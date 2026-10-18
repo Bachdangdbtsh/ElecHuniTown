@@ -326,3 +326,13 @@ Trong thư mục `frontend`:
 - [ ] `git status` sạch, không có `.env` trong danh sách commit
 
 Nếu làm theo đúng README mà vẫn không chạy được, hãy báo cho cả nhóm kèm **nguyên văn thông báo lỗi** để cùng sửa README cho đầy đủ hơn.
+
+## 15. (Optional) Làm việc với Figma trên IDE (VS Code)
+Nếu bạn muốn tích hợp Figma vào trong VS Code để không phải chuyển tab khi lập trình, hãy làm các bước theo thứ tự như sau:
+- Bước 1: Truy cập URL file Mockup chung của dự án: https://www.figma.com/design/ozyiDKhNaioPaJ1EzpsLhn/L08_0_Mockup_master_file?node-id=2001-5&t=U7GpH3GzUs7neffc-1
+- Bước 2: Ở góc trái màn hình, chọn chế độ Design --> Chọn MCP --> Chọn VS Code --> chọn Install in VS Code
+- Bước 3: Làm các bước mà VS Code hướng dẫn (Lưu ý: chọn chế độ Global để thay đổi). Bạn tích hợp VS Code Agent thành công khi ở trang Figma, ở phần MCP xuất hiện dòng "1 connection"
+- Bước 4: Mở VS Code --> Chọn Extensions ở sidebar --> Nhập Figma for VS Code --> Install
+- Bước 5: Sau khi Install thành công sẽ xuất hiện icon "Figma" ở cuối sidebar. Click vào biểu tượng này --> Chọn Sign-in --> Đăng nhập lại trên Figma
+- Bước 6: Sau khi đăng nhập trên Figma, VS Code sẽ lấy được tất cả các canvas trong account.
+- Bước 7: Chọn canvas muốn thiết kế để tiếp tục làm việc.

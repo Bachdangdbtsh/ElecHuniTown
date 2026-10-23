@@ -52,3 +52,223 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+model Product {
+  // TODO
+}
+
+model Order {
+  // TODO
+}
+
+//========================================================
+// QUAN LY KHO, DOI TRA - HOAN TransactionType
+//========================================================
+
+enum DocumentStatus {
+  DRAFT
+  PENDING_HANDLE
+  APPROVED
+  DENIED   // must have denying reason
+}
+
+enum StockIssueType {
+  SALE
+  DAMAGED
+  RETURN_TO_SUPPLIER
+}
+
+enum TransactionType {
+  RECEIPT
+  ISSUE
+  CUSTOMER_RETURN
+}
+
+enum ReturnStatus {
+  PENDING
+  APPROVED
+  DENIED
+  REFUNDED
+}
+
+enum ReturnItemCondition {
+  RESALEABLE
+  NON_RESALEABLE
+}
+
+model Supplier {
+  id                      Int     @id @default(autoincrement())
+  name                    String
+  businessRegistNum       String  @unique
+  email                   String?  @unique
+  phoneNumber             String?
+  address                 String?
+  contactPerson           String?  
+  bankNumber              String?
+  isActive                Boolean @default(true)
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @default(now())
+
+  receipts StockReceipt[]
+  issues   StockIssue[]
+}
+
+
+model StockReceipt {
+  id                      Int       @id @default(autoincrement())
+  code                    String    
+  status                  DocumentStatus  @default(DRAFT)
+  content                 String
+  rejectReason            String?
+  supplierId              Int                        
+  createdById             Int
+  handledById             Int?
+  createdAt               DateTime  @default(now())
+  handledAt               DateTime?
+
+  supplier        Supplier  @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdBy       User      @relation("ReceiptCreatedBy", fields: [createdById], references: [id], onDelete:  Restrict)
+  handledBy       User?      @relation("ReceiptHandledBy", fields: [handledById], references: [id], onDelete: Restrict)
+  items           StockIssueItem[]
+
+  @@index([status, createdAt])
+  @@index([supplierId])
+}
+
+model StockReceiptItem {
+  id              Int       @id @default(autoincrement())
+  productId       Int       
+  receiptId       Int
+  quantity        Int       @default(0)
+  unitCost        Int
+
+  receipt         StockReceipt      @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  product         Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  transaction     InventoryTransaction?
+
+  @@unique([receiptId, productId])
+  @@index([productId])
+}
+
+
+model StockIssue {
+  id                      Int       @id @default(autoincrement())
+  code                    String
+  type                    StockIssueType  @default(SALE)    
+  status                  DocumentStatus  @default(DRAFT)
+  content                 String
+  rejectReason            String?
+  supplierId              Int?      // dung khi status la RETURN_TO_SUPPLIER                  
+  createdById             Int
+  handledById             Int?
+  createdAt               DateTime  @default(now())
+  handledAt               DateTime?
+
+  supplier        Supplier?  @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdBy       User      @relation("ReceiptCreatedBy", fields: [createdById], references: [id], onDelete:  Restrict)
+  handledBy       User?      @relation("ReceiptHandledBy", fields: [handledById], references: [id], onDelete: Restrict)
+  items           StockReceiptItem[]
+
+  @@index([status, createdAt])
+  @@index([type])
+}
+
+model StockIssueItem {
+  id              Int       @id @default(autoincrement())
+  productId       Int       
+  issueId         Int
+  quantity        Int       @default(0)
+  unitCost        Int
+
+  receipt         StockReceipt      @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  product         Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  transaction     InventoryTransaction?
+
+  @@index([issueId, productId])
+  @@index([productId])
+}
+
+
+// TODO
+model InventoryTransaction {
+  id                Int       @id @default(autoincrement())
+  type              TransactionType   
+  productId         Int
+  quantity          Int       @default(0)
+  unitCost          Int       @default(0)
+  receiptItemId     Int?
+  issueItemId       Int?
+  returnRequestId   Int?      // dung khi CUSTOMER_RETURN
+  createdAt         DateTime  @default(now())
+
+  product           Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+  receiptItem       StockReceiptItem?  @relation(fields: [receiptItemId], references: [id], onDelete: Restrict)
+  issueItem         StockIssueItem?   @relation(fields: [issueItemId], references: [id], onDelete: Restrict)
+  returnRequest     ReturnRequest?    @relation(fields: [returnRequestId], references: [id], onDelete: Restrict)
+
+  @@index([productId, createdAt])
+  @@index([type, createdAt])
+}
+
+model ReturnRequest {
+  id                Int      @id @default(autoincrement())
+  orderId           Int
+  status            ReturnStatus    @default(PENDING)
+  reason            String        // ly do khach doi transaction
+  rejectReason      String        // ly do tu choi yeu cau doi tra - hoan TransactionType
+  createdAt         DateTime        @default(now())
+  handledById       Int?            
+  handledAt         DateTime?
+
+  // refunding info - chi dung khi REFUNDED
+  refundAmount        Int?        @default(0)
+  refundCode          String?     @unique
+  beneficiaryAccount  String?     
+  beneficiaryName     String?
+  beneficiaryBank     String?     
+  refundMessage       String?
+  refundedById        Int?
+  refundedAt          DateTime    @default(now())
+
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  handledBy   User      @relation("ReturnHandledBy", fields: [handledById], references: [id], onDelete: Restrict)
+  refundBy    User      @relation("OrderRefundedBy", fields: [refundedById], references: [id], onDelete: Restrict)
+  items       ReturnRequestItem[]
+
+  @@index([orderId])
+  @@index([status, createdAt])
+}
+
+
+model ReturnRequestItem {
+  id                  Int       @id @default(autoincrement())
+  returnRequestId     Int
+  productId           Int
+  condition           ReturnItemCondition?
+  quantity            Int
+  unitCost            Int
+
+  returnRequest         ReturnRequest           @relation(fields: [returnRequestId], references: [id], onDelete: Cascade)
+  product               Product                 @relation(fields: [productId], references: [id], onDelete: Restrict)
+  inventoryTransaction  InventoryTransaction?    
+
+  @@index([returnRequestId, productId])
+  @@index([productId])
+}
+
+model ReturnImage {
+  id              Int      @id @default(autoincrement())
+  returnRequestId Int
+  url             String
+  uploadedAt      DateTime @default(now())
+
+  returnRequest ReturnRequest @relation(fields: [returnRequestId], references: [id], onDelete: Cascade)
+
+  @@index([returnRequestId])
+}
+
+
+
+
+
+

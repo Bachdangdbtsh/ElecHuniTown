@@ -51,14 +51,114 @@ model User {
   role         Role     @relation(fields: [roleId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  customerOrders  Order[] @relation("CustomerOrders")
+  confirmedOrders Order[] @relation("OrderConfirmedBy")
+}
+
+// SAN PHAM VA DON HANG
+
+enum CategoryStatus {
+  VISIBLE
+  HIDDEN
+}
+
+enum ProductStatus {
+  ACTIVE
+  HIDDEN
+  INACTIVE
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPING
+  DELIVERED
+  REJECTED
+  CANCELLED
+}
+
+model Category {
+  id             Int        @id @default(autoincrement())
+  categoryName   String
+  status         CategoryStatus
+  categoryFather Int?
+
+  parent         Category?  @relation("CategoryHierarchy", fields: [categoryFather], references: [id], onDelete: SetNull)
+  children       Category[] @relation("CategoryHierarchy")
+  products       Product[]
 }
 
 model Product {
-  // TODO
+  id          Int      @id @default(autoincrement())
+  categoryId  Int
+  productName String
+  oldPrice    Int
+  newPrice    Int
+  description String
+  status      ProductStatus
+  slug        String
+  stock       Int
+
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  pictures    ProductPictures[]
+  tags        Product_Tags[]
+  orderItems  Order_contain_product[]
+
+  stockReceiptItems       StockReceiptItem[]
+  stockIssueItems         StockIssueItem[]
+  inventoryTransactions   InventoryTransaction[]
+  returnRequestItems      ReturnRequestItem[]
+}
+
+model ProductPictures {
+  productId Int
+  link      String
+
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@id([productId, link])
+}
+
+model Product_Tags {
+  productId Int
+  tag       String
+
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@id([productId, tag])
 }
 
 model Order {
-  // TODO
+  id          Int      @id @default(autoincrement())
+  customerId  Int
+  recipientId Int
+  confirmBy   Int
+  orderDate   DateTime @default(now())
+  status      OrderStatus
+  shippingFee Int
+  discount    Int
+  subtotal    Int
+  totalCost   Int
+
+  customer    Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  recipient   RecipientInfo @relation(fields: [recipientId], references: [id], onDelete: Restrict)
+  confirmer   Staff         @relation(fields: [confirmBy], references: [id], onDelete: Restrict)
+
+  items          Order_contain_product[]
+  returnRequests ReturnRequest[]
+}
+
+model Order_contain_product {
+  orderId   Int
+  productId Int
+  quantity  Int
+  price     Int
+
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@id([orderId, productId])
 }
 
 //========================================================

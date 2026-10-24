@@ -11,9 +11,11 @@ model Role {
   id          Int              @id @default(autoincrement())
   code        String           @unique
   name        String
+  description String?
   isSystem    Boolean          @default(false)
   users       User[]
   permissions RolePermission[]
+  manageLogs  AdminManageRole[]
 }
 
 model PermissionGroup {
@@ -28,15 +30,15 @@ model Permission {
   code    String           @unique
   name    String
   groupId Int
-  group   PermissionGroup  @relation(fields: [groupId], references: [id])
+  group   PermissionGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   roles   RolePermission[]
 }
 
 model RolePermission {
   roleId       Int
   permissionId Int
-  role         Role       @relation(fields: [roleId], references: [id])
-  permission   Permission @relation(fields: [permissionId], references: [id])
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
 }
@@ -48,17 +50,185 @@ model User {
   fullName     String
   isActive     Boolean  @default(true)
   roleId       Int
-  role         Role     @relation(fields: [roleId], references: [id])
+  role         Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  phone                 String?                @unique
+  lastLoginAt           DateTime?
+  loginHistory          LoginHistory[]
+  passwordResetTokens   PasswordResetToken[]
+  changeRequestsCreated AccountChangeRequest[] @relation("ChangeRequestCreatedBy")
+  changeRequestsHandled AccountChangeRequest[] @relation("ChangeRequestReviewedBy")
+
+  customer              Customer?
+  staff                 Staff?
+  shopOwner             ShopOwner?
+  admin                 Admin?
+
+  receiptsCreated       StockReceipt[]         @relation("ReceiptCreatedBy")
+  receiptsHandled       StockReceipt[]         @relation("ReceiptHandledBy")
+  issuesCreated         StockIssue[]           @relation("ReceiptCreatedBy")
+  issuesHandled         StockIssue[]           @relation("ReceiptHandledBy")
+  returnsHandled        ReturnRequest[]        @relation("ReturnHandledBy")
+  ordersRefunded        ReturnRequest[]        @relation("OrderRefundedBy")
+}
+
+model Customer {
+  userId         Int             @id
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipientInfos RecipientInfo[]
+}
+
+model Staff {
+  userId            Int                   @id
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  managedProducts   StaffManageProduct[]
+  managedCategories StaffManageCategory[]
+}
+
+model ShopOwner {
+  userId Int  @id
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Admin {
+  userId       Int               @id
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  managedRoles AdminManageRole[]
+}
+
+model AdminManageRole {
+  id      Int      @id @default(autoincrement())
+  adminId Int
+  roleId  Int
+  type    String
+  at      DateTime @default(now())
+
+  admin   Admin    @relation(fields: [adminId], references: [userId], onDelete: Restrict)
+  role    Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([roleId])
+}
+
+model StaffManageProduct {
+  id        Int      @id @default(autoincrement())
+  staffId   Int
+  productId Int
+  type      String
+  at        DateTime @default(now())
+
+  staff     Staff    @relation(fields: [staffId], references: [userId], onDelete: Restrict)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+  @@index([productId])
+}
+
+model StaffManageCategory {
+  id         Int      @id @default(autoincrement())
+  staffId    Int
+  categoryId Int
+  type       String
+  at         DateTime @default(now())
+
+  staff      Staff    @relation(fields: [staffId], references: [userId], onDelete: Restrict)
+
+  @@index([staffId])
+  @@index([categoryId])
+}
+
+model RecipientInfo {
+  id             Int      @id @default(autoincrement())
+  customerId     Int
+  recipientName  String?
+  recipientPhone String
+  address        String
+  recipientType  String?
+  isDefault      Boolean  @default(false)
+
+  customer       Customer @relation(fields: [customerId], references: [userId], onDelete: Cascade)
+
+  @@index([customerId])
 }
 
 model Product {
-  // TODO
+  id          Int      @id @default(autoincrement())
+  categoryId  Int
+  productName String
+  oldPrice    Int
+  newPrice    Int
+  description String
+  status      ProductStatus
+  slug        String
+  stock       Int
+
+  isFeature   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  rate        Float    @default(0)
+  sold        Int      @default(0)
+
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  pictures    ProductPictures[]
+  tags        Product_Tags[]
+  orderItems  Order_contain_product[]
+
+  stockReceiptItems       StockReceiptItem[]
+  stockIssueItems         StockIssueItem[]
+  inventoryTransactions   InventoryTransaction[]
+  returnRequestItems      ReturnRequestItem[]
+}
+
+model ProductPictures {
+  productId Int
+  link      String
+
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@id([productId, link])
+}
+
+model Product_Tags {
+  productId Int
+  tag       String
+
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@id([productId, tag])
 }
 
 model Order {
-  // TODO
+  id          Int      @id @default(autoincrement())
+  customerId  Int
+  recipientId Int
+  confirmBy   Int
+  orderDate   DateTime @default(now())
+  status      OrderStatus
+  shippingFee Int
+  discount    Int
+  subtotal    Int
+  totalCost   Int
+
+  customer    Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  recipient   RecipientInfo @relation(fields: [recipientId], references: [id], onDelete: Restrict)
+  confirmer   Staff         @relation(fields: [confirmBy], references: [id], onDelete: Restrict)
+
+  items          Order_contain_product[]
+  returnRequests ReturnRequest[]
+}
+
+model Order_contain_product {
+  orderId   Int
+  productId Int
+  quantity  Int
+  price     Int
+
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@id([orderId, productId])
 }
 
 //========================================================
@@ -267,8 +437,58 @@ model ReturnImage {
   @@index([returnRequestId])
 }
 
+//========================================================
+// XAC THUC, QUAN LY TAI KHOAN (module auth, account)
+//========================================================
 
+enum ChangeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
 
+model LoginHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     // null khi email khong ton tai
+  email     String
+  ip        String?
+  userAgent String?
+  success   Boolean
+  createdAt DateTime @default(now())
 
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, createdAt])
+}
 
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  tokenHash String    @unique   // sha256 cua token, khong luu token goc
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Yeu cau sua tai khoan do User gui, Quan tri vien duyet
+model AccountChangeRequest {
+  id            Int                 @id @default(autoincrement())
+  requestedById Int
+  reviewedById  Int?
+  reason        String
+  changes       Json                // { fullName?, email?, phone?, roleCode?, isActive? }
+  previous      Json
+  status        ChangeRequestStatus @default(PENDING)
+  createdAt     DateTime            @default(now())
+  reviewedAt    DateTime?
+
+  requestedBy User  @relation("ChangeRequestCreatedBy", fields: [requestedById], references: [id], onDelete: Cascade)
+  reviewedBy  User? @relation("ChangeRequestReviewedBy", fields: [reviewedById], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+  @@index([requestedById])
+}

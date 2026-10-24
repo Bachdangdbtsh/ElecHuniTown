@@ -51,4 +51,118 @@ model User {
   role         Role     @relation(fields: [roleId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  customerOrders  Order[] @relation("CustomerOrders")
+  confirmedOrders Order[] @relation("OrderConfirmedBy")
+}
+
+enum CategoryStatus {
+  VISIBLE
+  HIDDEN
+}
+
+enum ProductStatus {
+  ACTIVE
+  HIDDEN
+  INACTIVE
+}
+
+model Category {
+  id             Int            @id @default(autoincrement())
+  categoryName   String
+  status         CategoryStatus
+  categoryFather Int?
+
+  parent   Category?  @relation("CategoryHierarchy", fields: [categoryFather], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryHierarchy")
+  products Product[]
+}
+
+model Product {
+  id          Int           @id @default(autoincrement())
+  categoryId  Int
+  productName String
+  oldPrice    Int
+  newPrice    Int
+  description String
+  status      ProductStatus
+  slug        String
+  stock       Int
+  is_Feature  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  pictures   ProductPictures[]
+  tags       Product_Tags[]
+  orderItems Order_contain_product[]
+}
+
+model ProductPictures {
+  productId Int
+  link      String
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@id([productId, link])
+}
+
+model Product_Tags {
+  productId Int
+  tag       String
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@id([productId, tag])
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPING
+  DELIVERED
+  REJECTED
+  CANCELLED
+}
+
+model RecipientInfo {
+  id            Int      @id @default(autoincrement()) @map("ID")
+  customerID    Int?     @map("CustomerID")
+  address       String?  @map("Address")
+  phone         String?  @map("Recipient_Phone")
+  recipientType String?  @map("Recipient_Type")
+  isDefault     Boolean? @map("Is_Defalt")
+
+  orders Order[]
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  customerId  Int
+  recipientId Int
+  confirmBy   Int
+  orderDate   DateTime    @default(now())
+  status      OrderStatus
+  shippingFee Int
+  discount    Int
+  subtotal    Int
+  totalCost   Int
+
+  customer  User          @relation("CustomerOrders",   fields: [customerId],  references: [id], onDelete: Restrict)
+  recipient RecipientInfo @relation(fields: [recipientId], references: [id], onDelete: Restrict)
+  confirmer User          @relation("OrderConfirmedBy", fields: [confirmBy],   references: [id], onDelete: Restrict)
+
+  items Order_contain_product[]
+}
+
+model Order_contain_product {
+  orderId   Int
+  productId Int
+  quantity  Int
+  price     Int
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@id([orderId, productId])
 }

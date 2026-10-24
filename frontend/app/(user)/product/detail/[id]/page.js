@@ -124,7 +124,7 @@ export default function ProductDetail() {
           <div className="quantity">
             <div className="quantity-input">
               <div className="label">Số lượng</div>
-              <input type="number" value="1"></input>
+              <input type="number" defaultValue="1"></input>
             </div>
             <div className="quantity-detail">
               <div className="number">1 x </div>

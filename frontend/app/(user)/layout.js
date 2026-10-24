@@ -6,9 +6,9 @@ import { FaFacebook } from "react-icons/fa";
 import { FaTwitter } from "react-icons/fa";
 import { FaInstagram } from "react-icons/fa";
 import { FaYoutube } from "react-icons/fa";
-import { FaListUl } from "react-icons/fa";
 import Link from "next/link";
 import { FaFacebookF } from "react-icons/fa";
+import CategoryList from "./categoryList";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -41,10 +41,10 @@ export default function RootLayout({
             </div>
             <div className="small-icon">
               <CiHeart size="24px" />
-              <div className="cart">
+              <Link className="cart" href="/cart">
                 <IoCartOutline size="24px" />
                 <div>3</div>
-              </div>
+              </Link>
               <div className="login">
                 Đăng nhập
               </div>
@@ -53,30 +53,7 @@ export default function RootLayout({
           </div>
 
         </div>
-        <div className="category-list">
-          <div className="container">
-            <div className="category-more">
-              <div className="label">
-                <FaListUl />
-                <span>Danh mục</span>
-              </div>
-              <div className="category-list-more">
-                <div className="category-list-more--left">
-                  <div className="category-item">Điện tử, điện lạnh</div>
-                  <div className="category-item">Điện tử, điện lạnh</div>
-                </div>
-                <div className="category-list-more--right">
-                  <Link className="category-card" href="#">
-                    <img className="card-image" src="/tulanh.jpg"></img>
-                    <div className="card-label">Tủ lạnh</div>
-                  </Link>
-                </div>
-              </div>
-            </div>
-            <a className="category" href="#">Máy điều hoà</a>
-            <a className="category" href="#">Tủ lạnh</a>
-          </div>
-        </div>
+        <CategoryList></CategoryList>
         <div className="main-content">
           <div className='container'>
             {children}

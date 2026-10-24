@@ -11,9 +11,11 @@ model Role {
   id          Int              @id @default(autoincrement())
   code        String           @unique
   name        String
+  description String?
   isSystem    Boolean          @default(false)
   users       User[]
   permissions RolePermission[]
+  manageLogs  AdminManageRole[]
 }
 
 model PermissionGroup {
@@ -28,17 +30,31 @@ model Permission {
   code    String           @unique
   name    String
   groupId Int
-  group   PermissionGroup  @relation(fields: [groupId], references: [id])
+  group   PermissionGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   roles   RolePermission[]
 }
 
 model RolePermission {
   roleId       Int
   permissionId Int
-  role         Role       @relation(fields: [roleId], references: [id])
-  permission   Permission @relation(fields: [permissionId], references: [id])
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
+}
+
+model AdminManageRole {
+  id      Int      @id @default(autoincrement())
+  adminId Int
+  roleId  Int
+  type    String
+  at      DateTime @default(now())
+
+  admin   User     @relation("AdminManageRoles", fields: [adminId], references: [id], onDelete: Restrict)
+  role    Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([roleId])
 }
 
 model User {
@@ -48,9 +64,40 @@ model User {
   fullName     String
   isActive     Boolean  @default(true)
   roleId       Int
-  role         Role     @relation(fields: [roleId], references: [id])
+  role         Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  phone                 String?                @unique
+  lastLoginAt           DateTime?
+  loginHistory          LoginHistory[]
+  passwordResetTokens   PasswordResetToken[]
+  changeRequestsTarget  AccountChangeRequest[] @relation("ChangeRequestTarget")
+  changeRequestsCreated AccountChangeRequest[] @relation("ChangeRequestCreatedBy")
+  changeRequestsHandled AccountChangeRequest[] @relation("ChangeRequestReviewedBy")
+
+  recipientInfos        RecipientInfo[]
+  managedRoles          AdminManageRole[]      @relation("AdminManageRoles")
+  receiptsCreated       StockReceipt[]         @relation("ReceiptCreatedBy")
+  receiptsHandled       StockReceipt[]         @relation("ReceiptHandledBy")
+  issuesCreated         StockIssue[]           @relation("ReceiptCreatedBy")
+  issuesHandled         StockIssue[]           @relation("ReceiptHandledBy")
+  returnsHandled        ReturnRequest[]        @relation("ReturnHandledBy")
+  ordersRefunded        ReturnRequest[]        @relation("OrderRefundedBy")
+}
+
+model RecipientInfo {
+  id             Int     @id @default(autoincrement())
+  customerId     Int
+  recipientName  String?
+  recipientPhone String
+  address        String
+  recipientType  String?
+  isDefault      Boolean @default(false)
+
+  customer       User    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
 }
 
 model Product {
@@ -267,8 +314,59 @@ model ReturnImage {
   @@index([returnRequestId])
 }
 
+//========================================================
+// XAC THUC, QUAN LY TAI KHOAN (module auth, account)
+//========================================================
 
+enum ChangeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
 
+model LoginHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     // null khi email khong ton tai
+  email     String
+  ip        String?
+  userAgent String?
+  success   Boolean
+  createdAt DateTime @default(now())
 
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, createdAt])
+}
 
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  tokenHash String    @unique   // sha256 cua token, khong luu token goc
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Yeu cau sua tai khoan do Chu cua hang gui, Quan tri vien duyet
+model AccountChangeRequest {
+  id            Int                 @id @default(autoincrement())
+  targetUserId  Int
+  requestedById Int
+  reviewedById  Int?
+  reason        String
+  changes       Json                // { fullName?, email?, phone?, roleCode?, isActive? }
+  previous      Json
+  status        ChangeRequestStatus @default(PENDING)
+  createdAt     DateTime            @default(now())
+  reviewedAt    DateTime?
+
+  targetUser  User  @relation("ChangeRequestTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  requestedBy User  @relation("ChangeRequestCreatedBy", fields: [requestedById], references: [id], onDelete: Restrict)
+  reviewedBy  User? @relation("ChangeRequestReviewedBy", fields: [reviewedById], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+}

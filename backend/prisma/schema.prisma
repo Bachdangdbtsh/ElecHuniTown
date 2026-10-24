@@ -43,20 +43,6 @@ model RolePermission {
   @@id([roleId, permissionId])
 }
 
-model AdminManageRole {
-  id      Int      @id @default(autoincrement())
-  adminId Int
-  roleId  Int
-  type    String
-  at      DateTime @default(now())
-
-  admin   User     @relation("AdminManageRoles", fields: [adminId], references: [id], onDelete: Restrict)
-  role    Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  @@index([adminId])
-  @@index([roleId])
-}
-
 model User {
   id           Int      @id @default(autoincrement())
   email        String   @unique
@@ -72,12 +58,14 @@ model User {
   lastLoginAt           DateTime?
   loginHistory          LoginHistory[]
   passwordResetTokens   PasswordResetToken[]
-  changeRequestsTarget  AccountChangeRequest[] @relation("ChangeRequestTarget")
   changeRequestsCreated AccountChangeRequest[] @relation("ChangeRequestCreatedBy")
   changeRequestsHandled AccountChangeRequest[] @relation("ChangeRequestReviewedBy")
 
-  recipientInfos        RecipientInfo[]
-  managedRoles          AdminManageRole[]      @relation("AdminManageRoles")
+  customer              Customer?
+  staff                 Staff?
+  shopOwner             ShopOwner?
+  admin                 Admin?
+
   receiptsCreated       StockReceipt[]         @relation("ReceiptCreatedBy")
   receiptsHandled       StockReceipt[]         @relation("ReceiptHandledBy")
   issuesCreated         StockIssue[]           @relation("ReceiptCreatedBy")
@@ -86,16 +74,81 @@ model User {
   ordersRefunded        ReturnRequest[]        @relation("OrderRefundedBy")
 }
 
+model Customer {
+  userId         Int             @id
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipientInfos RecipientInfo[]
+}
+
+model Staff {
+  userId            Int                   @id
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  managedProducts   StaffManageProduct[]
+  managedCategories StaffManageCategory[]
+}
+
+model ShopOwner {
+  userId Int  @id
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Admin {
+  userId       Int               @id
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  managedRoles AdminManageRole[]
+}
+
+model AdminManageRole {
+  id      Int      @id @default(autoincrement())
+  adminId Int
+  roleId  Int
+  type    String
+  at      DateTime @default(now())
+
+  admin   Admin    @relation(fields: [adminId], references: [userId], onDelete: Restrict)
+  role    Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([roleId])
+}
+
+model StaffManageProduct {
+  id        Int      @id @default(autoincrement())
+  staffId   Int
+  productId Int
+  type      String
+  at        DateTime @default(now())
+
+  staff     Staff    @relation(fields: [staffId], references: [userId], onDelete: Restrict)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+  @@index([productId])
+}
+
+model StaffManageCategory {
+  id         Int      @id @default(autoincrement())
+  staffId    Int
+  categoryId Int
+  type       String
+  at         DateTime @default(now())
+
+  staff      Staff    @relation(fields: [staffId], references: [userId], onDelete: Restrict)
+
+  @@index([staffId])
+  @@index([categoryId])
+}
+
 model RecipientInfo {
-  id             Int     @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   customerId     Int
   recipientName  String?
   recipientPhone String
   address        String
   recipientType  String?
-  isDefault      Boolean @default(false)
+  isDefault      Boolean  @default(false)
 
-  customer       User    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer       Customer @relation(fields: [customerId], references: [userId], onDelete: Cascade)
 
   @@index([customerId])
 }
@@ -351,10 +404,9 @@ model PasswordResetToken {
   @@index([userId])
 }
 
-// Yeu cau sua tai khoan do Chu cua hang gui, Quan tri vien duyet
+// Yeu cau sua tai khoan do User gui, Quan tri vien duyet
 model AccountChangeRequest {
   id            Int                 @id @default(autoincrement())
-  targetUserId  Int
   requestedById Int
   reviewedById  Int?
   reason        String
@@ -364,9 +416,9 @@ model AccountChangeRequest {
   createdAt     DateTime            @default(now())
   reviewedAt    DateTime?
 
-  targetUser  User  @relation("ChangeRequestTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
-  requestedBy User  @relation("ChangeRequestCreatedBy", fields: [requestedById], references: [id], onDelete: Restrict)
+  requestedBy User  @relation("ChangeRequestCreatedBy", fields: [requestedById], references: [id], onDelete: Cascade)
   reviewedBy  User? @relation("ChangeRequestReviewedBy", fields: [reviewedById], references: [id], onDelete: Restrict)
 
   @@index([status, createdAt])
+  @@index([requestedById])
 }

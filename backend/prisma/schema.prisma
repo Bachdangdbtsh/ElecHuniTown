@@ -101,7 +101,9 @@ model Product {
 
   isFeature   Boolean  @default(false)
   createdAt   DateTime @default(now())
-  
+  rate        Float    @default(0)
+  sold        Int      @default(0)
+
   category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
   pictures    ProductPictures[]

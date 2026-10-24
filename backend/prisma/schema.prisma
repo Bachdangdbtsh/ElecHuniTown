@@ -99,6 +99,9 @@ model Product {
   slug        String
   stock       Int
 
+  isFeature   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
   category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
   pictures    ProductPictures[]

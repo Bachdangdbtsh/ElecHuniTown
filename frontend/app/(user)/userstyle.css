@@ -453,7 +453,7 @@ input,textarea,button {
   color: #2F7562;
 }
 
-.homepage .sugest-product .list-suggest-product {
+.homepage .suggest-product .list-suggest-product {
   margin-top: 30px;
   border-radius: 12px;
   padding: 30px;
@@ -820,6 +820,7 @@ input,textarea,button {
 .product-detail-page .quantity-detail{
   display:flex;
   gap:4px;
+  align-items: center;
 }
 .product-detail-page .quantity-input{
   display:flex;
@@ -860,6 +861,7 @@ input,textarea,button {
   font-weight:600;
   font-size:16px;
   color:#FFFFFF;
+  cursor: pointer;
 }
 
 /* End Product Detail */

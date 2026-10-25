@@ -17,6 +17,7 @@ export default function Home() {
     })
       .then(res => res.json())
       .then(data => {
+        console.log(data);
         setfeatureProducts(data.featureProducts);
         setsuggestProducts(data.suggestProducts);
       })

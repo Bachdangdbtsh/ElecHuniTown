@@ -2,33 +2,46 @@
 import Link from "next/link";
 import { FaStar } from "react-icons/fa6";
 import { FaStarHalf } from "react-icons/fa";
-import { BsBox2 } from "react-icons/bs";
-import { FaTicketSimple } from "react-icons/fa6";
 import ListImages from "./swiper";
 import ProductDescription from "./productDescription";
+import RightPart from "./rightPart";
 export const metadata = {
   title: "Trang sản phẩm",
 };
-export default function ProductDetail() {
-  
+
+export default async function ProductDetail({ params }) {
+  const { id } = await params;
+  const res = await fetch(`${process.env.NEXT_PUBLIC_URL}/product/detail/${id}`, {
+    method: "POST",
+    cache: "no-store",
+  });
+
+  // if (!res||res.code!="success") {
+  //   return <div>Không tìm thấy danh mục (HTTP {res.status})</div>;
+  // }
+
+  const data = await res.json();
+  const product = data.product;
+  console.log(data);
+
   return (<>
     <div className="product-detail-page">
       <div className="link-from-category">
-        <Link href="#">Máy cạo râu</Link>
+        <Link href={`/category/${product.category?.id}`}>{product.category?.name}</Link>
         <div>{">>"}</div>
-        <Link href="#">Máy cạo râu Coclear</Link>
+        <Link href={`/product/detail/${product.id}`}>{product.productName}</Link>
       </div>
       <div className="content">
         <div className="left-part">
           <div className="list-images">
-            <ListImages/>
+            <ListImages pictures={product.pictures}/>
           </div>
-          <ProductDescription/>
+          <ProductDescription des={product.description} />
           <div className="comment">
             <div className="first-part">
               <div className="rate">
                 <div className="title">Đánh giá</div>
-                <div className="point">0</div>
+                <div className="point">{product.rate}</div>
                 <div className="list-star">
                   <FaStar />
                   <FaStar />
@@ -80,63 +93,25 @@ export default function ProductDetail() {
 
             </div>
             <div className="other-review">
-              <div className="review-detail">
-                <div className="name">Nguyễn Văn A</div>
-                <div className="point">
-                  <FaStar />
-                  <FaStar />
-                  <FaStar />
-                  <FaStar />
-                  <FaStar />
-                </div>
-                <div className="des-detail">Sản phẩm sử dụng tốt</div>
-              </div>
+              {product.Comment.map((com,index) => {
+                console.log(com);
+                return (
+                  <div className="review-detail" key={index}>
+                    <div className="name">{com.User.fullName}</div>
+                    <div className="point">
+                      {Array.from({ length: Math.floor(com.rating ?? 0) }, (_, i) => (
+                        <FaStar key={i} />
+                      ))}
+                    </div>
+                    <div className="des-detail">{com.content}</div>
+                  </div>
+                )
+              })}
+
             </div>
           </div>
         </div>
-        <div className="right-part">
-          <div className="product-name">Máy cạo râu khô và ướt Coclear CS007</div>
-          <div className="in-row">
-            <div className="rate">
-              <div className="point">4.9</div>
-              <FaStar color="#FFD600" />
-            </div>
-            <div className="number-review">10 đánh giá</div>
-            <div className="sold-number"><strong>Đã bán: 15.9k</strong></div>
-          </div>
-          <div className="price">
-            <div className="current-price">
-              <div className="new-price">2.590.000đ</div>
-              <div className="discount">-30%</div>
-            </div>
-            <div className="old-price">13.650.000đ</div>
-          </div>
-          <div className="product-infor">
-            <div className="status infor-detail">
-              <BsBox2 />
-              <span>Còn hàng</span>
-            </div>
-            <div className="infor-detail">
-              <FaTicketSimple />
-              <div>Mã sản phẩm:<strong className="product-id">28T000001</strong></div>
-            </div>
-          </div>
-          <div className="quantity">
-            <div className="quantity-input">
-              <div className="label">Số lượng</div>
-              <input type="number" defaultValue="1"></input>
-            </div>
-            <div className="quantity-detail">
-              <div className="number">1 x </div>
-              <div className="price">10.000.000 </div>
-            </div>
-          </div>
-          <div className="total">
-            <div className="title">Tổng cộng</div>
-            <div className="total-price">10.000.000đ</div>
-          </div>
-          <button className="add-cart">Thêm vào giỏ hàng</button>
-        </div>
+        <RightPart product={product}></RightPart>
       </div>
     </div>
   </>)

@@ -1,7 +1,7 @@
 import { BsLightningChargeFill } from "react-icons/bs";
 import { FaStar } from "react-icons/fa";
 import Link from "next/link";
-export default function Product({ data }) {
+export default function Product({data}) {
   console.log(data);
    if(!data){
     return(<></>);
@@ -14,7 +14,7 @@ export default function Product({ data }) {
  
   return (<>
     <Link className="product" href={`/product/detail/${data.id}`}>
-      <img className="image" src={data.pictures?.[0]?.link ?? "/placeholder.png"}></img>
+      <img className="image" src={data.pictures?.[0]?.url ?? "/placeholder.png"}></img>
       <div className="discount">
         <BsLightningChargeFill color="#FFCB06" />
         <div className="label">

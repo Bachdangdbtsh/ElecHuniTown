@@ -9,6 +9,7 @@ import { FaYoutube } from "react-icons/fa";
 import Link from "next/link";
 import { FaFacebookF } from "react-icons/fa";
 import CategoryList from "./categoryList";
+import { Toaster } from 'sonner';
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -104,7 +105,10 @@ export default function RootLayout({
             <FaYoutube color="#ffffff" />
           </Link>
         </div>
-
+        <Toaster
+          position="top-right"
+          richColors
+        />
       </body>
     </html>
   );

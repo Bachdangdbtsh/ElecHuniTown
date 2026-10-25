@@ -3,12 +3,14 @@ import { FaTicketSimple } from "react-icons/fa6";
 import { BsBox2 } from "react-icons/bs";
 import { FaStar } from "react-icons/fa6";
 import { useEffect,useState } from "react";
+import {toast} from "sonner";
 function addCart(product,quantity){
   if(!product) return;
   console.log({
     productID:product.id,
     quantity:quantity,
   })
+  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
   fetch(`${process.env.NEXT_PUBLIC_URL}/cart/add`,{
     method:"POST",
     credentials:"include",
@@ -18,11 +20,17 @@ function addCart(product,quantity){
     body:JSON.stringify({
       productID:product.id,
       quantity:quantity,
+      currentCart:cart
     })
   })
   .then(res=>res.json())
   .then(data=>{
     console.log(data);
+    
+    localStorage.setItem("cart", JSON.stringify(data.currentCart));
+    if(data.code=="success"){
+      toast.success(data.message);
+    }
   })
 }
 
@@ -55,7 +63,7 @@ export default function RightPart({product}) {
         </div>
         <div className="infor-detail">
           <FaTicketSimple />
-          <div>Mã sản phẩm:<strong className="product-id">28T000001</strong></div>
+          <div>Mã sản phẩm:<strong className="product-id">{product.id}</strong></div>
         </div>
       </div>
       <div className="quantity">

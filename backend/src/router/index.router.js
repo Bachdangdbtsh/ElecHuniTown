@@ -185,13 +185,12 @@ router.post("/product/detail/:id", async (req, res) => {
 
 router.post("/cart/add", async (req, res) => {
   try {
-    console.log("[cart/add] Body:", req.body);
 
     const { productID, quantity } = req.body ?? {};
-    if(quantity<=0){
+    if (quantity <= 0) {
       res.json({
-        code:"error",
-        message:"Sản phẩm không hợp lệ",
+        code: "error",
+        message: "Sản phẩm không hợp lệ",
       })
       return;
     }
@@ -207,21 +206,58 @@ router.post("/cart/add", async (req, res) => {
     if (product.stock <= 0) {
       return res.status(400).json({ code: "error", message: "Sản phẩm đã hết hàng" });
     }
-
-    const cart = readCart(req);
-
-    const existing = cart.find((item) => item.productId === pid);
-    if (existing) {
-      existing.quantity = Math.min(existing.quantity + qty, product.stock);
-    } else {
-      cart.push({ productId: pid, quantity: Math.min(qty, product.stock) });
+    const currentCart = req.body.currentCart;
+    const index = currentCart.findIndex(item => item.id == productID);
+    if (index != -1) {
+      currentCart[index].quantity = Number(currentCart[index].quantity) + quantity;
+      if (currentCart[index].quantity > product.stock) {
+        currentCart[index].quantity = product.stock
+      }
     }
-
-    saveCart(res, cart);
+    else {
+      currentCart.push({
+        id: productID,
+        productName: product.productName,
+        price: product.newPrice,
+        quantity: quantity,
+      })
+    }
+    // res.cookie('cart', JSON.stringify(currentCart), {
+    //   path: '/',
+    //   httpOnly: true,
+    //   sameSite: 'lax',
+    //   secure: false,
+    //   maxAge: 7 * 24 * 60 * 60 * 1000,
+    // });
 
     return res.json({
       code: "success",
       message: "Đã thêm vào giỏ hàng",
+      currentCart,
+    });
+  } catch (err) {
+    console.error("[cart/add] Lỗi:", err);
+    return res.status(500).json({ code: "error", message: err.message });
+  }
+
+})
+
+router.post("/cart/get", async (req, res) => {
+  try {
+    const currentCart = req.body.currentCart;
+    for (const p of currentCart) {
+      const product = await prisma.product.findUnique({
+        where: { id:p.id },
+        include: {
+          pictures: true,
+        }
+      });
+      p.picture = product.pictures[0]?.url ?? null;
+    }
+    console.log(currentCart);
+    return res.json({
+      code: "success",
+      currentCart,
     });
   } catch (err) {
     console.error("[cart/add] Lỗi:", err);

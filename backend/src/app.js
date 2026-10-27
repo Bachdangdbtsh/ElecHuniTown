@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
 import { prisma } from './lib/prisma.js';
 import { errorHandler } from './common/error/ErrorHandler.js';
+import statisticRoutes from './modules/statistic/statistic.routes.js';
 
 export const app = express();
 
@@ -18,4 +19,5 @@ app.get('/health', async (req, res) => {
 
 // các module sẽ được gắn ở đây: app.use('/products', productRoutes), ...
 
+app.use('/statistics', statisticRoutes);
 app.use(errorHandler);                 

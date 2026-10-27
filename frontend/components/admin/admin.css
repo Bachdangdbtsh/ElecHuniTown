@@ -1,0 +1,106 @@
+/* Khung khu quản lý. Bảng màu theo đề: trắng 60% · mint 30% · xanh đen 10%. */
+.adm-root {
+  --ink: #1e293b;
+  --mint: #8fe3a9;
+  --mint-soft: #e8f8ee;
+  --paper: #ffffff;
+  --line: #e2e8f0;
+  --muted: #5b6b80;
+  --up: #15803d;
+  --down: #b91c1c;
+  flex: 1;
+  display: flex;
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-jakarta), system-ui, sans-serif;
+}
+
+.adm-shell {
+  display: flex;
+  width: 100%;
+}
+
+.adm-side {
+  flex: 0 0 248px;
+  background: var(--mint);
+  padding: 28px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.adm-brand {
+  font-size: 20px;
+  font-weight: 800;
+  padding: 0 12px;
+}
+
+.adm-side-title {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0 12px 20px;
+  opacity: 0.8;
+}
+
+.adm-nav {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adm-nav-item {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+a.adm-nav-item:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.adm-nav-item[aria-current='page'] {
+  background: var(--ink);
+  color: #fff;
+}
+
+.adm-nav-soon {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.adm-nav-item:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.adm-main {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 40px 56px;
+}
+
+@media (max-width: 860px) {
+  .adm-shell {
+    flex-direction: column;
+  }
+  .adm-side {
+    flex: none;
+    padding: 16px;
+  }
+  .adm-side-title {
+    padding-bottom: 8px;
+  }
+  .adm-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .adm-main {
+    padding: 24px 16px 40px;
+  }
+}

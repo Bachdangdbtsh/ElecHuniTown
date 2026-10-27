@@ -1,0 +1,80 @@
+'use client';
+
+import { useState, useSyncExternalStore } from 'react';
+import { useApi } from './_lib/useApi';
+import { formatDate, presetRange, previousRange } from './_lib/dates';
+import PeriodPicker from './_components/PeriodPicker';
+import ExportButton from './_components/ExportButton';
+import KpiPanel from './_components/KpiPanel';
+import RevenueChart from './_components/RevenueChart';
+import ProductRanking from './_components/ProductRanking';
+import RatingSection from './_components/RatingSection';
+
+// Khoảng ngày mặc định (tháng này) chỉ tính trên trình duyệt: server trả null để không lệch giờ khi hydrate.
+let defaultRange;
+const subscribeNone = () => () => {};
+const getClientRange = () => (defaultRange ??= presetRange('thisMonth'));
+const getServerRange = () => null;
+
+export default function StatisticsPage() {
+  const [picked, setRange] = useState(null);
+  const initial = useSyncExternalStore(subscribeNone, getClientRange, getServerRange);
+  const range = picked ?? initial;
+
+  const prev = range ? previousRange(range) : null;
+
+  const dashboard = useApi('/statistics/dashboard', range);
+  const revenue = useApi('/statistics/revenue', range && { ...range, groupBy: 'day' });
+  const prevRevenue = useApi('/statistics/revenue', prev && { ...prev, groupBy: 'day' });
+  const top = useApi('/statistics/top-products', range && { ...range, limit: 5 });
+  const slow = useApi('/statistics/slow-products', range && { ...range, limit: 5 });
+  const ratings = useApi('/statistics/ratings', range && { ...range, limit: 5 });
+
+  return (
+    <div className="st-page">
+      <header className="st-head">
+        <div>
+          <h1 className="st-h1">Thống kê tài chính</h1>
+          <p className="st-sub">
+            Tổng quan hiệu suất{range ? ` từ ${formatDate(range.from)} đến ${formatDate(range.to)}` : ''}
+          </p>
+        </div>
+        <div className="st-tools">
+          <PeriodPicker range={range} onChange={setRange} />
+          <ExportButton range={range} />
+        </div>
+      </header>
+
+      <KpiPanel state={dashboard} />
+
+      <section className="st-section" aria-labelledby="sec-revenue">
+        <h2 id="sec-revenue" className="st-h2">
+          Doanh thu theo thời gian
+        </h2>
+        <p className="st-sub">Tổng doanh số theo ngày, so với kỳ liền trước cùng độ dài</p>
+        <div className="st-panel">
+          <RevenueChart revenueState={revenue} previousState={prevRevenue} bestDate={dashboard.data?.bestDay?.date} />
+        </div>
+      </section>
+
+      <section className="st-section" aria-labelledby="sec-sales">
+        <h2 id="sec-sales" className="st-h2">
+          Thống kê doanh số
+        </h2>
+        <p className="st-sub">So sánh tốc độ bán và xác định cơ hội hàng tồn kho</p>
+        <div className="st-two">
+          <ProductRanking title="Sản phẩm bán chạy nhất" subtitle="Số lượng bán cao nhất trong kỳ" state={top} kind="top" />
+          <ProductRanking title="Sản phẩm bán chậm" subtitle="Tỷ lệ bán thấp nhất trong kỳ" state={slow} kind="slow" />
+        </div>
+      </section>
+
+      <section className="st-section" aria-labelledby="sec-rating">
+        <h2 id="sec-rating" className="st-h2">
+          Thống kê đánh giá
+        </h2>
+        <p className="st-sub">Cảm nhận về sản phẩm từ đánh giá của khách hàng</p>
+        <RatingSection state={ratings} />
+      </section>
+    </div>
+  );
+}

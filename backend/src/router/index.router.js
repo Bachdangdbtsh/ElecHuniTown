@@ -198,7 +198,7 @@ router.post("/cart/add", async (req, res) => {
     // Kiểm tra sản phẩm có thật
     const product = await prisma.product.findUnique({
       where: { id: productID },
-      select: { id: true, productName: true, newPrice: true, stock: true },
+      select: { id: true, productName: true, newPrice: true,oldPrice:true, stock: true, pictures: true, },
     });
     if (!product) {
       return res.status(404).json({ code: "error", message: "Sản phẩm không tồn tại" });
@@ -218,18 +218,12 @@ router.post("/cart/add", async (req, res) => {
       currentCart.push({
         id: productID,
         productName: product.productName,
-        price: product.newPrice,
+        newPrice: product.newPrice,
+        oldPrice:product.oldPrice,
         quantity: quantity,
+        image: product.pictures[0].url,
       })
     }
-    // res.cookie('cart', JSON.stringify(currentCart), {
-    //   path: '/',
-    //   httpOnly: true,
-    //   sameSite: 'lax',
-    //   secure: false,
-    //   maxAge: 7 * 24 * 60 * 60 * 1000,
-    // });
-
     return res.json({
       code: "success",
       message: "Đã thêm vào giỏ hàng",
@@ -247,7 +241,7 @@ router.post("/cart/get", async (req, res) => {
     const currentCart = req.body.currentCart;
     for (const p of currentCart) {
       const product = await prisma.product.findUnique({
-        where: { id:p.id },
+        where: { id: p.id },
         include: {
           pictures: true,
         }
@@ -264,6 +258,95 @@ router.post("/cart/get", async (req, res) => {
     return res.status(500).json({ code: "error", message: err.message });
   }
 
+})
+
+router.post("/order/create", async (req, res) => {
+  try {
+    const { name, phone, address, note, paymentMethod, cart, addressType } = req.body;
+    
+    const customerId = req.user ? req.user.id : null; 
+
+    if (!cart || cart.length === 0) {
+      return res.status(400).json({ success: false, message: "Giỏ hàng đang trống!" });
+    }
+
+    let subtotal = 0;
+    let total=0;
+    const orderItems = cart.map(item => {
+      subtotal += item.oldPrice * item.quantity;
+      total += item.newPrice * item.quantity;
+      return {
+        productId: item.id,
+        quantity: item.quantity,
+        price: item.newPrice
+      };
+    });
+
+    const shippingFee = 0; 
+    const discount = subtotal-total;    
+
+    let recipient = await prisma.recipientInfo.findFirst({
+      where: {
+        customerId: customerId, 
+        recipientPhoneNumber: phone,
+        address: address
+      }
+    });
+
+    if (!recipient) {
+      recipient = await prisma.recipientInfo.create({
+        data: {
+          customerId: customerId,
+          recipientName: name,
+          recipientPhoneNumber: phone,
+          address: address,
+          recipientType:addressType
+        }
+      });
+    }
+
+    const newOrder = await prisma.$transaction(async (tx) => {
+      const tempCode = `TEMP_${Date.now()}`;
+      
+      const order = await tx.order.create({
+        data: {
+          code: tempCode,
+          customerId: customerId,
+          recipientId: recipient.id,
+          status: 'PENDING',
+          shippingFee,
+          paymentMethod,
+          note,
+          discount,
+          subtotal,
+          totalCost,
+          items: {
+            create: orderItems 
+          }
+        }
+      });
+
+      const finalCode = `DH${String(order.id).padStart(10, '0')}`;
+
+      const updatedOrder = await tx.order.update({
+        where: { id: order.id },
+        data: { code: finalCode }
+      });
+
+      return updatedOrder;
+    });
+
+    console.log(newOrder);
+    return res.status(201).json({ 
+      success: true, 
+      message: "Đặt hàng thành công", 
+      newOrder,
+    });
+
+  } catch (error) {
+    console.error("Lỗi tạo order:", error);
+    return res.status(500).json({ success: false, message: "Lỗi server khi tạo đơn hàng" });
+  }
 })
 
 export default router;

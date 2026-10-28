@@ -3,36 +3,8 @@ import { FaTicketSimple } from "react-icons/fa6";
 import { BsBox2 } from "react-icons/bs";
 import { FaStar } from "react-icons/fa6";
 import { useEffect,useState } from "react";
-import {toast} from "sonner";
-function addCart(product,quantity){
-  if(!product) return;
-  console.log({
-    productID:product.id,
-    quantity:quantity,
-  })
-  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  fetch(`${process.env.NEXT_PUBLIC_URL}/cart/add`,{
-    method:"POST",
-    credentials:"include",
-    headers:{
-      "Content-Type":"application/json",
-    },
-    body:JSON.stringify({
-      productID:product.id,
-      quantity:quantity,
-      currentCart:cart
-    })
-  })
-  .then(res=>res.json())
-  .then(data=>{
-    console.log(data);
-    
-    localStorage.setItem("cart", JSON.stringify(data.currentCart));
-    if(data.code=="success"){
-      toast.success(data.message);
-    }
-  })
-}
+
+import {addCart} from "@/app/(user)/component/editCart";
 
 export default function RightPart({product}) {
   const discount = Math.round((product.oldPrice - product.newPrice) / product.oldPrice * 100);

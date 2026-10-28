@@ -198,7 +198,7 @@ router.post("/cart/add", async (req, res) => {
     // Kiểm tra sản phẩm có thật
     const product = await prisma.product.findUnique({
       where: { id: productID },
-      select: { id: true, productName: true, newPrice: true,oldPrice:true, stock: true, pictures: true, },
+      select: { id: true, productName: true, newPrice: true, oldPrice: true, stock: true, pictures: true, },
     });
     if (!product) {
       return res.status(404).json({ code: "error", message: "Sản phẩm không tồn tại" });
@@ -219,9 +219,10 @@ router.post("/cart/add", async (req, res) => {
         id: productID,
         productName: product.productName,
         newPrice: product.newPrice,
-        oldPrice:product.oldPrice,
+        oldPrice: product.oldPrice,
         quantity: quantity,
         image: product.pictures[0].url,
+        selected: true,
       })
     }
     return res.json({
@@ -263,31 +264,32 @@ router.post("/cart/get", async (req, res) => {
 router.post("/order/create", async (req, res) => {
   try {
     const { name, phone, address, note, paymentMethod, cart, addressType } = req.body;
-    
-    const customerId = req.user ? req.user.id : null; 
+    console.log("Tạo đơn hàng", req.body);
+    const customerId = req.user ? req.user.id : null;
 
     if (!cart || cart.length === 0) {
-      return res.status(400).json({ success: false, message: "Giỏ hàng đang trống!" });
+      return res.status(400).json({ code: "error", message: "Giỏ hàng đang trống!" });
     }
 
     let subtotal = 0;
-    let total=0;
+    let total = 0;
     const orderItems = cart.map(item => {
       subtotal += item.oldPrice * item.quantity;
       total += item.newPrice * item.quantity;
       return {
         productId: item.id,
-        quantity: item.quantity,
+        quantity: parseInt(item.quantity),
         price: item.newPrice
       };
     });
 
-    const shippingFee = 0; 
-    const discount = subtotal-total;    
+    const shippingFee = total > 1000000 ? 0 : 30000;
+    const discount = subtotal - total;
+    const totalCost = total + shippingFee;
 
     let recipient = await prisma.recipientInfo.findFirst({
       where: {
-        customerId: customerId, 
+        customerId: customerId,
         recipientPhoneNumber: phone,
         address: address
       }
@@ -300,17 +302,14 @@ router.post("/order/create", async (req, res) => {
           recipientName: name,
           recipientPhoneNumber: phone,
           address: address,
-          recipientType:addressType
+          recipientType: addressType
         }
       });
     }
 
     const newOrder = await prisma.$transaction(async (tx) => {
-      const tempCode = `TEMP_${Date.now()}`;
-      
       const order = await tx.order.create({
         data: {
-          code: tempCode,
           customerId: customerId,
           recipientId: recipient.id,
           status: 'PENDING',
@@ -321,32 +320,152 @@ router.post("/order/create", async (req, res) => {
           subtotal,
           totalCost,
           items: {
-            create: orderItems 
+            create: orderItems
           }
         }
       });
 
-      const finalCode = `DH${String(order.id).padStart(10, '0')}`;
-
-      const updatedOrder = await tx.order.update({
-        where: { id: order.id },
-        data: { code: finalCode }
-      });
-
-      return updatedOrder;
+      return order;
     });
 
     console.log(newOrder);
-    return res.status(201).json({ 
-      success: true, 
-      message: "Đặt hàng thành công", 
+    return res.status(201).json({
+      code: "success",
+      message: "Đặt hàng thành công",
       newOrder,
     });
 
   } catch (error) {
     console.error("Lỗi tạo order:", error);
-    return res.status(500).json({ success: false, message: "Lỗi server khi tạo đơn hàng" });
+    return res.status(500).json({ code: "error", message: "Lỗi server khi tạo đơn hàng" });
   }
 })
+
+router.get("/order/payment/:id", async (req, res) => {
+  try {
+    const orderId = Number(req.params.id);
+
+    if (isNaN(orderId)) {
+      return res.status(400).json({ code: "error", message: "ID không hợp lệ" });
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        recipient: true,
+        items: {
+          include: {
+            product: {
+              include: {
+                pictures: true,
+              }
+            }
+          }
+        },
+        customer: {
+          select: { email: true, fullName: true }
+        }
+      }
+    });
+
+    if (!order) {
+      return res.status(404).json({ code: "error", message: "Không tìm thấy đơn hàng" });
+    }
+
+    return res.status(200).json({
+      code: "success",
+      order,
+    });
+
+  } catch (error) {
+    console.error("Lỗi lấy chi tiết đơn hàng:", error);
+    return res.status(500).json({ code: 'error', message: "Lỗi server" });
+  }
+})
+
+import { VNPay, HashAlgorithm, ProductCode, ignoreLogger, VnpLocale } from 'vnpay';
+
+const vnpay = new VNPay({
+  tmnCode: 'SUYBCG99',
+  secureSecret: 'JODQGSBQOVJOTXBQRELQCRHWKGGSRAGP',
+  vnpayHost: 'https://sandbox.vnpayment.vn',
+  queryDrAndRefundHost: 'https://sandbox.vnpayment.vn', // tùy chọn, trường hợp khi url của querydr và refund khác với url khởi tạo thanh toán (thường sẽ sử dụng cho production)
+
+  testMode: true, // tùy chọn, ghi đè vnpayHost thành sandbox nếu là true
+  hashAlgorithm: 'SHA512', // tùy chọn
+
+  enableLog: true, // tùy chọn
+
+  loggerFn: ignoreLogger, // tùy chọn
+
+  endpoints: {
+    paymentEndpoint: 'paymentv2/vpcpay.html',
+    queryDrRefundEndpoint: 'merchant_webapi/api/transaction',
+    getBankListEndpoint: 'qrpayauth/api/merchant/get_bank_list',
+  }, // tùy chọn
+});
+
+// API xử lý đơn hàng
+router.post('/order/pay/:id', async (req, res) => {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: Number(req.params.id) },
+    });
+
+    const paymentUrl = vnpay.buildPaymentUrl({
+      vnp_Amount: order.totalCost,
+      vnp_IpAddr:
+        req.headers['x-forwarded-for'] ||
+        req.connection.remoteAddress ||
+        req.socket.remoteAddress ||
+        req.ip,
+      vnp_TxnRef: order.id,
+      vnp_OrderInfo: `Thanh toan don hang ${order.id}`,
+      vnp_OrderType: ProductCode.Other,
+      vnp_ReturnUrl: `http://localhost:4000/vnpay-return`,
+      vnp_Locale: VnpLocale.VN,
+    });
+
+    return res.json({
+      code: "success",
+      paymentUrl,
+      order,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi khi tạo đơn hàng',
+      error: error.message,
+    });
+  }
+});
+
+// Route xử lý URL trả về
+// Thay vì hiển thị văn bản, bạn có thể render một template hoặc chuyển hướng khách hàng đến trang cần thiết
+router.get('/vnpay-return', async (req, res) => {
+  try {
+    const verifyResult = await vnpay.verifyReturnUrl(req.query);
+
+    if (!verifyResult.isVerified) {
+      return res.send('Xác thực tính toàn vẹn dữ liệu thất bại');
+    }
+    if (!verifyResult.isSuccess) {
+      return res.send('Đơn hàng thanh toán thất bại');
+    }
+
+    const orderId = verifyResult.vnp_TxnRef;
+    await prisma.order.update({
+      where: { id: Number(orderId) },
+      data: {
+        paymentMethodStatus: true, 
+      }
+    });
+    return res.redirect(`http://localhost:3000/order/payment/${orderId}?payment=success`);
+
+  } catch (error) {
+    console.error('Lỗi xác thực Return URL:', error);
+    return res.send('Dữ liệu không hợp lệ');
+  }
+});
 
 export default router;

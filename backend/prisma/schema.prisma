@@ -165,13 +165,13 @@ model Product_Tags {
 
 model Order {
   id             Int                     @id @default(autoincrement())
-  code           String                  @unique
   customerId     Int?
   recipientId    Int
   confirmedById  Int?
   orderDate      DateTime                @default(now())
   status         OrderStatus
   paymentMethod  String?                 
+  paymentMethodStatus  Boolean  @default(false)           
   note           String?                 
   shippingFee    Int
   discount       Int

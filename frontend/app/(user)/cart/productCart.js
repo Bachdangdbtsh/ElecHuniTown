@@ -10,10 +10,12 @@ export default function ProductCart({ item, }) {
   return (
     <>
       <div className="infor-product">
-        <img src={item.picture} alt=""></img>
+        <img src={item.image} alt=""></img>
         <div className="inner-infor">
           <div className="label">{item.productName}</div>
           <div className="product-id">Mã sản phẩm: <strong>{item.id}</strong></div>
+          <div className="new-price product-id">Giá sản phẩm <strong className="color-red">{item.newPrice.toLocaleString("vi-VN")}</strong></div>
+          <div className="old-price product-id">Giá niêm yết: <strong>{item.oldPrice?.toLocaleString("vi-VN")}</strong></div>
         </div>
       </div>
       <div className="inner-quantity">
@@ -37,7 +39,7 @@ export default function ProductCart({ item, }) {
         ></input>
         <div className="price">
           <span>{quantity} x </span>
-          <span className="hl">{item.price.toLocaleString("vi-VN")}</span>
+          <span className="hl">{item.newPrice.toLocaleString("vi-VN")}</span>
         </div>
       </div>
     </>

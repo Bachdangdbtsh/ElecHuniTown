@@ -1,8 +1,9 @@
-const required = ['DATABASE_URL', 'JWT_SECRET', 'CLIENT_ORIGIN'];
-const missing = required.filter((k) => !process.env[k]);
-if (missing.length) {
-  throw new Error(`Thieu bien moi truong: ${missing.join(', ')}`);
-}
+// const required = ['DATABASE_URL', 'JWT_SECRET', 'CLIENT_ORIGIN'];
+// const missing = required.filter((k) => !process.env[k]);
+// if (missing.length) {
+//   throw new Error(`Thieu bien moi truong: ${missing.join(', ')}`);
+// }
+import 'dotenv/config'; 
 
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',

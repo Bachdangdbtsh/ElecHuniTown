@@ -5,6 +5,11 @@ import { env } from './config/env.js';
 import { prisma } from './lib/prisma.js';
 import { errorHandler } from './common/error/ErrorHandler.js';
 import statisticRoutes from './modules/statistic/statistic.routes.js';
+import authRoutes from './modules/auth/auth.route.js';
+import recipientRoutes from './modules/recipient/recipient.route.js';
+import changeRequestRoutes from './modules/account-change-request/change-request.route.js';
+import adminRoutes from './modules/admin/admin.route.js';
+import roleRoutes from './modules/role/role.route.js';
 
 export const app = express();
 
@@ -19,5 +24,10 @@ app.get('/health', async (req, res) => {
 
 // các module sẽ được gắn ở đây: app.use('/products', productRoutes), ...
 
+app.use('/auth', authRoutes);
+app.use('/recipients', recipientRoutes);
+app.use('/account-change-requests', changeRequestRoutes);
+app.use('/admin', adminRoutes);
+app.use('/roles', roleRoutes);
 app.use('/statistics', statisticRoutes);
 app.use(errorHandler);                 

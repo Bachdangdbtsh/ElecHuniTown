@@ -1,0 +1,184 @@
+'use client';
+
+import { useState } from 'react';
+import { useApi } from '../_lib/useApi';
+import AsyncSection from '../_components/AsyncSection';
+import CreateUserModal from '../_components/CreateUserModal';
+import UserDrawer from '../_components/UserDrawer';
+
+export default function AdminUsersPage() {
+  const [role, setRole] = useState('all');
+  const [status, setStatus] = useState('all');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
+
+  const query = {
+    role,
+    status,
+    search: search.trim() || undefined,
+    page,
+    limit: 10,
+  };
+
+  const usersState = useApi('/admin/users', query);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+        <div>
+          <h1 style={{ fontSize: 28, fontWeight: 800 }}>Quản lý tài khoản</h1>
+          <p style={{ fontSize: 14, color: 'var(--muted)', marginTop: 4 }}>
+            Quản lý tài khoản khách hàng, nhân viên và đối tác
+          </p>
+        </div>
+        <button
+          type="button"
+          className="st-btn st-btn-primary"
+          onClick={() => setIsModalOpen(true)}
+        >
+          + Tạo tài khoản nhân viên
+        </button>
+      </div>
+
+      {/* KPI */}
+      <div className="adm-grid-kpi">
+        <div className="adm-kpi-card">
+          <p className="adm-kpi-title">Tổng số người dùng</p>
+          <p className="adm-kpi-value">{usersState.data?.kpis?.totalUsers ?? '—'}</p>
+        </div>
+        <div className="adm-kpi-card">
+          <p className="adm-kpi-title">Khách hàng</p>
+          <p className="adm-kpi-value">{usersState.data?.kpis?.customerCount ?? '—'}</p>
+        </div>
+        <div className="adm-kpi-card">
+          <p className="adm-kpi-title">Nhân viên / Quản trị viên</p>
+          <p className="adm-kpi-value">{usersState.data?.kpis?.staffAndAdminCount ?? '—'}</p>
+        </div>
+        <div className="adm-kpi-card">
+          <p className="adm-kpi-title">Đã khóa</p>
+          <p className="adm-kpi-value" style={{ color: 'var(--down)' }}>
+            {usersState.data?.kpis?.lockedCount ?? '—'}
+          </p>
+        </div>
+      </div>
+
+      {/* Bộ lọc */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+        <select
+          className="st-segment-btn"
+          value={role}
+          onChange={(e) => {
+            setRole(e.target.value);
+            setPage(1);
+          }}
+          style={{ border: '1.5px solid var(--ink)', borderRadius: 8 }}
+        >
+          <option value="all">Tất cả vai trò</option>
+          <option value="CUSTOMER">Khách hàng</option>
+          <option value="STAFF">Nhân viên</option>
+          <option value="SHOP_OWNER">Chủ ứng dụng</option>
+          <option value="ADMIN">Quản trị viên</option>
+        </select>
+
+        <select
+          className="st-segment-btn"
+          value={status}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setPage(1);
+          }}
+          style={{ border: '1.5px solid var(--ink)', borderRadius: 8 }}
+        >
+          <option value="all">Tất cả trạng thái</option>
+          <option value="active">Đang hoạt động</option>
+          <option value="locked">Đã khóa</option>
+        </select>
+
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Tìm theo tên, email, sđt..."
+          style={{ maxWidth: 280 }}
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+        />
+
+        <button type="button" className="adm-btn" onClick={usersState.reload} style={{ marginLeft: 'auto' }}>
+          Làm mới
+        </button>
+      </div>
+
+      {/* Bảng danh sách */}
+      <AsyncSection
+        state={usersState}
+        minHeight={280}
+        isEmpty={(d) => d.items.length === 0}
+        emptyText="Không tìm thấy người dùng phù hợp."
+      >
+        {(d) => (
+          <div className="adm-table-wrap">
+            <table className="adm-table">
+              <thead>
+                <tr>
+                  <th>Mã</th>
+                  <th>Họ và tên</th>
+                  <th>Email</th>
+                  <th>Điện thoại</th>
+                  <th>Vai trò</th>
+                  <th>Trạng thái</th>
+                  <th>Hoạt động gần nhất</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {d.items.map((u) => (
+                  <tr key={u.id}>
+                    <td style={{ fontWeight: 700 }}>{u.userCode}</td>
+                    <td>{u.fullName}</td>
+                    <td>{u.email}</td>
+                    <td>{u.phone || '—'}</td>
+                    <td>{u.roleName}</td>
+                    <td>
+                      <span className={`adm-badge ${u.isActive ? 'adm-badge-active' : 'adm-badge-locked'}`}>
+                        {u.isActive ? 'Hoạt động' : 'Đã khóa'}
+                      </span>
+                    </td>
+                    <td>{u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString('vi-VN') : 'Chưa đăng nhập'}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="adm-btn"
+                        style={{ padding: '4px 10px', fontSize: 12 }}
+                        onClick={() => setSelectedUserId(u.id)}
+                      >
+                        Chi tiết
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </AsyncSection>
+
+      <CreateUserModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={usersState.reload}
+      />
+
+      <UserDrawer
+        userId={selectedUserId}
+        onClose={() => setSelectedUserId(null)}
+        onRefresh={usersState.reload}
+      />
+    </div>
+  );
+}

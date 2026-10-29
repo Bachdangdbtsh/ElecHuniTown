@@ -60,6 +60,8 @@ model User {
   passwordResetTokens   PasswordResetToken[]
   changeRequestsCreated AccountChangeRequest[] @relation("ChangeRequestCreatedBy")
   changeRequestsHandled AccountChangeRequest[] @relation("ChangeRequestReviewedBy")
+  auditLogs             AuditLog[]
+  Comment               Comment[]
 
   customer  Customer?
   staff     Staff?
@@ -74,8 +76,38 @@ model User {
   ordersRefunded  ReturnRequest[] @relation("OrderRefundedBy")
 }
 
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOCK
+  UNLOCK
+  APPROVE
+  REJECT
+  ASSIGN_ROLE
+  CHANGE_PERMISSIONS
+}
+
+model AuditLog {
+  id         Int         @id @default(autoincrement())
+  actorId    Int
+  action     AuditAction
+  entityType String
+  entityId   Int?
+  details    Json?
+  ip         String?
+  createdAt  DateTime    @default(now())
+  actor      User        @relation(fields: [actorId], references: [id])
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
 model Customer {
   userId         Int             @id
+  email          String?
+  fullName       String?
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   recipientInfos RecipientInfo[]
   orders         Order[]
@@ -144,7 +176,7 @@ model StaffManageCategory {
 
 model RecipientInfo {
   id                  Int      @id @default(autoincrement())
-  customerId          Int
+  customerId          Int?
   recipientName       String?
   recipientPhoneNumber String?
   recipientPhone      String?
@@ -152,7 +184,7 @@ model RecipientInfo {
   recipientType       String?
   isDefault           Boolean  @default(false)
 
-  customer Customer @relation(fields: [customerId], references: [userId], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [userId], onDelete: Cascade)
   orders   Order[]
 
   @@index([customerId])
@@ -167,6 +199,9 @@ model Category {
   status         Boolean               @default(true)
   isActive       Boolean               @default(true)
   categoryFather Int?
+  parentID       Int?
+  imageUrl       String?
+  createdAt      DateTime              @default(now())
   updatedAt      DateTime              @default(now())
   parent         Category?             @relation("CategoryHierarchy", fields: [categoryFather], references: [id], onDelete: SetNull)
   children       Category[]            @relation("CategoryHierarchy")
@@ -208,11 +243,13 @@ model Product {
   stockIssueItems       StockIssueItem[]
   inventoryTransactions InventoryTransaction[]
   returnRequestItems    ReturnRequestItem[]
+  Comment               Comment[]
 }
 
 model ProductPictures {
   productId Int
   link      String
+  url       String?
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -240,17 +277,20 @@ enum OrderStatus {
 
 model Order {
   id          Int         @id @default(autoincrement())
-  customerId  Int
+  customerId  Int?
   recipientId Int
   confirmBy   Int?
   orderDate   DateTime    @default(now())
   status      OrderStatus
+  paymentMethod       String?
+  paymentMethodStatus Boolean     @default(false)
+  note                String?
   shippingFee Int
   discount    Int
   subtotal    Int
   totalCost   Int
 
-  customer  Customer      @relation(fields: [customerId], references: [userId], onDelete: Restrict)
+  customer  Customer?     @relation(fields: [customerId], references: [userId], onDelete: Restrict)
   recipient RecipientInfo @relation(fields: [recipientId], references: [id], onDelete: Restrict)
   confirmer Staff?        @relation(fields: [confirmBy], references: [userId], onDelete: Restrict)
 
@@ -268,6 +308,19 @@ model Order_contain_product {
   product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@id([orderId, productId])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  userId    Int
+  content   String
+  rating    Int?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 //========================================================

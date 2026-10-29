@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("postgresql://elec:secret@localhost:5432/elechunitown?schema=public")
+  url      = DATABASE_URL
 }
 
 model Role {

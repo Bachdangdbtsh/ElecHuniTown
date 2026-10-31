@@ -1,0 +1,11 @@
+admin@elechunitown.vn
+Admin@123
+
+owner@elechunitown.vn
+Owner@123
+
+test@student.edu.vn
+test@123
+
+Staff@elechunitown.vn
+staff@123

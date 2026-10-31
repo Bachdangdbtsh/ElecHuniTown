@@ -1,0 +1,53 @@
+'use client';
+
+import AsyncSection from './AsyncSection';
+import { formatCompactVnd, formatNumber } from '../_lib/format';
+
+/**
+ * Danh sách xếp hạng sản phẩm. kind = 'top' (bán chạy: hiện doanh thu) hoặc 'slow' (bán chậm: hiện tồn kho).
+ * Thanh ngang thể hiện số đã bán so với sản phẩm cao nhất trong danh sách.
+ */
+export default function ProductRanking({ title, subtitle, state, kind }) {
+  return (
+    <section className="st-panel" aria-labelledby={`rank-${kind}`}>
+      <h3 id={`rank-${kind}`} className="st-h3">
+        {title}
+      </h3>
+      <p className="st-sub">{subtitle}</p>
+      <AsyncSection
+        state={state}
+        minHeight={260}
+        isEmpty={(d) => d.items.length === 0}
+        emptyText="Chưa có sản phẩm nào để xếp hạng."
+      >
+        {(d) => {
+          const max = Math.max(...d.items.map((i) => i.sold), 1);
+          return (
+            <ol className="st-rank">
+              {d.items.map((item, idx) => (
+                <li key={item.id}>
+                  <span className="st-rank-no">{idx + 1}</span>
+                  <div className="st-rank-body">
+                    <p className="st-rank-name">{item.name}</p>
+                    <p className="st-rank-cat">{item.category}</p>
+                    <div className="st-bar" aria-hidden="true">
+                      <span className={kind === 'top' ? 'st-bar-fill' : 'st-bar-fill st-bar-slow'} style={{ width: `${(item.sold / max) * 100}%` }} />
+                    </div>
+                  </div>
+                  <div className="st-rank-nums">
+                    <p>
+                      Đã bán <strong>{formatNumber(item.sold)}</strong>
+                    </p>
+                    <p className="st-rank-meta">
+                      {kind === 'top' ? `Doanh thu ${formatCompactVnd(item.revenue)} ₫` : `Tồn kho ${formatNumber(item.stock)}`}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          );
+        }}
+      </AsyncSection>
+    </section>
+  );
+}

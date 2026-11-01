@@ -29,8 +29,7 @@ export default function RootLayout({
   children,
 }) {
   return (
-    <html lang="vi" suppressHydrationWarning>
-      <body>
+    <>
         <div className='header'>
           <div className="container">
             <Link href="/" className='logo'>
@@ -46,10 +45,12 @@ export default function RootLayout({
                 <IoCartOutline size="24px" />
                 <div>3</div>
               </Link>
-              <div className="login">
+              <Link href="/login" className="login">
                 Đăng nhập
-              </div>
-              <div className="register">Đăng ký</div>
+              </Link>
+              <Link href="/register" className="register">
+                Đăng ký
+              </Link>
             </div>
           </div>
 
@@ -109,7 +110,6 @@ export default function RootLayout({
           position="top-right"
           richColors
         />
-      </body>
-    </html>
+    </>
   );
 }

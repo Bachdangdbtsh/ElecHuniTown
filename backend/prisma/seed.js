@@ -213,6 +213,18 @@ async function main() {
     });
   }
 
+  const adminUsers = await prisma.user.findMany({
+    where: { roleId: adminRoleId },
+    select: { id: true },
+  });
+  for (const adminUser of adminUsers) {
+    await prisma.admin.upsert({
+      where: { userId: adminUser.id },
+      update: {},
+      create: { userId: adminUser.id },
+    });
+  }
+
   const ownerEmail = 'owner@elechunitown.vn';
   const existingOwner = await prisma.user.findUnique({
     where: { email: ownerEmail },

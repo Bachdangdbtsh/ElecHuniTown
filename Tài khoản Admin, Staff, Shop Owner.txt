@@ -1,0 +1,11 @@
+Mật khẩu đăng nhập của một số tài khoản:
+
+STAFF:
+- trongbuiduc@elechunitown.com		bdt123456!
+- hmngoc@elechunitown.com		minhngoc3667@
+
+SHOP_OWNER:
+- pvnam1989@elechunitown.com		vannam1989@yahoo
+
+ADMIN:
+- nnthuan1996@elechunitown.com		thuanAdmin@6991!

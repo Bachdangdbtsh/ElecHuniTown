@@ -61,6 +61,7 @@ Khởi tạo danh mục nhóm quyền, mã quyền, 4 vai trò chuẩn và tài 
 ```bash
 npm run db:seed
 ```
+Có thể chạy lại trong môi trường phát triển để đồng bộ các nhóm quyền, quyền theo vai trò và bản ghi `Admin` còn thiếu. Seed cũng tạo tài khoản mẫu nếu chưa tồn tại; không chạy trên production nếu chưa rà soát các tài khoản mẫu.
 Tài khoản khởi tạo sẵn:
 - **Quản trị viên (`ADMIN`):** `admin@elechunitown.vn` / `Admin@123`
 - **Chủ ứng dụng (`SHOP_OWNER`):** `owner@elechunitown.vn` / `Owner@123`

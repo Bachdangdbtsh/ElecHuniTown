@@ -36,10 +36,12 @@ export default function AccountLayout({ children }) {
     <div className="cust-shell">
       <aside className="cust-aside">
         <div>
-          <p className="cust-brand">ElecHuniTown</p>
-          <p className="cust-menu-title" style={{ marginTop: 4 }}>
-            Tài khoản của tôi
-          </p>
+          <Link href="/" style={{ color: 'inherit', textDecoration: 'none' }}>
+            <p className="cust-brand">ElecHuniTown</p>
+            <p className="cust-menu-title" style={{ marginTop: 4 }}>
+              TÀI KHOẢN CỦA TÔI
+            </p>
+          </Link>
         </div>
 
         <nav aria-label="Menu tài khoản">

@@ -11,6 +11,7 @@ import recipientRoutes from './modules/recipient/recipient.route.js';
 import changeRequestRoutes from './modules/account-change-request/change-request.route.js';
 import adminRoutes from './modules/admin/admin.route.js';
 import roleRoutes from './modules/role/role.route.js';
+import inventoryRoutes from './source/Inventory/InventoryRouter.js';
 export const app = express();
 
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
@@ -25,6 +26,7 @@ app.use("/",router);
 console.log(env)
 // các module sẽ được gắn ở đây: app.use('/products', productRoutes), ...
 
+app.use('/', inventoryRoutes);
 app.use('/auth', authRoutes);
 app.use('/recipients', recipientRoutes);
 app.use('/account-change-requests', changeRequestRoutes);

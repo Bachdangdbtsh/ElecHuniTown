@@ -1,32 +1,36 @@
-import {prisma} from "../../lib/prisma.js"
+import { prisma } from '../../lib/prisma.js';
 
-// Lay thong tin nguoi dung toi thieu
 const userBrief = {
-    select : { id: true, fullName: true }
-}
+  select: { id: true, fullName: true },
+};
 
-// Lay thong tin phieu nhap/xuat toi thieu
-const documentInclude = {
-    supplier: true,
-    createdBy: userBrief,
-    handledBy: userBrief,
-    items: {
-        include: {
-            product: {
-                select : { id: true, name: true}
-            }
-        }
-    }
-}
+const receiptInclude = {
+  supplier: { select: { id: true, name: true } },
+  createdBy: userBrief,
+  handledBy: userBrief,
+  items: {
+    include: {
+      product: { select: { id: true, productName: true, slug: true, stock: true } },
+    },
+  },
+};
 
+const issueInclude = {
+  supplier: { select: { id: true, name: true } },
+  createdBy: userBrief,
+  handledBy: userBrief,
+  items: {
+    include: {
+      product: { select: { id: true, productName: true, slug: true, stock: true } },
+    },
+  },
+};
 
-// Cau hinh so trang hien thi trong 1 lan truy van, khong hien thi toan bo de giam so lan truy van
 const paging = ({ page, pageSize }) => ({
   skip: (page - 1) * pageSize,
   take: pageSize,
 });
 
-// Chuan hoa ket qua truy van thanh 1 object chung
 const paged = (items, total, { page, pageSize }) => ({
   items,
   total,
@@ -34,50 +38,263 @@ const paged = (items, total, { page, pageSize }) => ({
   pageSize,
 });
 
-const dateFilter = (from, to) => {
-    from || to 
-    ? {
-        createdAt: {
-            ...(from && {gte: from}),
-            ...(to && {lte: to})
-        }
-    } : { }
+function dateFilter(from, to) {
+  if (!from && !to) return {};
+
+  const endDate = to ? new Date(`${to}T00:00:00.000Z`) : undefined;
+  if (endDate) endDate.setUTCDate(endDate.getUTCDate() + 1);
+
+  return {
+    createdAt: {
+      ...(from && { gte: new Date(`${from}T00:00:00.000Z`) }),
+      ...(endDate && { lt: endDate }),
+    },
+  };
 }
 
-export function getReceiptByID(db, receiptID) {
-    // TODO
+const productInventorySelect = {
+  id: true,
+  productName: true,
+  slug: true,
+  stock: true,
+  status: true,
+  category: { select: { id: true, name: true } },
+  pictures: { select: { url: true }, take: 1 },
+};
+
+export async function findInventoryProducts({ lowStock, search, page, pageSize }) {
+  const where = {
+    ...(lowStock && { stock: { lte: 3 } }),
+    ...(search && {
+      OR: [
+        { productName: { contains: search, mode: 'insensitive' } },
+        { slug: { contains: search, mode: 'insensitive' } },
+      ],
+    }),
+  };
+
+  const [items, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      select: productInventorySelect,
+      orderBy: [{ stock: 'asc' }, { id: 'asc' }],
+      ...paging({ page, pageSize }),
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  return paged(items, total, { page, pageSize });
 }
 
-export function getIssueByID(db, issueID) {
-    // TODO
+export async function findProductsByIds(ids) {
+  return prisma.product.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, productName: true, newPrice: true },
+  });
 }
 
-export async function findReceipts(db, query) {
-    const {status, supplierID, from, to} = query
+export async function findActiveSupplier(id) {
+  return prisma.supplier.findFirst({
+    where: { id, isActive: true },
+    select: { id: true },
+  });
+}
 
-    // dieu kien loc du lieu
-    const where = {
-        ...(status && { status }),
-        ...(supplierID && { supplierID }),
-        ...(dateFilter(from, to))
+export async function getReceiptById(id) {
+  return prisma.stockReceipt.findUnique({
+    where: { id },
+    include: receiptInclude,
+  });
+}
+
+export async function getIssueById(id) {
+  return prisma.stockIssue.findUnique({
+    where: { id },
+    include: issueInclude,
+  });
+}
+
+export async function findReceipts({ status, supplierId, from, to, page, pageSize }) {
+  const where = {
+    ...(status && { status }),
+    ...(supplierId && { supplierId }),
+    ...dateFilter(from, to),
+  };
+
+  const [items, total] = await Promise.all([
+    prisma.stockReceipt.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      ...paging({ page, pageSize }),
+      include: {
+        supplier: { select: { id: true, name: true } },
+        createdBy: userBrief,
+        _count: { select: { items: true } },
+      },
+    }),
+    prisma.stockReceipt.count({ where }),
+  ]);
+
+  return paged(items, total, { page, pageSize });
+}
+
+export async function findIssues({ status, supplierId, from, to, page, pageSize }) {
+  const where = {
+    ...(status && { status }),
+    ...(supplierId && { supplierId }),
+    ...dateFilter(from, to),
+  };
+
+  const [items, total] = await Promise.all([
+    prisma.stockIssue.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      ...paging({ page, pageSize }),
+      include: {
+        supplier: { select: { id: true, name: true } },
+        createdBy: userBrief,
+        _count: { select: { items: true } },
+      },
+    }),
+    prisma.stockIssue.count({ where }),
+  ]);
+
+  return paged(items, total, { page, pageSize });
+}
+
+export async function createReceipt({ supplierId, createdById, content, items }) {
+  return prisma.$transaction(async (tx) => {
+    const receipt = await tx.stockReceipt.create({
+      data: {
+        code: '',
+        status: 'PENDING_HANDLE',
+        content,
+        supplierId,
+        createdById,
+        items: { create: items },
+      },
+      select: { id: true },
+    });
+
+    return tx.stockReceipt.update({
+      where: { id: receipt.id },
+      data: { code: `PN-${String(receipt.id).padStart(6, '0')}` },
+      include: receiptInclude,
+    });
+  });
+}
+
+export async function createIssue({ supplierId, createdById, content, type, items }) {
+  return prisma.$transaction(async (tx) => {
+    const issue = await tx.stockIssue.create({
+      data: {
+        code: '',
+        status: 'PENDING_HANDLE',
+        content,
+        type,
+        supplierId,
+        createdById,
+        items: { create: items },
+      },
+      select: { id: true },
+    });
+
+    return tx.stockIssue.update({
+      where: { id: issue.id },
+      data: { code: `PX-${String(issue.id).padStart(6, '0')}` },
+      include: issueInclude,
+    });
+  });
+}
+
+export async function approveReceipt(id, handledById) {
+  return prisma.$transaction(async (tx) => {
+    const changed = await tx.stockReceipt.updateMany({
+      where: { id, status: 'PENDING_HANDLE' },
+      data: { status: 'APPROVED', handledById, handledAt: new Date(), rejectReason: null },
+    });
+    if (changed.count === 0) return null;
+
+    const items = await tx.stockReceiptItem.findMany({
+      where: { receiptId: id },
+      orderBy: { productId: 'asc' },
+    });
+    for (const item of items) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { stock: { increment: item.quantity } },
+      });
     }
 
-    // thuc hien 2 query cung luc: 1 cai tim kiem tat ca 
-    const [items, total] = await Promise.all([
-        db.StockReceipt.findMany({
-            where,
-            orderBy: {createdAt: 'desc'},
-            ...paging(query),
-            // optional: Lay them thong tin 
-            include: {
-                supplier: {select: {id: true, name: true}},
-                createdBy: userBrief,
-                _count: { select: {items: true}},
-            }
-        }),
-        db.StockReceipt._count({where}),
-    ])
+    await tx.inventoryTransaction.createMany({
+      data: items.map((item) => ({
+        type: 'RECEIPT',
+        productId: item.productId,
+        quantity: item.quantity,
+        unitCost: item.unitCost,
+        receiptItemId: item.id,
+      })),
+    });
 
-    return paged(items, total, query)
+    return tx.stockReceipt.findUnique({ where: { id }, include: receiptInclude });
+  });
 }
 
+export class InsufficientStockError extends Error {
+  constructor(productId) {
+    super(`Insufficient stock for product ${productId}`);
+    this.productId = productId;
+  }
+}
+
+export async function approveIssue(id, handledById) {
+  return prisma.$transaction(async (tx) => {
+    const changed = await tx.stockIssue.updateMany({
+      where: { id, status: 'PENDING_HANDLE' },
+      data: { status: 'APPROVED', handledById, handledAt: new Date(), rejectReason: null },
+    });
+    if (changed.count === 0) return null;
+
+    const items = await tx.stockIssueItem.findMany({
+      where: { issueId: id },
+      orderBy: { productId: 'asc' },
+    });
+    for (const item of items) {
+      const changedStock = await tx.product.updateMany({
+        where: { id: item.productId, stock: { gte: item.quantity } },
+        data: { stock: { decrement: item.quantity } },
+      });
+      if (changedStock.count === 0) {
+        throw new InsufficientStockError(item.productId);
+      }
+    }
+
+    await tx.inventoryTransaction.createMany({
+      data: items.map((item) => ({
+        type: 'ISSUE',
+        productId: item.productId,
+        quantity: item.quantity,
+        unitCost: item.unitCost,
+        issueItemId: item.id,
+      })),
+    });
+
+    return tx.stockIssue.findUnique({ where: { id }, include: issueInclude });
+  });
+}
+
+export async function rejectReceipt(id, handledById, rejectReason) {
+  const changed = await prisma.stockReceipt.updateMany({
+    where: { id, status: 'PENDING_HANDLE' },
+    data: { status: 'DENIED', rejectReason, handledById, handledAt: new Date() },
+  });
+  return changed.count ? getReceiptById(id) : null;
+}
+
+export async function rejectIssue(id, handledById, rejectReason) {
+  const changed = await prisma.stockIssue.updateMany({
+    where: { id, status: 'PENDING_HANDLE' },
+    data: { status: 'DENIED', rejectReason, handledById, handledAt: new Date() },
+  });
+  return changed.count ? getIssueById(id) : null;
+}

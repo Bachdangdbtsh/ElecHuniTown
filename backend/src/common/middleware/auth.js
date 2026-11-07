@@ -79,6 +79,23 @@ export function requirePermission(permissionCode) {
   };
 }
 
+export function requirePermissionOrRole(permissionCode, ...roleCodes) {
+  return (req, res, next) => {
+    if (!req.user) {
+      throw new AppError(401, 'UNAUTHENTICATED', 'Bạn chưa đăng nhập');
+    }
+
+    if (
+      !req.user.permissions?.includes(permissionCode)
+      && !roleCodes.includes(req.user.role)
+    ) {
+      throw new AppError(403, 'FORBIDDEN', 'Bạn không có quyền thực hiện chức năng này');
+    }
+
+    next();
+  };
+}
+
 export function requireRole(...roleCodes) {
   return (req, res, next) => {
     if (!req.user) {

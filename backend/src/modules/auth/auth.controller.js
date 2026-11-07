@@ -1,3 +1,5 @@
+import jwt from 'jsonwebtoken';
+import { env } from '../../config/env.js';
 import { AppError } from '../../common/error/AppError.js';
 import * as service from './auth.service.js';
 import {
@@ -35,12 +37,17 @@ export async function login(req, res) {
   const payload = parse(loginSchema, req.body);
   const clientMeta = extractClientMeta(req);
   const result = await service.login(payload, clientMeta);
+  const expiresAt = jwt.decode(result.token)?.exp;
+  if (!Number.isInteger(expiresAt)) {
+    throw new AppError(500, 'TOKEN_EXPIRY_INVALID', 'Không thể xác định thời hạn phiên đăng nhập');
+  }
 
   res.cookie('token', result.token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: env.nodeEnv === 'production',
     sameSite: 'lax',
-    maxAge: 30 * 60 * 1000,
+    path: '/',
+    maxAge: Math.max(0, expiresAt * 1000 - Date.now()),
   });
 
   ok(res, result);
@@ -49,8 +56,9 @@ export async function login(req, res) {
 export async function logout(req, res) {
   res.clearCookie('token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: env.nodeEnv === 'production',
     sameSite: 'lax',
+    path: '/',
   });
   ok(res, { message: 'Đăng xuất thành công' });
 }

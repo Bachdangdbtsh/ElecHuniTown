@@ -23,7 +23,6 @@ app.get('/health', async (req, res) => {
   res.json({ status: 'ok' });
 });
 app.use("/",router);
-console.log(env)
 // các module sẽ được gắn ở đây: app.use('/products', productRoutes), ...
 
 app.use('/', inventoryRoutes);

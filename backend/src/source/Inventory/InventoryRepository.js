@@ -57,9 +57,15 @@ const productInventorySelect = {
   productName: true,
   slug: true,
   stock: true,
+  newPrice: true,
   status: true,
   category: { select: { id: true, name: true } },
   pictures: { select: { url: true }, take: 1 },
+  inventoryTransactions: {
+    select: { createdAt: true },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+  },
 };
 
 export async function findInventoryProducts({ lowStock, search, page, pageSize }) {
@@ -97,6 +103,14 @@ export async function findActiveSupplier(id) {
   return prisma.supplier.findFirst({
     where: { id, isActive: true },
     select: { id: true },
+  });
+}
+
+export async function findActiveSuppliers() {
+  return prisma.supplier.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
   });
 }
 

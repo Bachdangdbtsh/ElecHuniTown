@@ -47,6 +47,10 @@ export function getLowStockInventory(query) {
   return inventoryRepository.findInventoryProducts({ ...query, lowStock: true });
 }
 
+export function listSuppliers() {
+  return inventoryRepository.findActiveSuppliers();
+}
+
 export function listReceipts(query) {
   return inventoryRepository.findReceipts(query);
 }

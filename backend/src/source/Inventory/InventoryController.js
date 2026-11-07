@@ -40,6 +40,10 @@ export async function lowStock(req, res) {
   ok(res, await service.getLowStockInventory(parse(inventoryQuerySchema, req.query)));
 }
 
+export async function listSuppliers(req, res) {
+  ok(res, await service.listSuppliers());
+}
+
 export async function listReceipts(req, res) {
   ok(res, await service.listReceipts(parse(documentListQuerySchema, req.query)));
 }

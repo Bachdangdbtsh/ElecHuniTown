@@ -24,7 +24,7 @@ export default function LoginPage() {
       if (role === 'ADMIN') {
         router.push('/admin/dashboard');
       } else if (role === 'STAFF' || role === 'SHOP_OWNER') {
-        router.push('/statistics');
+        router.push('/inventory');
       } else {
         router.push('/account/overview');
       }

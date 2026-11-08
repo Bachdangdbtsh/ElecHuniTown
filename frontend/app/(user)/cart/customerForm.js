@@ -1,14 +1,20 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import JustValidate from "just-validate";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function CustomerInfor() {
-  useEffect(() => {
+  const validatorRef = useRef(null);
+  const router=useRouter();
+  const order = () => {
     const formEl = document.querySelector("#customer-infor-form");
     if (!formEl) return;
+    if (validatorRef.current) return;
+    console.log("khởi tạo")
 
     const validator = new JustValidate("#customer-infor-form", {
-      errorLabelCssClass: "my-error-message", // class tuỳ chỉnh cho label lỗi
+      errorLabelCssClass: "my-error-message",
     });
 
     validator
@@ -23,21 +29,54 @@ export default function CustomerInfor() {
       ])
       .onSuccess((event) => {
         const form = event.target;
-        const fd = new FormData(form);
-
-        const name    = fd.get("name");
-        const phone   = fd.get("phone");
-        const address = fd.get("address");
-        const note    = fd.get("note");
+        const name = form.name.value;
+        const phone = form.phone.value;
+        const address = form.address.value;
+        const note = form.note.value;
+        const addressType = form.addressType.value;
 
         let paymentMethod = "money";
         form.querySelectorAll(".paymentMethod").forEach((item) => {
           if (item.checked) paymentMethod = item.value;
         });
 
-        console.log({ name, phone, address, note, paymentMethod });
+        const cart = JSON.parse(localStorage.getItem("cart") || []);
+        const cartChecked = cart.filter((p) => p.selected == true);
+
+        fetch(`${process.env.NEXT_PUBLIC_URL}/order/create`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name, phone, address, note, paymentMethod,
+            cart: cartChecked,
+            addressType,
+
+          })
+        })
+        .then(res=>res.json())
+        .then(data=>{
+          if(data.code=="success"){
+            toast.success(data.message);
+            const remainCart=cart.filter((p) => p.selected !==true);
+            localStorage.setItem("cart",JSON.stringify(remainCart));
+            router.push(`/order/payment/${data.newOrder.id}`)
+          }
+          if(data.code=="error"){
+            toast(data.message);
+          }
+        })
+
       });
-  }, []);
+    validatorRef.current = validator;
+    return () => {
+      const errorLabels = formEl.querySelectorAll(".my-error-message");
+      errorLabels.forEach((label) => label.remove());
+    };
+  }
+  useEffect(order, []);
 
   return (
     <form className="inner-form" id="customer-infor-form">
@@ -64,14 +103,29 @@ export default function CustomerInfor() {
       </div>
 
       {/* address */}
-      <div className="field">
-        <input
-          className="input-text"
-          type="text"
-          id="address"
-          name="address"
-          placeholder="Địa chỉ"
-        />
+      <div className="inrow">
+        <div className="field">
+          <input
+            className="input-text"
+            type="text"
+            id="address"
+            name="address"
+            placeholder="Địa chỉ"
+          />
+        </div>
+
+        <div className="field">
+          <select
+            className="input-text"
+            id="addressType"
+            name="addressType"
+          >
+            <option value="">Chọn loại địa chỉ</option>
+            <option value="home">Nhà riêng</option>
+            <option value="company">Công ty</option>
+          </select>
+
+        </div>
       </div>
 
       {/* note */}
@@ -93,6 +147,7 @@ export default function CustomerInfor() {
               type="radio"
               id="money"
               className="paymentMethod"
+              name="paymentMethod"
               defaultChecked
               value="money"
             />
@@ -103,6 +158,7 @@ export default function CustomerInfor() {
               type="radio"
               id="momo"
               className="paymentMethod"
+              name="paymentMethod"
               value="momo"
             />
             <label htmlFor="momo">Ví MoMo</label>
@@ -112,6 +168,7 @@ export default function CustomerInfor() {
               type="radio"
               id="bank"
               className="paymentMethod"
+              name="paymentMethod"
               value="bank"
             />
             <label htmlFor="bank">Chuyển khoản ngân hàng</label>

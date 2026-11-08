@@ -4,12 +4,14 @@ import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
 import { prisma } from './lib/prisma.js';
 import { errorHandler } from './common/error/ErrorHandler.js';
+import categoryRouter from './source/Category/CategoryRouter.js';
 
 export const app = express();
 
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
+app.use('/categories', categoryRouter);
 
 app.get('/health', async (req, res) => {
   await prisma.$queryRaw`SELECT 1`;   // kiểm tra kết nối DB

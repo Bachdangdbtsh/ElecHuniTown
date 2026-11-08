@@ -33,7 +33,7 @@ export default function Home() {
             ))}
           </div>
           <div className="view-more">
-            <Link href="#" className="view-more-button">Xem thêm</Link>
+            <Link href="/search?isFeature=true" className="view-more-button">Xem thêm</Link>
 
           </div>
         </div>
@@ -45,7 +45,7 @@ export default function Home() {
             ))}
           </div>
           <div className="view-more">
-            <Link href="#" className="view-more-button">Xem thêm</Link>
+            <Link href="/search?isSuggest=true" className="view-more-button">Xem thêm</Link>
           </div>
         </div>
 

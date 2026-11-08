@@ -18,6 +18,7 @@ export async function list(req, res) {
 }
 
 export async function create(req, res) {
+  console.log(req.body);
   const payload = parse(createRecipientSchema, req.body);
   const data = await service.addAddress(req.user.id, payload);
   ok(res, data, 201);

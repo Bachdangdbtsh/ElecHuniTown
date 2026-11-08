@@ -6,7 +6,48 @@ import { useEffect, useState } from "react";
 
 export default function ProductCart({ item, }) {
   const [quantity, setquantity] = useState(item.quantity);
+  useEffect(() => {
+    setquantity(item.quantity);
+  }, [item.quantity]);
 
+  const handleQuantityChange = async (e) => {
+    let newQuantity = parseInt(e.target.value, 10);
+    if (isNaN(newQuantity)) newQuantity = 1;
+
+    // Giới hạn min 1, max là tồn kho
+    const MAX_STOCK = item.stock || 99;
+    if (newQuantity < 1) newQuantity = 1;
+    if (newQuantity > MAX_STOCK) newQuantity = MAX_STOCK;
+
+    setquantity(newQuantity);
+
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const index = cart.findIndex((i) => i.id == item.id);
+    if (index != -1) {
+      cart[index].quantity = newQuantity;
+      localStorage.setItem("cart", JSON.stringify(cart));
+    }
+
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_URL}/cart/update`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId: item.id,
+          quantity: newQuantity
+        })
+      });
+    } catch (error) {
+      console.error("Lỗi cập nhật số lượng:", error);
+    }
+
+    window.dispatchEvent(
+      new CustomEvent("cart:updated", {
+        detail: { id: item.id, quantity: newQuantity }
+      })
+    );
+  };
   return (
     <>
       <div className="infor-product">
@@ -20,22 +61,8 @@ export default function ProductCart({ item, }) {
       </div>
       <div className="inner-quantity">
         <div className="label">Số Lượng </div>
-        <input type="number" value={quantity}
-          onChange={(event) => {
-            setquantity(event.target.value);
-            const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-            const index = cart.findIndex((i) => i.id == item.id);
-            if (index != -1) {
-              cart[index].quantity = event.target.value;
-              localStorage.setItem("cart", JSON.stringify(cart));
-              window.dispatchEvent(
-                new CustomEvent("cart:updated", {
-                  detail: { id: item.id, quantity: Number(cart[index].quantity) }
-                })
-              );
-
-            }
-          }}
+        <input type="number" value={quantity} min="0" max={item.stock}
+          onChange={handleQuantityChange}
         ></input>
         <div className="price">
           <span>{quantity} x </span>

@@ -8,14 +8,14 @@ datasource db {
 }
 
 model Role {
-  id          Int              @id @default(autoincrement())
-  code        String           @unique
+  id          Int               @id @default(autoincrement())
+  code        String            @unique
   name        String
+  isSystem    Boolean           @default(false)
   description String?
-  isSystem    Boolean          @default(false)
+  manageLogs  AdminManageRole[]
   permissions RolePermission[]
   users       User[]
-  manageLogs  AdminManageRole[]
 }
 
 model PermissionGroup {
@@ -39,8 +39,8 @@ model Permission {
 model RolePermission {
   roleId       Int
   permissionId Int
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
   @@index([permissionId])
@@ -57,9 +57,13 @@ model User {
   updatedAt             DateTime               @updatedAt
   lastLoginAt           DateTime?
   phone                 String?                @unique @map("phoneNumber")
-  role                  Role                   @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  avatar                String?
+  changeRequestsHandled AccountChangeRequest[] @relation("ChangeRequestReviewedBy")
+  changeRequestsCreated AccountChangeRequest[] @relation("ChangeRequestCreatedBy")
+  admin                 Admin?
   auditLogs             AuditLog[]
   Comment               Comment[]
+  customer              Customer?
   loginHistory          LoginHistory[]
   confirmedOrders       Order[]                @relation("OrderConfirmedBy")
   orders                Order[]                @relation("OrderCustomer")
@@ -67,30 +71,28 @@ model User {
   recipientInfos        RecipientInfo[]
   returnsHandled        ReturnRequest[]        @relation("ReturnHandledBy")
   ordersRefunded        ReturnRequest[]        @relation("OrderRefundedBy")
+  shopOwner             ShopOwner?
+  staff                 Staff?
+  cart                  Cart?  
   issuesCreated         StockIssue[]           @relation("IssueCreatedBy")
   issuesHandled         StockIssue[]           @relation("IssueHandledBy")
   receiptsCreated       StockReceipt[]         @relation("ReceiptCreatedBy")
   receiptsHandled       StockReceipt[]         @relation("ReceiptHandledBy")
-  changeRequestsCreated AccountChangeRequest[] @relation("ChangeRequestCreatedBy")
-  changeRequestsHandled AccountChangeRequest[] @relation("ChangeRequestReviewedBy")
-  customer              Customer?
-  staff                 Staff?
-  shopOwner             ShopOwner?
-  admin                 Admin?
+  role                  Role                   @relation(fields: [roleId], references: [id])
 
   @@index([roleId])
 }
 
 model Customer {
-  userId         Int             @id
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int  @id
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Staff {
   userId            Int                   @id
   user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  managedProducts   StaffManageProduct[]
   managedCategories StaffManageCategory[]
+  managedProducts   StaffManageProduct[]
 }
 
 model ShopOwner {
@@ -105,15 +107,15 @@ model Admin {
 }
 
 model AuditLog {
-  id         Int        @id @default(autoincrement())
+  id         Int         @id @default(autoincrement())
   actorId    Int
   action     AuditAction
   entityType String
   entityId   Int?
   details    Json?
   ip         String?
-  createdAt  DateTime   @default(now())
-  actor      User       @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  createdAt  DateTime    @default(now())
+  actor      User        @relation(fields: [actorId], references: [id])
 
   @@index([actorId, createdAt])
   @@index([entityType, entityId])
@@ -126,7 +128,7 @@ model AdminManageRole {
   roleId  Int
   type    String
   at      DateTime @default(now())
-  admin   Admin    @relation(fields: [adminId], references: [userId], onDelete: Restrict)
+  admin   Admin    @relation(fields: [adminId], references: [userId])
   role    Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@index([adminId])
@@ -141,8 +143,8 @@ model RecipientInfo {
   address              String
   recipientType        String?
   isDefault            Boolean @default(false)
-  customer             User    @relation(fields: [customerId], references: [id], onDelete: Cascade)
   orders               Order[]
+  customer             User    @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([customerId])
 }
@@ -155,8 +157,8 @@ model Category {
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  parentID    Int?
   imageUrl    String?
+  parentID    Int?
   products    Product[]
 
   @@index([isActive])
@@ -177,22 +179,23 @@ model Product {
   createdAt             DateTime                @default(now())
   rate                  Float                   @default(0)
   sold                  Int                     @default(0)
-  category              Category                @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   Comment               Comment[]
+  inventoryTransactions InventoryTransaction[]
+  orderItems            Order_contain_product[]
+  category              Category                @relation(fields: [categoryId], references: [id])
   pictures              ProductPictures[]
   tags                  Product_Tags[]
-  orderItems            Order_contain_product[]
-  inventoryTransactions InventoryTransaction[]
   returnRequestItems    ReturnRequestItem[]
-  stockIssueItems       StockIssueItem[]
-  stockReceiptItems     StockReceiptItem[]
   staffManageLogs       StaffManageProduct[]
+  stockIssueItems       StockIssueItem[]
+  cartItems             CartItem[]  
+  stockReceiptItems     StockReceiptItem[]
 }
 
 model ProductPictures {
   productId Int
   url       String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  product   Product @relation(fields: [productId], references: [id])
 
   @@id([productId, url])
 }
@@ -200,7 +203,7 @@ model ProductPictures {
 model Product_Tags {
   productId Int
   tag       String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  product   Product @relation(fields: [productId], references: [id])
 
   @@id([productId, tag])
 }
@@ -212,16 +215,17 @@ model Order {
   confirmedById       Int?
   orderDate           DateTime                @default(now())
   status              OrderStatus
-  paymentMethod       String?
-  paymentMethodStatus Boolean                 @default(false)
-  note                String?
   shippingFee         Int
   discount            Int
   subtotal            Int
   totalCost           Int
-  customer            User                    @relation("OrderCustomer", fields: [customerId], references: [id], onDelete: Restrict)
-  recipient           RecipientInfo           @relation(fields: [recipientId], references: [id], onDelete: Restrict)
+  note                String?
+  paymentMethod       String?
+  paymentMethodStatus Boolean                 @default(false)
+  transactionID       String?
   confirmedBy         User?                   @relation("OrderConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
+  customer            User                    @relation("OrderCustomer", fields: [customerId], references: [id])
+  recipient           RecipientInfo           @relation(fields: [recipientId], references: [id])
   items               Order_contain_product[]
   returnRequests      ReturnRequest[]
 }
@@ -231,8 +235,8 @@ model Order_contain_product {
   productId Int
   quantity  Int
   price     Int
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Restrict)
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
 
   @@id([orderId, productId])
 }
@@ -249,24 +253,24 @@ model Supplier {
   isActive          Boolean        @default(true)
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
-  receipts          StockReceipt[]
   issues            StockIssue[]
+  receipts          StockReceipt[]
 }
 
 model StockReceipt {
-  id           Int               @id @default(autoincrement())
+  id           Int                @id @default(autoincrement())
   code         String
-  status       DocumentStatus    @default(DRAFT)
+  status       DocumentStatus     @default(DRAFT)
   content      String
   rejectReason String?
   supplierId   Int
   createdById  Int
   handledById  Int?
-  createdAt    DateTime          @default(now())
+  createdAt    DateTime           @default(now())
   handledAt    DateTime?
-  supplier     Supplier          @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  createdBy    User              @relation("ReceiptCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  handledBy    User?             @relation("ReceiptHandledBy", fields: [handledById], references: [id], onDelete: Restrict)
+  createdBy    User               @relation("ReceiptCreatedBy", fields: [createdById], references: [id])
+  handledBy    User?              @relation("ReceiptHandledBy", fields: [handledById], references: [id], onDelete: Restrict)
+  supplier     Supplier           @relation(fields: [supplierId], references: [id])
   items        StockReceiptItem[]
 
   @@index([status, createdAt])
@@ -279,9 +283,9 @@ model StockReceiptItem {
   receiptId   Int
   quantity    Int                   @default(0)
   unitCost    Int
-  product     Product               @relation(fields: [productId], references: [id], onDelete: Restrict)
-  receipt     StockReceipt          @relation(fields: [receiptId], references: [id], onDelete: Cascade)
   transaction InventoryTransaction?
+  product     Product               @relation(fields: [productId], references: [id])
+  receipt     StockReceipt          @relation(fields: [receiptId], references: [id], onDelete: Cascade)
 
   @@unique([receiptId, productId])
   @@index([productId])
@@ -299,9 +303,9 @@ model StockIssue {
   handledById  Int?
   createdAt    DateTime         @default(now())
   handledAt    DateTime?
-  supplier     Supplier?        @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  createdBy    User             @relation("IssueCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy    User             @relation("IssueCreatedBy", fields: [createdById], references: [id])
   handledBy    User?            @relation("IssueHandledBy", fields: [handledById], references: [id], onDelete: Restrict)
+  supplier     Supplier?        @relation(fields: [supplierId], references: [id], onDelete: Restrict)
   items        StockIssueItem[]
 
   @@index([status, createdAt])
@@ -314,28 +318,28 @@ model StockIssueItem {
   issueId     Int
   quantity    Int                   @default(0)
   unitCost    Int
-  issue       StockIssue            @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  product     Product               @relation(fields: [productId], references: [id], onDelete: Restrict)
   transaction InventoryTransaction?
+  issue       StockIssue            @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  product     Product               @relation(fields: [productId], references: [id])
 
   @@index([issueId, productId])
   @@index([productId])
 }
 
 model InventoryTransaction {
-  id              Int                 @id @default(autoincrement())
+  id              Int               @id @default(autoincrement())
   type            TransactionType
   productId       Int
-  quantity        Int                 @default(0)
-  unitCost        Int                 @default(0)
-  receiptItemId   Int?                @unique
-  issueItemId     Int?                @unique
+  quantity        Int               @default(0)
+  unitCost        Int               @default(0)
+  receiptItemId   Int?              @unique
+  issueItemId     Int?              @unique
   returnRequestId Int?
-  createdAt       DateTime            @default(now())
-  product         Product             @relation(fields: [productId], references: [id], onDelete: Restrict)
-  receiptItem     StockReceiptItem?   @relation(fields: [receiptItemId], references: [id], onDelete: Restrict)
-  issueItem       StockIssueItem?     @relation(fields: [issueItemId], references: [id], onDelete: Restrict)
-  returnRequest   ReturnRequest?      @relation(fields: [returnRequestId], references: [id], onDelete: Restrict)
+  createdAt       DateTime          @default(now())
+  issueItem       StockIssueItem?   @relation(fields: [issueItemId], references: [id], onDelete: Restrict)
+  product         Product           @relation(fields: [productId], references: [id])
+  receiptItem     StockReceiptItem? @relation(fields: [receiptItemId], references: [id], onDelete: Restrict)
+  returnRequest   ReturnRequest?    @relation(fields: [returnRequestId], references: [id], onDelete: Restrict)
 
   @@index([productId, createdAt])
   @@index([type, createdAt])
@@ -358,26 +362,26 @@ model ReturnRequest {
   refundMessage      String?
   refundedById       Int?
   refundedAt         DateTime?
-  order              Order                  @relation(fields: [orderId], references: [id], onDelete: Restrict)
-  handledBy          User?                  @relation("ReturnHandledBy", fields: [handledById], references: [id], onDelete: Restrict)
-  refundBy           User?                  @relation("OrderRefundedBy", fields: [refundedById], references: [id], onDelete: Restrict)
   transactions       InventoryTransaction[]
-  items              ReturnRequestItem[]
   images             ReturnImage[]
+  handledBy          User?                  @relation("ReturnHandledBy", fields: [handledById], references: [id], onDelete: Restrict)
+  order              Order                  @relation(fields: [orderId], references: [id])
+  refundBy           User?                  @relation("OrderRefundedBy", fields: [refundedById], references: [id], onDelete: Restrict)
+  items              ReturnRequestItem[]
 
   @@index([orderId])
   @@index([status, createdAt])
 }
 
 model ReturnRequestItem {
-  id              Int                @id @default(autoincrement())
+  id              Int                  @id @default(autoincrement())
   returnRequestId Int
   productId       Int
   condition       ReturnItemCondition?
   quantity        Int
   unitCost        Int
-  product         Product            @relation(fields: [productId], references: [id], onDelete: Restrict)
-  returnRequest   ReturnRequest      @relation(fields: [returnRequestId], references: [id], onDelete: Cascade)
+  product         Product              @relation(fields: [productId], references: [id])
+  returnRequest   ReturnRequest        @relation(fields: [returnRequestId], references: [id], onDelete: Cascade)
 
   @@index([returnRequestId, productId])
   @@index([productId])
@@ -428,8 +432,8 @@ model AccountChangeRequest {
   status        ChangeRequestStatus @default(PENDING)
   createdAt     DateTime            @default(now())
   reviewedAt    DateTime?
-  requestedBy   User                @relation("ChangeRequestCreatedBy", fields: [requestedById], references: [id], onDelete: Cascade)
   reviewedBy    User?               @relation("ChangeRequestReviewedBy", fields: [reviewedById], references: [id], onDelete: Restrict)
+  requestedBy   User                @relation("ChangeRequestCreatedBy", fields: [requestedById], references: [id], onDelete: Cascade)
 
   @@index([status, createdAt])
   @@index([requestedById])
@@ -454,8 +458,8 @@ model StaffManageProduct {
   productId Int
   type      String
   at        DateTime @default(now())
-  staff     Staff    @relation(fields: [staffId], references: [userId], onDelete: Restrict)
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  staff     Staff    @relation(fields: [staffId], references: [userId])
 
   @@index([staffId])
   @@index([productId])
@@ -467,10 +471,31 @@ model StaffManageCategory {
   categoryId Int
   type       String
   at         DateTime @default(now())
-  staff      Staff    @relation(fields: [staffId], references: [userId], onDelete: Restrict)
+  staff      Staff    @relation(fields: [staffId], references: [userId])
 
   @@index([staffId])
   @@index([categoryId])
+}
+
+model Cart {
+  id         Int        @id @default(autoincrement())
+  customerId Int        @unique
+  customer   User       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items      CartItem[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cartId    Int
+  productId Int
+  quantity  Int      @default(1)
+  
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([cartId, productId])
 }
 
 enum AuditAction {

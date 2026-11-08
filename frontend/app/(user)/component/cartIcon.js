@@ -19,7 +19,15 @@ export default function CartIcon({ cart,isLogin }) {
   };
 
   useEffect(() => {
-    updateCount();
+    const wasLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+
+    if (!isLogin && wasLoggedIn) {
+      localStorage.removeItem("cart");      // Xóa giỏ hàng
+      localStorage.removeItem("isLoggedIn"); // Xóa cờ
+      setCartCount(0);                      // Reset số lượng về 0
+    } else {
+      updateCount();
+    }
 
     const handleCartUpdated = () => {
       updateCount(); 

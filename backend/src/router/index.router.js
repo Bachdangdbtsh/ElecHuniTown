@@ -256,7 +256,8 @@ router.post("/product/detail/:id", async (req, res) => {
 router.post("/cart/add", async (req, res) => {
   try {
 
-    const { productID, quantity, currentCart } = req.body ?? {};
+    let { productID, quantity, currentCart } = req.body ?? {};
+    productID=Number(productID);
     if (quantity <= 0) {
       res.json({
         code: "error",
@@ -279,7 +280,6 @@ router.post("/cart/add", async (req, res) => {
     let userId = null;
     const token = req.cookies.token;
     if (token) {
-      console.log(token);
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         userId = decoded.userId;

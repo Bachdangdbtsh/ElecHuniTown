@@ -34,7 +34,7 @@ export default function AccountLayout({ children }) {
 
   return (
     <div className="cust-shell">
-      <aside className="cust-aside">
+      <aside className="cust-aside" style={{height:'100vh',position: 'fixed',}}>
         <div>
           <Link href="/" style={{ color: 'inherit', textDecoration: 'none' }}>
             <p className="cust-brand">ElecHuniTown</p>
@@ -80,7 +80,7 @@ export default function AccountLayout({ children }) {
         </div>
       </aside>
 
-      <main className="cust-main">{children}</main>
+      <main className="cust-main" style={{marginLeft:"300px",}}>{children}</main>
     </div>
   );
 }

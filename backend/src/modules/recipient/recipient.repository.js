@@ -41,7 +41,7 @@ export async function createRecipient(customerId, data) {
       data: {
         customerId,
         recipientName: data.recipientName,
-        recipientPhone: data.recipientPhone,
+        recipientPhoneNumber: data.recipientPhoneNumber,
         address: data.address,
         recipientType: data.recipientType || null,
         isDefault: shouldBeDefault,

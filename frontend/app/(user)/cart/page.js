@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 
 import CustomerInfor from "./customerForm";
 import Cart from "./cart"

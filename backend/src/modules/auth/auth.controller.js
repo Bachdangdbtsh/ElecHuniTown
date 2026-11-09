@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { env } from '../../config/env.js';
 import { AppError } from '../../common/error/AppError.js';
+import { env } from '../../config/env.js';
 import * as service from './auth.service.js';
 import {
   registerSchema,
@@ -47,10 +48,11 @@ export async function login(req, res) {
     secure: env.nodeEnv === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: Math.max(0, expiresAt * 1000 - Date.now()),
+    maxAge: env.jwtCookieMaxAgeMs,
   });
 
-  ok(res, result);
+  // Không trả JWT trong body — chỉ cookie httpOnly (tránh XSS đọc token)
+  ok(res, { user: result.user });
 }
 
 export async function logout(req, res) {

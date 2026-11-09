@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { env } from '../../config/env.js';
 import { AppError } from '../../common/error/AppError.js';
+import { invalidateUserSessions } from '../../common/sessionInvalidation.js';
 import * as repo from './auth.repository.js';
 
 function hashToken(rawToken) {
@@ -126,10 +127,12 @@ export async function login(payload, clientMeta = {}) {
 
 export async function forgotPassword(payload) {
   const user = await repo.findUserByEmail(payload.email);
+  // Always return the same generic message to avoid email enumeration.
+  const genericMessage =
+    'Nếu email tồn tại trong hệ thống, hướng dẫn khôi phục mật khẩu đã được gửi';
+
   if (!user) {
-    return {
-      message: 'Nếu email tồn tại trong hệ thống, hướng dẫn khôi phục mật khẩu đã được gửi',
-    };
+    return { message: genericMessage };
   }
 
   const rawToken = crypto.randomBytes(32).toString('hex');
@@ -142,10 +145,13 @@ export async function forgotPassword(payload) {
     expiresAt,
   });
 
-  return {
-    message: 'Nếu email tồn tại trong hệ thống, hướng dẫn khôi phục mật khẩu đã được gửi',
-    resetToken: rawToken,
-  };
+  // Only expose the raw token in development so the UI can be tested without email.
+  // In production the token must be delivered out-of-band (email/SMS).
+  const result = { message: genericMessage };
+  if (env.nodeEnv === 'development') {
+    result.resetToken = rawToken;
+  }
+  return result;
 }
 
 export async function resetPassword(payload) {
@@ -168,6 +174,8 @@ export async function resetPassword(payload) {
 
   await repo.updateUserPassword(user.id, passwordHash);
   await repo.markResetTokenUsed(resetRecord.id);
+  // Thu hồi mọi phiên JWT cũ — bắt buộc đăng nhập lại bằng mật khẩu mới
+  invalidateUserSessions(user.id);
 
   return {
     message: 'Đặt lại mật khẩu thành công, bạn có thể đăng nhập bằng mật khẩu mới',
@@ -187,9 +195,10 @@ export async function changePassword(userId, payload) {
 
   const passwordHash = await bcrypt.hash(payload.newPassword, 10);
   await repo.updateUserPassword(userId, passwordHash);
+  invalidateUserSessions(userId);
 
   return {
-    message: 'Đổi mật khẩu thành công',
+    message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.',
   };
 }
 

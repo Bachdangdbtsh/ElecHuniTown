@@ -2,7 +2,7 @@ import { toast } from "sonner";
 export function addCart(product, quantity) {
   if (!product) return;
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  fetch(`${process.env.NEXT_PUBLIC_URL}/cart/add`, {
+  fetch(`${(process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_URL)}/cart/add`, {
     method: "POST",
     credentials: "include",
     headers: {

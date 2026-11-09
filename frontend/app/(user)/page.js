@@ -11,7 +11,7 @@ export default function Home() {
   useEffect(() => {
     if (featureProducts != null && suggestProducts != null)
       return;
-    fetch("http://localhost:4000/", {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_URL) || "http://localhost:4000"}/`, {
       method: "POST",
       credentials: "include",
     })

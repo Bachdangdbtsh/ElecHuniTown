@@ -23,7 +23,7 @@ export default function ListProductSearch() {
   const [pagination, setpagination] = useState({});
   useEffect(() => {
 
-    const url = new URL(`${process.env.NEXT_PUBLIC_URL}/search`);
+    const url = new URL(`${(process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_URL)}/search`);
     if (key) url.searchParams.append("key", key);
     if (isFeature) url.searchParams.append("isFeature", isFeature);
     if (isSuggest) url.searchParams.append("isSuggest", isSuggest);

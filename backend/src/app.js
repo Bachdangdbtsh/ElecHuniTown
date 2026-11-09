@@ -11,25 +11,45 @@ import recipientRoutes from './modules/recipient/recipient.route.js';
 import changeRequestRoutes from './modules/account-change-request/change-request.route.js';
 import adminRoutes from './modules/admin/admin.route.js';
 import roleRoutes from './modules/role/role.route.js';
-import inventoryRoutes from './source/Inventory/InventoryRouter.js';
 export const app = express();
 
-app.use(cors({ origin: env.clientOrigin, credentials: true }));
-app.use(express.json());
+// CORS must allow credentials for httpOnly cookie auth
+app.use(
+  cors({
+    origin: env.clientOrigin,
+    credentials: true,
+  }),
+);
+app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
-app.get('/health', async (req, res) => {
-  await prisma.$queryRaw`SELECT 1`;   // kiểm tra kết nối DB
-  res.json({ status: 'ok' });
+// Security headers tối thiểu (không thêm dependency helmet)
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
 });
-app.use("/",router);
-// các module sẽ được gắn ở đây: app.use('/products', productRoutes), ...
 
-app.use('/', inventoryRoutes);
+app.get('/health', async (req, res, next) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: 'ok', env: env.nodeEnv });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Shopping / catalog / cart / order (module của thành viên khác)
+app.use('/', router);
+
+// Account / Auth / Phân quyền
 app.use('/auth', authRoutes);
 app.use('/recipients', recipientRoutes);
 app.use('/account-change-requests', changeRequestRoutes);
 app.use('/admin', adminRoutes);
 app.use('/roles', roleRoutes);
 app.use('/statistics', statisticRoutes);
-app.use(errorHandler);                 
+
+// Global error handler — luôn đặt cuối
+app.use(errorHandler);

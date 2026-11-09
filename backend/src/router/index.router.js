@@ -1,36 +1,55 @@
 import { Router } from "express";
-
 import slugify from "slugify";
-const router = Router();
-import { prisma } from '../lib/prisma.js';
 import jwt from 'jsonwebtoken';
+import { prisma } from '../lib/prisma.js';
+import { env } from '../config/env.js';
+import { isSessionInvalidated } from '../common/sessionInvalidation.js';
+
+const router = Router();
+
+/** Extract userId from httpOnly cookie token without throwing (guest-safe). */
+function getUserIdFromCookie(req) {
+  const token = req.cookies?.token;
+  if (!token) return null;
+  try {
+    const decoded = jwt.verify(token, env.jwtSecret);
+    return decoded.userId ?? null;
+  } catch {
+    return null;
+  }
+}
 
 const getMyCart = async (userId) => {
-  let cart = await prisma.cart.findUnique({
-    where: { customerId: userId },
-    include: {
-      items: {
-        include: {
-          product: true,
-        },
-        orderBy: { id: 'desc' }
-      }
-    }
-  });
-
-  if (!cart) {
-    cart = await prisma.cart.create({
-      data: { customerId: userId },
+  try {
+    let cart = await prisma.cart.findUnique({
+      where: { customerId: userId },
       include: {
         items: {
           include: {
             product: true,
-          }
+          },
+          orderBy: { id: 'desc' }
         }
       }
     });
+
+    if (!cart) {
+      cart = await prisma.cart.create({
+        data: { customerId: userId },
+        include: {
+          items: {
+            include: {
+              product: true,
+            }
+          }
+        }
+      });
+    }
+    return cart
+
+  } catch (error) {
+    console.error("Lỗi lấy giỏ hàng:", error);
   }
-  return cart;
 };
 
 
@@ -274,9 +293,8 @@ router.post("/cart/add", async (req, res) => {
     let userId = null;
     const token = req.cookies.token;
     if (token) {
-      console.log(token);
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, env.jwtSecret);
         userId = decoded.userId;
       } catch (error) {
       }
@@ -350,7 +368,7 @@ router.post("/cart/get", async (req, res) => {
 
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, env.jwtSecret);
         userId = decoded.userId;
       } catch (error) {
       }
@@ -422,7 +440,7 @@ router.post("/cart/remove", async (req, res) => {
     const token = req.cookies.token;
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, env.jwtSecret);
         userId = decoded.userId;
       } catch (error) { }
     }
@@ -459,7 +477,7 @@ router.post("/cart/update", async (req, res) => {
     const token = req.cookies.token;
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, env.jwtSecret);
         userId = decoded.userId;
       } catch (error) { }
     }
@@ -503,7 +521,7 @@ router.post("/order/create", async (req, res) => {
 
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, env.jwtSecret);
         customerId = decoded.userId; // Lấy ID từ token
       } catch (error) {
         console.log("Token không hợp lệ:", error.message);
@@ -644,8 +662,8 @@ router.get("/order/payment/:id", async (req, res) => {
 import { VNPay, HashAlgorithm, ProductCode, ignoreLogger, VnpLocale } from 'vnpay';
 
 const vnpay = new VNPay({
-  tmnCode: 'SUYBCG99',
-  secureSecret: 'JODQGSBQOVJOTXBQRELQCRHWKGGSRAGP',
+  tmnCode: env.vnpayTmnCode,
+  secureSecret: env.vnpaySecureSecret,
   vnpayHost: 'https://sandbox.vnpayment.vn',
   queryDrAndRefundHost: 'https://sandbox.vnpayment.vn', // tùy chọn, trường hợp khi url của querydr và refund khác với url khởi tạo thanh toán (thường sẽ sử dụng cho production)
 
@@ -727,48 +745,66 @@ router.get('/vnpay-return', async (req, res) => {
   }
 });
 
-router.get("/checkLogin", async (req, res) => {
-  const token = req.cookies.token;
-  if (!token) {
-    return res.json({ code: "error", message: "Chưa đăng nhập" });
-  }
-
-  let decoded;
+async function handleCheckLogin(req, res) {
   try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
-  } catch {
-    return res.status(401).json({ message: "Token không hợp lệ hoặc đã hết hạn" });
-  }
+    const token = req.cookies?.token;
+    if (!token) {
+      return res.json({ code: 'error', message: 'Chưa đăng nhập' });
+    }
 
-  try {
+    let decoded;
+    try {
+      decoded = jwt.verify(token, env.jwtSecret);
+    } catch {
+      return res.status(401).json({ code: 'error', message: 'Token không hợp lệ hoặc đã hết hạn' });
+    }
+
+    if (decoded.userId && decoded.iat && isSessionInvalidated(decoded.userId, decoded.iat)) {
+      return res.status(401).json({ code: 'error', message: 'Phiên đăng nhập đã hết hiệu lực' });
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      include: {
-        // role: {
-        //   include: {
-        //     permissions: {
-        //       include: { permission: true }
-        //     }
-        //   }
-        // },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        phone: true,
+        avatar: true,
+        isActive: true,
+        role: { select: { code: true, name: true } },
         recipientInfos: true,
-      }
+      },
     });
-    if (!user) {
-      return res.status(401).json({ message: "Tài khoản không tồn tại" });
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({ code: 'error', message: 'Tài khoản không hợp lệ hoặc đã bị khóa' });
     }
 
     const cart = await getMyCart(user.id);
     return res.json({
-      code: "success",
-      account: user,
+      code: 'success',
+      account: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        phone: user.phone,
+        avatar: user.avatar,
+        role: user.role?.code,
+        roleName: user.role?.name,
+        recipientInfos: user.recipientInfos,
+      },
       cart,
     });
   } catch (error) {
-    console.error("Lỗi tải thông tin đăng nhập:", error);
-    return res.status(500).json({ code: "INTERNAL_ERROR", message: "Không thể tải thông tin tài khoản" });
+    console.error('[checkLogin]', error.message);
+    return res.status(401).json({ code: 'error', message: 'Token không hợp lệ hoặc đã hết hạn' });
   }
-})
+}
+
+// Accept both casings used by different frontend files.
+router.get('/checkLogin', handleCheckLogin);
+router.get('/checklogin', handleCheckLogin);
 
 router.post("/comment/create", async (req, res) => {
   try {
@@ -782,7 +818,7 @@ router.post("/comment/create", async (req, res) => {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, env.jwtSecret);
       userId = decoded.userId;
     } catch (error) {
       return res.status(401).json({ code: "error", message: "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại" });

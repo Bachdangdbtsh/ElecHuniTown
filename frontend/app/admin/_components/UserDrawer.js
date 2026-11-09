@@ -8,6 +8,7 @@ import { apiPatch } from '@/lib/api';
 export default function UserDrawer({ userId, onClose, onRefresh }) {
   const userDetailState = useApi(userId ? `/admin/users/${userId}` : null);
   const [locking, setLocking] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   if (!userId) return null;
 
@@ -18,15 +19,16 @@ export default function UserDrawer({ userId, onClose, onRefresh }) {
     if (!reason) return;
 
     setLocking(true);
+    setActionError('');
     try {
       await apiPatch(`/admin/users/${userId}/status`, {
         isActive: nextStatus,
         reason,
       });
       userDetailState.reload();
-      onRefresh();
+      onRefresh?.();
     } catch (err) {
-      alert(err.message);
+      setActionError(err.message);
     } finally {
       setLocking(false);
     }
@@ -35,6 +37,7 @@ export default function UserDrawer({ userId, onClose, onRefresh }) {
   return (
     <div className="adm-drawer-overlay" onClick={onClose}>
       <div className="adm-drawer" onClick={(e) => e.stopPropagation()}>
+        {actionError && <div className="auth-error" style={{ marginBottom: 12 }}>{actionError}</div>}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: 18, fontWeight: 700 }}>Chi tiết người dùng</h2>
           <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer' }}>

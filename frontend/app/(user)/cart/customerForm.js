@@ -54,7 +54,7 @@ export default function CustomerInfor({ recipientInfos = [], isLogin }) {
         }
 
         // Gọi API tạo đơn hàng
-        fetch(`${process.env.NEXT_PUBLIC_URL}/order/create`, {
+        fetch(`${(process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_URL)}/order/create`, {
           method: "POST",
           credentials: "include",
           headers: {

@@ -11,7 +11,7 @@ export default function Cart() {
 
   const renderCart = () => {
     const currentCart = JSON.parse(localStorage.getItem("cart") || "[]");
-    fetch(`${process.env.NEXT_PUBLIC_URL}/cart/get`, {
+    fetch(`${(process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_URL)}/cart/get`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -87,7 +87,7 @@ const toggleSelect = (id) => {
     localStorage.setItem("cart", JSON.stringify(newLocalCart));
 
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_URL}/cart/remove`, {
+      await fetch(`${(process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_URL)}/cart/remove`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

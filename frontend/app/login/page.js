@@ -1,17 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { apiPost } from '@/lib/api';
-import '../customer.css';
+import '../eht-ui.css';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect');
+  const justRegistered = searchParams.get('registered') === '1';
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  function normalizeRole(role) {
+    if (!role) return '';
+    if (typeof role === 'string') return role;
+    return role.code || role.name || '';
+  }
+
+  /**
+   * Admin/Owner/Staff KHÔNG theo redirect về `/` hay `/account/*`
+   * (log thực tế: login?redirect=/  → admin bị đưa về shop/profile).
+   */
+  function destinationForRole(role) {
+    const r = redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : null;
+
+    if (role === 'ADMIN') {
+      if (r && r.startsWith('/admin')) return r;
+      return '/admin/dashboard';
+    }
+    if (role === 'SHOP_OWNER' || role === 'STAFF') {
+      if (r && (r.startsWith('/store') || r.startsWith('/statistics'))) return r;
+      return '/store/orders';
+    }
+    // CUSTOMER
+    if (r && !r.startsWith('/admin') && !r.startsWith('/store')) return r;
+    return '/account/overview';
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -20,17 +50,15 @@ export default function LoginPage() {
 
     try {
       const data = await apiPost('/auth/login', { email, password });
-      const role = data.user.role;
-      if (role === 'ADMIN') {
-        router.push('/admin/dashboard');
-      } else if (role === 'STAFF' || role === 'SHOP_OWNER') {
-        router.push('/inventory');
-      } else {
-        router.push('/account/overview');
+      const role = normalizeRole(data.user?.role);
+      if (!role) {
+        setError('Đăng nhập thành công nhưng không đọc được vai trò. Kiểm tra API /auth/login.');
+        return;
       }
+      // Sau login: luôn về trang chủ; vào console/account qua icon tài khoản theo role
+      window.location.assign('/');
     } catch (err) {
-      setError(err.message);
-    } finally {
+      setError(err.message || 'Đăng nhập thất bại');
       setLoading(false);
     }
   }
@@ -39,6 +67,7 @@ export default function LoginPage() {
     <div className="auth-wrap">
       <div className="auth-card">
         <div className="auth-header">
+          <div className="auth-brand-mark">EH</div>
           <p className="auth-logo">ElecHuniTown</p>
           <p className="auth-subtitle">Thiết bị gia dụng thông minh cho cuộc sống sinh viên</p>
         </div>
@@ -52,6 +81,11 @@ export default function LoginPage() {
           </Link>
         </div>
 
+        {justRegistered && (
+          <div className="auth-success" style={{ marginBottom: 12 }}>
+            Đăng ký thành công. Vui lòng đăng nhập.
+          </div>
+        )}
         {error && <div className="auth-error">{error}</div>}
 
         <form className="auth-form" onSubmit={handleSubmit}>
@@ -63,6 +97,7 @@ export default function LoginPage() {
               className="form-control"
               placeholder="you@student.edu.vn"
               required
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -81,6 +116,7 @@ export default function LoginPage() {
               className="form-control"
               placeholder="Nhập mật khẩu"
               required
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -92,5 +128,13 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="auth-wrap"><div className="auth-card">Đang tải...</div></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

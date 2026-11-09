@@ -154,13 +154,14 @@ export async function findChangeRequestById(id) {
   });
 }
 
-export async function resolveChangeRequest({ requestId, reviewedById, status, changes, requestedUserId }) {
+export async function resolveChangeRequest({ requestId, reviewedById, status, reviewNote, changes, requestedUserId }) {
   return prisma.$transaction(async (tx) => {
     const updatedRequest = await tx.accountChangeRequest.update({
       where: { id: requestId },
       data: {
         status,
         reviewedById,
+        reviewNote: reviewNote || null,
         reviewedAt: new Date(),
       },
     });

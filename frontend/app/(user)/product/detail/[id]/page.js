@@ -4,20 +4,26 @@ import ListImages from "./swiper";
 import ProductDescription from "./productDescription";
 import RightPart from "./rightPart";
 import Comment from "./comment";
+import { notFound } from "next/navigation";
 export const metadata = {
   title: "Trang sản phẩm",
 };
 
 export default async function ProductDetail({ params }) {
   const { id } = await params;
-  const res = await fetch(`${process.env.NEXT_PUBLIC_URL}/product/detail/${id}`, {
+  if (!/^\d+$/.test(id)) notFound();
+
+  const apiBase = (process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_URL || "http://localhost:4000").replace(/\/+$/, "");
+  const res = await fetch(`${apiBase}/product/detail/${id}`, {
     method: "POST",
     cache: "no-store",
   });
 
+  if (res.status === 404) notFound();
+  if (!res.ok) throw new Error(`Không thể tải sản phẩm (HTTP ${res.status})`);
   const data = await res.json();
   const product = data.product;
-  console.log(data);
+  if (!product) notFound();
 
   return (<>
     <div className="product-detail-page">

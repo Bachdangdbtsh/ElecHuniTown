@@ -56,7 +56,7 @@ export default function CategoryList() {
                     >
                       <img
                         className="card-image"
-                        src={child.imageUrl || "/placeholder.jpg"}
+                        src={child.imageUrl || "/placeholder.svg"}
                         alt={child.name}
                       />
                       <div className="card-label">{child.name}</div>

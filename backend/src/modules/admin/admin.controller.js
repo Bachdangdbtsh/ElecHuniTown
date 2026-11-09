@@ -60,7 +60,7 @@ export async function reviewRequest(req, res) {
     throw new AppError(400, 'INVALID_ID', 'Mã yêu cầu không hợp lệ');
   }
   const payload = parse(reviewChangeRequestSchema, req.body);
-  const data = await service.reviewChangeRequest(id, req.user.id, payload.status);
+  const data = await service.reviewChangeRequest(id, req.user.id, payload.status, payload.note);
   ok(res, data);
 }
 

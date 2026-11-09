@@ -2,12 +2,11 @@
 
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { apiPost } from '@/lib/api';
 import '../eht-ui.css';
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect');
   const justRegistered = searchParams.get('registered') === '1';
@@ -23,23 +22,19 @@ function LoginForm() {
     return role.code || role.name || '';
   }
 
-  /**
-   * Admin/Owner/Staff KHÔNG theo redirect về `/` hay `/account/*`
-   * (log thực tế: login?redirect=/  → admin bị đưa về shop/profile).
-   */
   function destinationForRole(role) {
     const r = redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : null;
 
     if (role === 'ADMIN') {
-      if (r && r.startsWith('/admin')) return r;
+      if (r && r.startsWith('/admin/')) return r;
       return '/admin/dashboard';
     }
     if (role === 'SHOP_OWNER' || role === 'STAFF') {
-      if (r && (r.startsWith('/store') || r.startsWith('/statistics'))) return r;
+      if (r && (r === '/store' || r.startsWith('/store/') || r === '/statistics' || r === '/inventory')) return r;
       return '/store/orders';
     }
     // CUSTOMER
-    if (r && !r.startsWith('/admin') && !r.startsWith('/store')) return r;
+    if (r && !/^\/(admin|store|statistics|inventory)(\/|\?|$)/.test(r)) return r;
     return '/account/overview';
   }
 
@@ -55,8 +50,7 @@ function LoginForm() {
         setError('Đăng nhập thành công nhưng không đọc được vai trò. Kiểm tra API /auth/login.');
         return;
       }
-      // Sau login: luôn về trang chủ; vào console/account qua icon tài khoản theo role
-      window.location.assign('/');
+      window.location.assign(destinationForRole(role));
     } catch (err) {
       setError(err.message || 'Đăng nhập thất bại');
       setLoading(false);

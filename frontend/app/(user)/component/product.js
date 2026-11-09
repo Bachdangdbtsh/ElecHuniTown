@@ -17,7 +17,7 @@ export default function Product({ data }) {
   return (<>
     <div className="product-wrapper">
       <Link className="product" href={`/product/detail/${data.id}`}>
-        <img className="image" src={data.pictures?.[0]?.url ?? "/placeholder.png"}></img>
+        <img className="image" src={data.pictures?.[0]?.url ?? "/placeholder.svg"}></img>
         <div className="discount">
           <BsLightningChargeFill color="#FFCB06" />
           <div className="label">

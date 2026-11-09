@@ -9,9 +9,9 @@ import { removeCart } from "../component/editCart";
 
 export default function Cart() {
   const [cart, setcart] = useState(null);
-  const renderCart = () => {
+  useEffect(() => {
     const currentCart = JSON.parse(localStorage.getItem("cart") || "[]");
-    fetch(`${process.env.NEXT_PUBLIC_URL}/cart/get`, {
+    fetch('/api/backend/cart/get', {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -26,8 +26,7 @@ export default function Cart() {
         });
         setcart(merged);
       })
-  }
-  useEffect(() => renderCart, [])
+  }, [])
   useEffect(() => {
     const handler = (e) => {
       const detail = e.detail;

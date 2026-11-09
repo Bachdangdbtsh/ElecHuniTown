@@ -43,7 +43,7 @@ export default function CustomerInfor() {
         const cart = JSON.parse(localStorage.getItem("cart") || []);
         const cartChecked = cart.filter((p) => p.selected == true);
 
-        fetch(`${process.env.NEXT_PUBLIC_URL}/order/create`, {
+        fetch('/api/backend/order/create', {
           method: "POST",
           credentials: "include",
           headers: {

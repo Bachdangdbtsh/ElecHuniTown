@@ -1,26 +1,7 @@
-'use client';
-
 import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import InventoryWorkspace from './_components/InventoryWorkspace';
+import InventoryPageContent from './_components/InventoryPageContent';
 
-function InventoryPageContent() {
-  const searchParams = useSearchParams();
-  const requestedView = searchParams.get('view');
-  const initialView = ['inventory', 'lowStock', 'pending', 'processed'].includes(requestedView)
-    ? requestedView
-    : 'dashboard';
-  const requestedStatus = searchParams.get('status');
-  const initialStatus = ['APPROVED', 'DENIED'].includes(requestedStatus) ? requestedStatus : 'all';
-
-  return (
-    <InventoryWorkspace
-      key={`${initialView}:${initialStatus}`}
-      initialView={initialView}
-      initialStatus={initialStatus}
-    />
-  );
-}
+export const instant = false;
 
 export default function InventoryPage() {
   return (

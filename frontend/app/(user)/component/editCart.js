@@ -7,7 +7,7 @@ export function addCart(product, quantity) {
     quantity: quantity,
   })
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  fetch(`${process.env.NEXT_PUBLIC_URL}/cart/add`, {
+  fetch('/api/backend/cart/add', {
     method: "POST",
     credentials: "include",
     headers: {

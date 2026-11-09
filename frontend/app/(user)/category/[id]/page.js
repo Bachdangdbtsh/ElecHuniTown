@@ -6,7 +6,7 @@ export const metadata = {
 };
 
 async function CategoryLoader({ id }) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_URL}/category/${id}`, {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/category/${id}`, {
     method: "POST",
     cache: "no-store",       
   });

@@ -4,26 +4,32 @@ import Link from "next/link";
 import { FaChevronRight } from "react-icons/fa";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 
 export default function PaymentDetail({ id }) {
   const router=useRouter();
   const [order, setorder] = useState(null);
+  const [error, setError] = useState("");
   const searchParams = useSearchParams();
-  const status = searchParams.get("status");
+  const status = searchParams.get("payment");
   useEffect(() => {
     if(status=="success"){
       toast.success("Thanh toán thành công")
     }
 
-    fetch(`${process.env.NEXT_PUBLIC_URL}/order/payment/${id}`, {
+    fetch(`/api/backend/order/payment/${id}`, {
       method: "GET",
     })
-      .then(res => res.json())
-      .then((data) => {
-        console.log(data.order);
-        setorder(data.order)
+      .then(res => {
+        if (!res.ok) throw new Error(`Không tải được đơn hàng (${res.status})`);
+        return res.json();
       })
-  }, [])
+      .then((data) => {
+        if (!data.order) throw new Error("Không tìm thấy đơn hàng");
+        setorder(data.order);
+      })
+      .catch((cause) => setError(cause.message || "Không tải được đơn hàng"));
+  }, [id, status])
   const getStatusInfo = (status) => {
     switch (status) {
       case 'PENDING':
@@ -41,17 +47,22 @@ export default function PaymentDetail({ id }) {
     }
   };
   const pay=function(){
-    fetch(`${process.env.NEXT_PUBLIC_URL}/order/pay/${id}`,{
+    fetch(`/api/backend/order/pay/${id}`,{
       method:"POST",
     })
     .then(res=>res.json())
     .then(data=>{
       console.log(data);
-      if(data.code="success"){
-        router.push(data.paymentUrl);
+      if(data.code === "success" && data.paymentUrl){
+        window.location.assign(data.paymentUrl);
+      } else {
+        toast.error(data.message || "Không thể bắt đầu thanh toán");
       }
     })
+    .catch(() => toast.error("Không thể kết nối máy chủ thanh toán"))
   }
+  if (error) return <div role="alert">{error}</div>;
+  if (!order) return <div role="status">Đang tải thông tin đơn hàng...</div>;
   return (order && <>
     <div className="order-detail-page">
       <div className="cart-page">
@@ -70,9 +81,9 @@ export default function PaymentDetail({ id }) {
                 return (
                   <div className="inner-product" key={index}>
                     <div className="infor-product">
-                      <img src={product.pictures[0].url} alt=""></img>
+                      <img src={product.pictures?.[0]?.url || ""} alt=""></img>
                       <div className="inner-infor">
-                        <div className="label">{product.name}</div>
+                        <div className="label">{product.productName}</div>
                         <div className="product-id">Mã sản phẩm: <strong>{product.id}</strong></div>
                         <div className="new-price product-id">Giá sản phẩm <strong className="color-red">{product.newPrice?.toLocaleString("vi-VN")}</strong></div>
                         <div className="old-price product-id">Giá niêm yết: <strong>{product.oldPrice?.toLocaleString("vi-VN")}</strong></div>
@@ -118,7 +129,7 @@ export default function PaymentDetail({ id }) {
           <div>{order.recipient.address}</div>
           <div className="inrow">
             <div className="hl">Ghi chú</div>
-            <div>{order.recipient.note}</div>
+            <div>{order.note}</div>
           </div>
           <div className="inrow">
             <div className="hl">Tình trạng đơn hàng</div>

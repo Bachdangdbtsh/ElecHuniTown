@@ -684,9 +684,19 @@ const vnpay = new VNPay({
 // API xử lý đơn hàng
 router.post('/order/pay/:id', async (req, res) => {
   try {
+    const orderId = Number(req.params.id);
+    if (!Number.isInteger(orderId) || orderId < 1) {
+      return res.status(400).json({ code: 'error', message: 'ID đơn hàng không hợp lệ' });
+    }
     const order = await prisma.order.findUnique({
-      where: { id: Number(req.params.id) },
+      where: { id: orderId },
     });
+    if (!order) {
+      return res.status(404).json({ code: 'error', message: 'Không tìm thấy đơn hàng' });
+    }
+    if (!env.vnpayTmnCode || !env.vnpaySecureSecret) {
+      return res.status(503).json({ code: 'error', message: 'Cổng thanh toán chưa được cấu hình' });
+    }
 
     const paymentUrl = vnpay.buildPaymentUrl({
       vnp_Amount: order.totalCost,
@@ -698,7 +708,7 @@ router.post('/order/pay/:id', async (req, res) => {
       vnp_TxnRef: order.id,
       vnp_OrderInfo: `Thanh toan don hang ${order.id}`,
       vnp_OrderType: ProductCode.Other,
-      vnp_ReturnUrl: `http://localhost:4000/vnpay-return`,
+      vnp_ReturnUrl: `${env.serverOrigin.replace(/\/+$/, '')}/vnpay-return`,
       vnp_Locale: VnpLocale.VN,
     });
 
@@ -725,7 +735,7 @@ router.get('/vnpay-return', async (req, res) => {
       return res.send('Xác thực tính toàn vẹn dữ liệu thất bại');
     }
     if (!verifyResult.isSuccess) {
-      return res.send('Đơn hàng thanh toán thất bại');
+      return res.redirect(`${env.clientOrigin.replace(/\/+$/, '')}/order/payment/${encodeURIComponent(verifyResult.vnp_TxnRef)}?payment=failed`);
     }
 
     const orderId = verifyResult.vnp_TxnRef;
@@ -737,7 +747,7 @@ router.get('/vnpay-return', async (req, res) => {
         transactionID: transactionID,
       }
     });
-    return res.redirect(`http://localhost:3000/order/payment/${orderId}?payment=success`);
+    return res.redirect(`${env.clientOrigin.replace(/\/+$/, '')}/order/payment/${orderId}?payment=success`);
 
   } catch (error) {
     console.error('Lỗi xác thực Return URL:', error);

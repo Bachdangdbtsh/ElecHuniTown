@@ -1,29 +1,49 @@
 "use client"
-import { IoMdClose } from "react-icons/io";
 import Link from "next/link";
 import { FaChevronRight } from "react-icons/fa";
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import { getApiBase } from "@/lib/apiBase";
 
 export default function PaymentDetail({ id }) {
-  const router=useRouter();
   const [order, setorder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [paying, setPaying] = useState(false);
   const searchParams = useSearchParams();
-  const status = searchParams.get("status");
+  const paymentStatus = searchParams.get("payment");
   useEffect(() => {
-    if(status=="success"){
-      toast.success("Thanh toán thành công")
-    }
-
-    fetch(`${process.env.NEXT_PUBLIC_URL}/order/payment/${id}`, {
+    const controller = new AbortController();
+    setLoading(true);
+    setError("");
+    fetch(`${getApiBase()}/order/payment/${id}`, {
       method: "GET",
+      credentials: "include",
+      signal: controller.signal,
     })
-      .then(res => res.json())
-      .then((data) => {
-        console.log(data.order);
-        setorder(data.order)
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok || data.code !== "success" || !data.order) {
+          throw new Error(data.message || "Không tải được thông tin đơn hàng.");
+        }
+        return data.order;
       })
-  }, [])
+      .then(setorder)
+      .catch((err) => {
+        if (err.name !== "AbortError") setError(err.message || "Không kết nối được máy chủ.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [id]);
+
+  useEffect(() => {
+    if (paymentStatus === "success" && order?.paymentMethodStatus) toast.success("Thanh toán thành công");
+    if (paymentStatus === "success" && order && !order.paymentMethodStatus) toast.error("Chưa xác nhận được thanh toán.");
+    if (paymentStatus === "failed") toast.error("Thanh toán chưa thành công. Bạn có thể thử lại.");
+  }, [paymentStatus, order]);
   const getStatusInfo = (status) => {
     switch (status) {
       case 'PENDING':
@@ -40,19 +60,37 @@ export default function PaymentDetail({ id }) {
         return { text: 'Không xác định', color: '#6b7280' }; // Màu xám
     }
   };
-  const pay=function(){
-    fetch(`${process.env.NEXT_PUBLIC_URL}/order/pay/${id}`,{
-      method:"POST",
-    })
-    .then(res=>res.json())
-    .then(data=>{
-      console.log(data);
-      if(data.code="success"){
-        router.push(data.paymentUrl);
+  const pay = async () => {
+    setPaying(true);
+    try {
+      const res = await fetch(`${getApiBase()}/order/pay/${id}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok || data.code !== "success" || !data.paymentUrl) {
+        throw new Error(data.message || "Không tạo được phiên thanh toán.");
       }
-    })
-  }
-  return (order && <>
+      const paymentUrl = new URL(data.paymentUrl);
+      if (paymentUrl.protocol !== "https:" || !/(^|\.)vnpayment\.vn$/.test(paymentUrl.hostname)) {
+        throw new Error("Địa chỉ thanh toán không hợp lệ.");
+      }
+      window.location.assign(paymentUrl.href);
+    } catch (err) {
+      toast.error(err.message || "Không thể kết nối cổng thanh toán.");
+      setPaying(false);
+    }
+  };
+
+  if (loading) return <div className="order-detail-page">Đang tải xác nhận đơn hàng...</div>;
+  if (error || !order) return (
+    <div className="order-detail-page">
+      <p role="alert">{error || "Không tìm thấy đơn hàng."}</p>
+      <Link href="/cart">Quay lại giỏ hàng</Link>
+    </div>
+  );
+
+  return (<>
     <div className="order-detail-page">
       <div className="cart-page">
         <div className="cart">
@@ -70,9 +108,9 @@ export default function PaymentDetail({ id }) {
                 return (
                   <div className="inner-product" key={index}>
                     <div className="infor-product">
-                      <img src={product.pictures[0].url} alt=""></img>
+                      <img src={product.pictures?.[0]?.url || "/placeholder.svg"} alt={product.productName}></img>
                       <div className="inner-infor">
-                        <div className="label">{product.name}</div>
+                        <div className="label">{product.productName}</div>
                         <div className="product-id">Mã sản phẩm: <strong>{product.id}</strong></div>
                         <div className="new-price product-id">Giá sản phẩm <strong className="color-red">{product.newPrice?.toLocaleString("vi-VN")}</strong></div>
                         <div className="old-price product-id">Giá niêm yết: <strong>{product.oldPrice?.toLocaleString("vi-VN")}</strong></div>
@@ -118,7 +156,7 @@ export default function PaymentDetail({ id }) {
           <div>{order.recipient.address}</div>
           <div className="inrow">
             <div className="hl">Ghi chú</div>
-            <div>{order.recipient.note}</div>
+            <div>{order.note || "Không có"}</div>
           </div>
           <div className="inrow">
             <div className="hl">Tình trạng đơn hàng</div>
@@ -131,7 +169,7 @@ export default function PaymentDetail({ id }) {
         {
           (order.paymentMethodStatus==false&&order.paymentMethod!="money")&&
           <div className="payment">
-            <button onClick={()=>{pay()}}>THANH TOÁN</button>
+            <button type="button" onClick={pay} disabled={paying}>{paying ? "ĐANG CHUYỂN HƯỚNG..." : "THANH TOÁN"}</button>
           </div>
         }
       </div>

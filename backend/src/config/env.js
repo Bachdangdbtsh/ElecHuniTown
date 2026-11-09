@@ -21,6 +21,7 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: Number(process.env.PORT ?? 4000),
   clientOrigin: process.env.CLIENT_ORIGIN,
+  serverOrigin: process.env.SERVER_ORIGIN ?? `http://localhost:${process.env.PORT ?? 4000}`,
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '30m',
   jwtCookieMaxAgeMs: parseExpiresToMs(process.env.JWT_EXPIRES_IN ?? '30m'),

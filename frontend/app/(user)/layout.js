@@ -42,15 +42,6 @@ export default async function RootLayout({
 }) {
   const { account, cart, isLogin } = await checkLogin();
   return (
-    <Suspense fallback={null}>
-      <UserLayout>{children}</UserLayout>
-    </Suspense>
-  );
-}
-
-async function UserLayout({ children }) {
-  const { account, cart, isLogin } = await checkLogin();
-  return ((isLogin!=null) &&
     <>
       <div className='header'>
         <div className="container">

@@ -6,36 +6,31 @@ import { prisma } from '../lib/prisma.js';
 import jwt from 'jsonwebtoken';
 
 const getMyCart = async (userId) => {
-  try {
-    let cart = await prisma.cart.findUnique({
-      where: { customerId: userId },
+  let cart = await prisma.cart.findUnique({
+    where: { customerId: userId },
+    include: {
+      items: {
+        include: {
+          product: true,
+        },
+        orderBy: { id: 'desc' }
+      }
+    }
+  });
+
+  if (!cart) {
+    cart = await prisma.cart.create({
+      data: { customerId: userId },
       include: {
         items: {
           include: {
             product: true,
-          },
-          orderBy: { id: 'desc' }
+          }
         }
       }
     });
-
-    if (!cart) {
-      cart = await prisma.cart.create({
-        data: { customerId: userId },
-        include: {
-          items: {
-            include: {
-              product: true,
-            }
-          }
-        }
-      });
-    }
-    return cart
-
-  } catch (error) {
-    console.error("Lỗi lấy giỏ hàng:", error);
   }
+  return cart;
 };
 
 
@@ -733,13 +728,19 @@ router.get('/vnpay-return', async (req, res) => {
 });
 
 router.get("/checkLogin", async (req, res) => {
-  try {
-    const token = req.cookies.token;
-    if (!token) {
-      return res.json({ code: "error", message: "Chưa đăng nhập" });
-    }
+  const token = req.cookies.token;
+  if (!token) {
+    return res.json({ code: "error", message: "Chưa đăng nhập" });
+  }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch {
+    return res.status(401).json({ message: "Token không hợp lệ hoặc đã hết hạn" });
+  }
+
+  try {
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       include: {
@@ -753,16 +754,19 @@ router.get("/checkLogin", async (req, res) => {
         recipientInfos: true,
       }
     });
+    if (!user) {
+      return res.status(401).json({ message: "Tài khoản không tồn tại" });
+    }
+
     const cart = await getMyCart(user.id);
-    res.json({
+    return res.json({
       code: "success",
       account: user,
       cart,
     });
-
   } catch (error) {
-    console.log(error);
-    return res.status(401).json({ message: "Token không hợp lệ hoặc đã hết hạn" });
+    console.error("Lỗi tải thông tin đăng nhập:", error);
+    return res.status(500).json({ code: "INTERNAL_ERROR", message: "Không thể tải thông tin tài khoản" });
   }
 })
 

@@ -138,6 +138,7 @@ async function main() {
     'STOCK_RECEIPT_CREATE',
     'STOCK_ISSUE_CREATE',
     'STOCK_ISSUE_MANAGE',
+    'SUPPLIER_MANAGE',
     'STATISTIC_VIEW',
   ];
   const staffRoleId = roleMap.get('STAFF');

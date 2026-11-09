@@ -1,17 +1,21 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   FiBarChart2,
   FiBell,
   FiBox,
+  FiChevronDown,
   FiClipboard,
   FiGrid,
   FiLogOut,
+  FiPackage,
   FiRefreshCw,
   FiSettings,
   FiTag,
+  FiUsers,
 } from 'react-icons/fi';
 
 const navigation = [
@@ -22,6 +26,8 @@ const navigation = [
 
 export default function InventoryShell({ user, onLogout, children }) {
   const pathname = usePathname();
+  const [inventoryMenuOpen, setInventoryMenuOpen] = useState(() => pathname.startsWith('/inventory'));
+  const [accessNotice, setAccessNotice] = useState(false);
   const today = new Intl.DateTimeFormat('vi-VN', {
     weekday: 'long',
     day: 'numeric',
@@ -49,15 +55,77 @@ export default function InventoryShell({ user, onLogout, children }) {
               <span>{label}</span>
             </span>
           ))}
-          <Link
-            href="/inventory"
-            className={`inv-nav-link ${isInventory ? 'is-active' : ''}`}
-            aria-current={isInventory ? 'page' : undefined}
-          >
-            <span className="inv-nav-icon"><FiBox aria-hidden="true" /></span>
-            <span>Quản lý kho hàng</span>
-            <span className="inv-nav-chevron" aria-hidden="true">›</span>
-          </Link>
+          <div className="inv-nav-group">
+            <div className={`inv-nav-parent-row ${isInventory ? 'is-active' : ''}`}>
+              <Link
+                href="/inventory"
+                className="inv-nav-parent-link"
+                aria-current={pathname === '/inventory' ? 'page' : undefined}
+                onClick={() => setInventoryMenuOpen(true)}
+              >
+                <span className="inv-nav-icon"><FiBox aria-hidden="true" /></span>
+                <span>Quản lý kho hàng</span>
+              </Link>
+              <button
+                type="button"
+                className={`inv-nav-toggle ${inventoryMenuOpen ? 'is-open' : ''}`}
+                aria-label={inventoryMenuOpen ? 'Thu gọn tính năng kho hàng' : 'Mở tính năng kho hàng'}
+                aria-expanded={inventoryMenuOpen}
+                aria-controls="inventory-submenu"
+                onClick={() => setInventoryMenuOpen((open) => !open)}
+              >
+                <FiChevronDown aria-hidden="true" />
+              </button>
+            </div>
+            {inventoryMenuOpen && (
+              <div className="inv-nav-submenu" id="inventory-submenu">
+                <Link
+                  href="/inventory?view=inventory"
+                  className={`inv-nav-sub-link ${pathname === '/inventory' ? 'is-current' : ''}`}
+                  onClick={() => setAccessNotice(false)}
+                >
+                  <FiPackage aria-hidden="true" />
+                  <span>Quản lý hàng tồn kho</span>
+                </Link>
+                {user.role === 'STAFF' ? (
+                  <>
+                    <button
+                      type="button"
+                      className="inv-nav-sub-link inv-nav-sub-button"
+                      aria-describedby={accessNotice ? 'inventory-access-notice' : undefined}
+                      onClick={() => setAccessNotice(true)}
+                    >
+                      <FiClipboard aria-hidden="true" />
+                      <span>Duyệt phiếu nhập/xuất kho</span>
+                    </button>
+                    {accessNotice && (
+                      <small className="inv-nav-access-notice" id="inventory-access-notice" role="status">
+                        Chỉ có shop owner mới có quyền truy cập.
+                      </small>
+                    )}
+                  </>
+                ) : (
+                  <Link
+                    href="/inventory?view=pending"
+                    className="inv-nav-sub-link"
+                    onClick={() => setAccessNotice(false)}
+                  >
+                    <FiClipboard aria-hidden="true" />
+                    <span>Duyệt phiếu nhập/xuất kho</span>
+                  </Link>
+                )}
+                <Link
+                  href="/inventory/suppliers"
+                  className={`inv-nav-sub-link ${pathname.startsWith('/inventory/suppliers') ? 'is-current' : ''}`}
+                  aria-current={pathname.startsWith('/inventory/suppliers') ? 'page' : undefined}
+                  onClick={() => setAccessNotice(false)}
+                >
+                  <FiUsers aria-hidden="true" />
+                  <span>Quản lý nhà cung cấp</span>
+                </Link>
+              </div>
+            )}
+          </div>
           <Link
             href="/statistics"
             className={`inv-nav-link ${pathname.startsWith('/statistics') ? 'is-active' : ''}`}

@@ -7,6 +7,8 @@ import {
   emptyActionSchema,
   inventoryQuerySchema,
   rejectDocumentSchema,
+  supplierListQuerySchema,
+  supplierSchema,
 } from './Inventory.schema.js';
 
 function parse(schema, data) {
@@ -42,6 +44,27 @@ export async function lowStock(req, res) {
 
 export async function listSuppliers(req, res) {
   ok(res, await service.listSuppliers());
+}
+
+export async function searchSuppliers(req, res) {
+  ok(res, await service.searchSuppliers(parse(supplierListQuerySchema, req.query)));
+}
+
+export async function getSupplier(req, res) {
+  ok(res, await service.getSupplier(parseId(req.params.id, 'Mã nhà cung cấp')));
+}
+
+export async function createSupplier(req, res) {
+  ok(res, await service.createSupplier(parse(supplierSchema, req.body)), 201);
+}
+
+export async function updateSupplier(req, res) {
+  const id = parseId(req.params.id, 'Mã nhà cung cấp');
+  ok(res, await service.updateSupplier(id, parse(supplierSchema, req.body)));
+}
+
+export async function deleteSupplier(req, res) {
+  ok(res, await service.deleteSupplier(parseId(req.params.id, 'Mã nhà cung cấp')));
 }
 
 export async function listReceipts(req, res) {

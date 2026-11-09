@@ -4,11 +4,17 @@ import * as controller from './InventoryController.js';
 
 const router = Router();
 
-router.use(['/inventory', '/stock-receipts', '/stock-issues'], authenticate);
+router.use(['/inventory', '/stock-receipts', '/stock-issues', '/suppliers'], authenticate);
 
 router.get('/inventory/low-stock', requirePermission('INVENTORY_VIEW'), controller.lowStock);
 router.get('/inventory', requirePermission('INVENTORY_VIEW'), controller.inventory);
 router.get('/inventory/suppliers', requirePermission('INVENTORY_VIEW'), controller.listSuppliers);
+
+router.get('/suppliers', requirePermission('SUPPLIER_MANAGE'), controller.searchSuppliers);
+router.post('/suppliers', requirePermission('SUPPLIER_MANAGE'), controller.createSupplier);
+router.get('/suppliers/:id', requirePermission('SUPPLIER_MANAGE'), controller.getSupplier);
+router.patch('/suppliers/:id', requirePermission('SUPPLIER_MANAGE'), controller.updateSupplier);
+router.delete('/suppliers/:id', requirePermission('SUPPLIER_MANAGE'), controller.deleteSupplier);
 
 router.get('/stock-receipts', requirePermission('INVENTORY_VIEW'), controller.listReceipts);
 router.post('/stock-receipts', requirePermission('STOCK_RECEIPT_CREATE'), controller.createReceipt);

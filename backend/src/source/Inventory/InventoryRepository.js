@@ -114,6 +114,73 @@ export async function findActiveSuppliers() {
   });
 }
 
+const supplierSelect = {
+  id: true,
+  name: true,
+  businessRegistNum: true,
+  address: true,
+  phoneNumber: true,
+  email: true,
+  contactPerson: true,
+  bankNumber: true,
+  bankName: true,
+  createdAt: true,
+};
+
+export async function findSuppliers({ search, searchBy, page, pageSize }) {
+  const searchFields = searchBy === 'all'
+    ? ['name', 'businessRegistNum', 'phoneNumber']
+    : [searchBy];
+  const where = {
+    isActive: true,
+    ...(search && {
+      OR: searchFields.map((field) => ({
+        [field]: { contains: search, mode: 'insensitive' },
+      })),
+    }),
+  };
+  const [items, total] = await Promise.all([
+    prisma.supplier.findMany({
+      where,
+      select: supplierSelect,
+      orderBy: { name: 'asc' },
+      ...paging({ page, pageSize }),
+    }),
+    prisma.supplier.count({ where }),
+  ]);
+  return paged(items, total, { page, pageSize });
+}
+
+export function findSupplierById(id) {
+  return prisma.supplier.findFirst({
+    where: { id, isActive: true },
+    select: supplierSelect,
+  });
+}
+
+export function createSupplier(data) {
+  return prisma.supplier.create({
+    data,
+    select: supplierSelect,
+  });
+}
+
+export function updateSupplier(id, data) {
+  return prisma.supplier.update({
+    where: { id },
+    data,
+    select: supplierSelect,
+  });
+}
+
+export function deactivateSupplier(id) {
+  return prisma.supplier.update({
+    where: { id },
+    data: { isActive: false },
+    select: { id: true },
+  });
+}
+
 export async function getReceiptById(id) {
   return prisma.stockReceipt.findUnique({
     where: { id },

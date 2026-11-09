@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   FiAlertTriangle,
   FiArrowDownCircle,
@@ -64,7 +65,8 @@ function escapeCsv(value) {
   return `"${String(value ?? '').replaceAll('"', '""')}"`;
 }
 
-export default function InventoryWorkspace() {
+export default function InventoryWorkspace({ initialView = 'dashboard', initialStatus = 'all' }) {
+  const router = useRouter();
   const user = useInventoryUser();
   const permissions = user.permissions || [];
   const canCreateReceipt = permissions.includes('STOCK_RECEIPT_CREATE');
@@ -82,11 +84,13 @@ export default function InventoryWorkspace() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [pageError, setPageError] = useState('');
-  const [view, setView] = useState('dashboard');
+  const [view, setView] = useState(
+    initialView === 'pending' && user.role === 'STAFF' ? 'dashboard' : initialView,
+  );
   const [category, setCategory] = useState('Tất cả');
   const [search, setSearch] = useState('');
   const [requestType, setRequestType] = useState('all');
-  const [requestStatus, setRequestStatus] = useState('all');
+  const [requestStatus, setRequestStatus] = useState(initialStatus);
   const [period, setPeriod] = useState('all');
   const [periodNow, setPeriodNow] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
@@ -96,6 +100,12 @@ export default function InventoryWorkspace() {
   const [activeProduct, setActiveProduct] = useState(null);
   const [adjustingProduct, setAdjustingProduct] = useState(null);
   const [activeDocument, setActiveDocument] = useState(null);
+
+  useEffect(() => {
+    if (initialView === 'pending' && user.role === 'STAFF') {
+      router.replace('/inventory');
+    }
+  }, [initialView, router, user.role]);
 
   const fetchData = useCallback(() => Promise.all([
     apiGet(`/inventory?page=1&pageSize=${pageSize}`),
@@ -236,18 +246,22 @@ export default function InventoryWorkspace() {
 
   function finishCreate() {
     setCreateOpen(false);
-    setView(canAccessRequests ? 'pending' : 'inventory');
-    setSearch('');
+    changeView(canAccessRequests ? 'pending' : 'inventory');
     refreshData();
   }
 
-  function changeView(nextView) {
-    if (nextView === 'pending' && !canAccessRequests) return;
+  function changeView(nextView, nextStatus = 'all') {
+    if (nextView === 'pending' && user.role === 'STAFF') return;
     setView(nextView);
     setSearch('');
     setCategory('Tất cả');
     setRequestType('all');
-    setRequestStatus('all');
+    setRequestStatus(nextStatus);
+    const query = new URLSearchParams();
+    if (nextView !== 'dashboard') query.set('view', nextView);
+    if (nextStatus !== 'all') query.set('status', nextStatus);
+    const queryString = query.toString();
+    router.push(queryString ? `/inventory?${queryString}` : '/inventory');
   }
 
   function chooseAdjustment(kind) {
@@ -354,7 +368,7 @@ export default function InventoryWorkspace() {
         <InventoryDashboard
           onOpenInventory={() => changeView('inventory')}
           onOpenRequests={() => changeView('pending')}
-          onOpenSuppliers={() => changeView('suppliers')}
+          onOpenSuppliers={() => router.push('/inventory/suppliers')}
           supplierCount={suppliers.length}
           canAccessRequests={canAccessRequests}
         />
@@ -367,8 +381,8 @@ export default function InventoryWorkspace() {
           <div className="inv-metric-grid inv-metric-grid-four">
             <MetricCard icon={<FiPackage />} value={documents.length} title="Tổng yêu cầu" subtitle="Phiếu nhập và phiếu xuất" tone="blue" onClick={() => setRequestStatus('all')} />
             <MetricCard icon={<FiRefreshCw />} value={pendingDocuments.length} title="Đang xử lý" subtitle="Cần xem xét" tone="orange" onClick={() => { changeView('pending'); }} />
-            <MetricCard icon={<FiCheck />} value={documents.filter((doc) => doc.status === 'APPROVED').length} title="Đã duyệt" subtitle="Hoàn tất xử lý" tone="green" onClick={() => { changeView('processed'); setRequestStatus('APPROVED'); }} />
-            <MetricCard icon={<FiX />} value={documents.filter((doc) => doc.status === 'DENIED').length} title="Từ chối" subtitle="Có lý do đi kèm" tone="red" onClick={() => { changeView('processed'); setRequestStatus('DENIED'); }} />
+            <MetricCard icon={<FiCheck />} value={documents.filter((doc) => doc.status === 'APPROVED').length} title="Đã duyệt" subtitle="Hoàn tất xử lý" tone="green" onClick={() => changeView('processed', 'APPROVED')} />
+            <MetricCard icon={<FiX />} value={documents.filter((doc) => doc.status === 'DENIED').length} title="Từ chối" subtitle="Có lý do đi kèm" tone="red" onClick={() => changeView('processed', 'DENIED')} />
           </div>
         ) : (
           <div className={`inv-metric-grid ${view === 'lowStock' ? 'inv-metric-grid-one' : !canAccessRequests ? 'inv-metric-grid-two' : ''}`}>

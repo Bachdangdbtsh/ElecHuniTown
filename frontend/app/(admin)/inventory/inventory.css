@@ -123,6 +123,137 @@
   background: #fff;
 }
 
+.inv-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.inv-nav-parent-row {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 3px;
+  padding: 0 7px;
+  border-radius: 9px;
+  color: #164638;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.inv-nav-parent-row:hover {
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.inv-nav-parent-row.is-active {
+  color: var(--inv-ink);
+  background: #fff;
+}
+
+.inv-nav-parent-link {
+  display: flex;
+  min-width: 0;
+  min-height: 38px;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.inv-nav-toggle {
+  display: grid;
+  width: 26px;
+  height: 28px;
+  flex: 0 0 26px;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.inv-nav-toggle:hover {
+  background: rgba(22, 70, 56, 0.08);
+}
+
+.inv-nav-toggle svg {
+  width: 15px;
+  height: 15px;
+  transition: transform 160ms ease;
+}
+
+.inv-nav-toggle.is-open svg {
+  transform: rotate(180deg);
+}
+
+.inv-nav-submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 1px 0 3px 20px;
+  animation: inv-submenu-enter 150ms ease-out;
+}
+
+.inv-nav-sub-link {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  color: #205943;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-decoration: none;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.inv-root button.inv-nav-sub-button {
+  width: 100%;
+  border: 0;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.inv-nav-access-notice {
+  padding: 2px 8px 6px;
+  color: #8a4b11;
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.inv-nav-sub-link:hover,
+.inv-nav-sub-link.is-current {
+  color: var(--inv-ink);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.inv-nav-sub-link svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+}
+
+@keyframes inv-submenu-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .inv-nav-disabled {
   color: #205943;
   cursor: not-allowed;
@@ -2399,6 +2530,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .inv-nav-toggle svg,
+  .inv-nav-submenu {
+    animation: none;
+    transition: none;
+  }
   .inv-root *,
   .inv-root *::before,
   .inv-root *::after {

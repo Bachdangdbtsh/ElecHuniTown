@@ -1,7 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { env } from '../../config/env.js';
 import { AppError } from '../../common/error/AppError.js';
-import { env } from '../../config/env.js';
 import * as service from './auth.service.js';
 import {
   registerSchema,

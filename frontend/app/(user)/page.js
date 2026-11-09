@@ -11,7 +11,7 @@ export default function Home() {
   useEffect(() => {
     if (featureProducts != null && suggestProducts != null)
       return;
-    fetch("http://localhost:4000/", {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_URL) || "http://localhost:4000"}/`, {
       method: "POST",
       credentials: "include",
     })
@@ -33,7 +33,7 @@ export default function Home() {
             ))}
           </div>
           <div className="view-more">
-            <Link href="#" className="view-more-button">Xem thêm</Link>
+            <Link href="/search?isFeature=true" className="view-more-button">Xem thêm</Link>
 
           </div>
         </div>
@@ -45,7 +45,7 @@ export default function Home() {
             ))}
           </div>
           <div className="view-more">
-            <Link href="#" className="view-more-button">Xem thêm</Link>
+            <Link href="/search?isSuggest=true" className="view-more-button">Xem thêm</Link>
           </div>
         </div>
 

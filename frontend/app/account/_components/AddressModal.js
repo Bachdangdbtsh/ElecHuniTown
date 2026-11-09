@@ -31,7 +31,7 @@ export default function AddressModal({ initialData, isOpen, onClose, onSave, err
     e.preventDefault();
     onSave({
       recipientName,
-      recipientPhone,
+      recipientPhoneNumber:recipientPhone,
       address,
       recipientType,
       isDefault,

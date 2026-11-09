@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useApi } from '../_lib/useApi';
-import AsyncSection from '../_components/AsyncSecction';
+import AsyncSection from '../_components/AsyncSection';
 import { apiPut } from '@/lib/api';
 
 export default function AdminRolesPage() {
@@ -10,6 +10,8 @@ export default function AdminRolesPage() {
   const [selectedRoleId, setSelectedRoleId] = useState(null);
   const [activePerms, setActivePerms] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [statusMsg, setStatusMsg] = useState('');
+  const [statusErr, setStatusErr] = useState('');
 
   function handleSelectRole(role) {
     setSelectedRoleId(role.id);
@@ -30,14 +32,16 @@ export default function AdminRolesPage() {
   async function handleSavePermissions() {
     if (!selectedRoleId || !activePerms) return;
     setSaving(true);
+    setStatusMsg('');
+    setStatusErr('');
     try {
       await apiPut(`/roles/${selectedRoleId}/permissions`, {
         permissionIds: Array.from(activePerms),
       });
-      alert('Cập nhật phân quyền thành công!');
+      setStatusMsg('Cập nhật phân quyền thành công.');
       matrixState.reload();
     } catch (err) {
-      alert(err.message);
+      setStatusErr(err.message);
     } finally {
       setSaving(false);
     }
@@ -46,6 +50,8 @@ export default function AdminRolesPage() {
   return (
     <div>
       <div style={{ marginBottom: 20 }}>
+        {statusMsg && <div className="auth-success" style={{ marginBottom: 12 }}>{statusMsg}</div>}
+        {statusErr && <div className="auth-error" style={{ marginBottom: 12 }}>{statusErr}</div>}
         <h1 style={{ fontSize: 28, fontWeight: 800 }}>Phân quyền truy cập</h1>
         <p style={{ fontSize: 14, color: 'var(--muted)', marginTop: 4 }}>
           Cấu hình quyền hạn chức năng theo từng vai trò trong hệ thống

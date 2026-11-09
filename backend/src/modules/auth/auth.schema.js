@@ -1,5 +1,18 @@
 import { z } from 'zod';
 
+/**
+ * Password policy (e-commerce tối thiểu):
+ * - ≥ 8 ký tự
+ * - Có chữ thường, chữ hoa, số
+ * (Ký tự đặc biệt khuyến nghị, chưa bắt buộc để khớp UX mockup "tối thiểu 8 ký tự")
+ */
+const passwordPolicy = z
+  .string()
+  .min(8, 'Mật khẩu phải có ít nhất 8 ký tự')
+  .regex(/[a-z]/, 'Mật khẩu phải có ít nhất một chữ thường')
+  .regex(/[A-Z]/, 'Mật khẩu phải có ít nhất một chữ hoa')
+  .regex(/[0-9]/, 'Mật khẩu phải có ít nhất một chữ số');
+
 export const registerSchema = z
   .object({
     fullName: z.string().trim().min(2, 'Họ và tên phải có ít nhất 2 ký tự'),
@@ -10,7 +23,7 @@ export const registerSchema = z
       .regex(/^(0|\+84)[3|5|7|8|9][0-9]{8}$/, 'Số điện thoại không hợp lệ')
       .optional()
       .or(z.literal('')),
-    password: z.string().min(8, 'Mật khẩu phải có ít nhất 8 ký tự'),
+    password: passwordPolicy,
     confirmPassword: z.string().min(8, 'Xác nhận mật khẩu phải có ít nhất 8 ký tự'),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -31,7 +44,7 @@ export const resetPasswordSchema = z
   .object({
     email: z.string().trim().email('Email không đúng định dạng'),
     token: z.string().trim().min(1, 'Mã xác thực không được để trống'),
-    newPassword: z.string().min(8, 'Mật khẩu mới phải có ít nhất 8 ký tự'),
+    newPassword: passwordPolicy,
     confirmPassword: z.string().min(8, 'Xác nhận mật khẩu phải có ít nhất 8 ký tự'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -42,7 +55,7 @@ export const resetPasswordSchema = z
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, 'Vui lòng nhập mật khẩu hiện tại'),
-    newPassword: z.string().min(8, 'Mật khẩu mới phải có ít nhất 8 ký tự'),
+    newPassword: passwordPolicy,
     confirmPassword: z.string().min(8, 'Xác nhận mật khẩu phải có ít nhất 8 ký tự'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {

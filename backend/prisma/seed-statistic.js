@@ -70,14 +70,7 @@ const VN_OFFSET_MS = 7 * 3600 * 1000;
 async function cleanup() {
   const like = `${EMAIL_PREFIX}%`;
   const slug = `${SLUG_PREFIX}%`;
-  const hasComment = (
-    await prisma.$queryRaw`
-      SELECT EXISTS (
-        SELECT 1
-        FROM information_schema.tables
-        WHERE table_schema = current_schema() AND table_name = 'Comment'
-      ) AS "exists"`
-  )[0].exists;
+  const hasComment = (await prisma.$queryRaw`SELECT to_regclass('"Comment"') AS t`)[0].t !== null;
   if (hasComment) {
     await prisma.$executeRaw`DELETE FROM "Comment" WHERE "userId" IN (SELECT id FROM "User" WHERE email LIKE ${like})`;
   }

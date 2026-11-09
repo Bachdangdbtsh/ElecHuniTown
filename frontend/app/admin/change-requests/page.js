@@ -1,28 +1,35 @@
 'use client';
 
+import { useState } from 'react';
 import { useApi } from '../_lib/useApi';
-import AsyncSection from '../_components/AsyncSecction';
+import AsyncSection from '../_components/AsyncSection';
 import { apiPatch } from '@/lib/api';
 
 export default function AdminChangeRequestsPage() {
   const requestsState = useApi('/admin/change-requests');
+  const [feedback, setFeedback] = useState('');
+  const [feedbackErr, setFeedbackErr] = useState('');
 
   async function handleReview(id, status) {
     const actionText = status === 'APPROVED' ? 'phê duyệt' : 'từ chối';
     if (!confirm(`Bạn có chắc chắn muốn ${actionText} yêu cầu này?`)) return;
-
+    setFeedback('');
+    setFeedbackErr('');
     try {
-      await apiPatch(`/admin/change-requests/${id}/review`, { status });
-      alert(`Đã ${actionText} thành công!`);
+      const note = window.prompt('Ghi chú (tuỳ chọn):') || undefined;
+      await apiPatch(`/admin/change-requests/${id}/review`, { status, note });
+      setFeedback(`Đã ${actionText} thành công.`);
       requestsState.reload();
     } catch (err) {
-      alert(err.message);
+      setFeedbackErr(err.message);
     }
   }
 
   return (
     <div>
       <div style={{ marginBottom: 20 }}>
+        {feedback && <div className="auth-success" style={{ marginBottom: 12 }}>{feedback}</div>}
+        {feedbackErr && <div className="auth-error" style={{ marginBottom: 12 }}>{feedbackErr}</div>}
         <h1 style={{ fontSize: 28, fontWeight: 800 }}>Yêu cầu thay đổi thông tin</h1>
         <p style={{ fontSize: 14, color: 'var(--muted)', marginTop: 4 }}>
           Xét duyệt các yêu cầu cập nhật thông tin tài khoản từ người dùng

@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import { invalidateUserSessions } from '../../common/sessionInvalidation.js';
 import { AppError } from '../../common/error/AppError.js';
 import * as repo from './admin.repository.js';
 
@@ -140,7 +141,11 @@ export async function toggleUserStatus(targetUserId, currentAdminId, payload) {
     throw new AppError(404, 'USER_NOT_FOUND', 'Người dùng cần thao tác không tồn tại');
   }
 
-  return repo.updateUserActiveStatus(targetUserId, payload.isActive);
+  const updated = await repo.updateUserActiveStatus(targetUserId, payload.isActive);
+  if (payload.isActive === false) {
+    invalidateUserSessions(targetUserId);
+  }
+  return updated;
 }
 
 export async function getPendingChangeRequests() {

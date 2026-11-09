@@ -76,3 +76,12 @@ export async function updateRolePermissions({ adminId, roleId, permissionIds }) 
     });
   });
 }
+
+export async function findPermissionCodesByIds(ids) {
+  if (!ids?.length) return [];
+  const rows = await prisma.permission.findMany({
+    where: { id: { in: ids } },
+    select: { code: true },
+  });
+  return rows.map((r) => r.code);
+}

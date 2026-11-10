@@ -41,24 +41,31 @@ const getMyCart = async (userId) => {
 
 router.post("/", async (req, res) => {
   try {
+    const limit = 10;
+    const featurePage = Math.max(1, Number.parseInt(req.query.featurePage, 10) || 1);
+    const suggestPage = Math.max(1, Number.parseInt(req.query.suggestPage, 10) || 1);
     const productInclude = {
       category: { select: { id: true, name: true, slug: true, imageUrl: true } },
       pictures: { select: { url: true } },
       tags: { select: { tag: true } },
     };
-    const [featureProducts, suggestProducts] = await Promise.all([
+    const [featureProducts, suggestProducts, featureTotal, suggestTotal] = await Promise.all([
       prisma.product.findMany({
         where: { isFeature: true, status: "ACTIVE" },
         include: productInclude,
         orderBy: { createdAt: "desc" },
-        take: 6,
+        take: limit,
+        skip: (featurePage - 1) * limit,
       }),
       prisma.product.findMany({
         where: { status: "ACTIVE" },
         include: productInclude,
         orderBy: { createdAt: "asc" },
-        take: 6,
+        take: limit,
+        skip: (suggestPage - 1) * limit,
       }),
+      prisma.product.count({ where: { isFeature: true, status: "ACTIVE" } }),
+      prisma.product.count({ where: { status: "ACTIVE" } }),
     ]);
 
     res.json({
@@ -66,6 +73,8 @@ router.post("/", async (req, res) => {
       message: "Lấy thành công",
       featureProducts,
       suggestProducts,
+      featureTotalPages: Math.ceil(featureTotal / limit),
+      suggestTotalPages: Math.ceil(suggestTotal / limit),
     });
   } catch (err) {
     res.status(500).json({ code: "error", message: err.message });
@@ -836,22 +845,24 @@ router.post("/comment/create", async (req, res) => {
 router.post("/search", async (req, res) => {
   try {
     let title = "";
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 9;
-    const skip = page > 0 ? (page - 1) * limit : 0;
-    let whereCondition = {}
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
+    const skip = (page - 1) * limit;
+    let whereCondition = { status: "ACTIVE" }
     let orderCondition = { createdAt: 'desc' }
     if (req.query.isFeature === "true") {
       whereCondition.isFeature = true;
       title = "Sản phẩm hot"
     }
-    if (req.query.key != "null") {
-      const keyword = slugify(req.query.key);
+    if (typeof req.query.key === 'string' && req.query.key.trim() && req.query.key !== 'null') {
+      const searchTerm = req.query.key.trim();
+      const keyword = slugify(searchTerm);
       title = `Kết quả tìm kiếm: ${req.query.key}`
-      whereCondition.slug = {
-        contains: keyword,       // Tìm slug có chứa keyword
-        mode: 'insensitive',     // Không phân biệt chữ hoa/thường 
-      }
+      whereCondition.OR = [
+        { productName: { contains: searchTerm, mode: 'insensitive' } },
+        { slug: { contains: keyword, mode: 'insensitive' } },
+        { category: { name: { contains: searchTerm, mode: 'insensitive' } } },
+      ];
     }
     if (req.query.tag && req.query.tag !== "null") {
       whereCondition.tags = {

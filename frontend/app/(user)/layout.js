@@ -1,7 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./userstyle.css"
-import { CiHeart } from "react-icons/ci";
-import { IoCartOutline } from "react-icons/io5";
+import "./shop-enhancements.css";
 import { FaFacebook } from "react-icons/fa";
 import { FaTwitter } from "react-icons/fa";
 import { FaInstagram } from "react-icons/fa";
@@ -9,7 +8,7 @@ import { FaYoutube } from "react-icons/fa";
 import Link from "next/link";
 import { FaFacebookF } from "react-icons/fa";
 import CategoryList from "./categoryList";
-import CartCount from "./component/CartCount";
+import ShopHeader from "./component/ShopHeader";
 import { Toaster } from 'sonner';
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,31 +30,7 @@ export default function RootLayout({
 }) {
   return (
     <>
-        <div className='header'>
-          <div className="container">
-            <Link href="/" className='logo'>
-              <img src="/Container.svg"></img>
-              <div className="brand">ElecHuniTown</div>
-            </Link>
-            <div className="search">
-              <input placeholder="Tìm sản phẩm, danh mục"></input>
-            </div>
-            <div className="small-icon">
-              <CiHeart size="24px" />
-              <Link className="cart" href="/cart">
-                <IoCartOutline size="24px" />
-                <CartCount />
-              </Link>
-              <Link href="/login" className="login">
-                Đăng nhập
-              </Link>
-              <Link href="/register" className="register">
-                Đăng ký
-              </Link>
-            </div>
-          </div>
-
-        </div>
+        <ShopHeader />
         <CategoryList></CategoryList>
         <div className="main-content">
           <div className='container'>
@@ -74,7 +49,7 @@ export default function RootLayout({
             </div>
             <div className="end-footer">
               <div className="label-homepage">Trang chủ</div>
-              <img className="logo" src="/logo.png">
+              <img className="logo" src="/logo.png" alt="ElecHuniTown">
               </img>
               <div className="social-list">
                 <Link href="#" >

@@ -17,13 +17,13 @@ router.patch('/suppliers/:id', requirePermission('SUPPLIER_MANAGE'), controller.
 router.delete('/suppliers/:id', requirePermission('SUPPLIER_MANAGE'), controller.deleteSupplier);
 
 router.get('/stock-receipts', requirePermission('INVENTORY_VIEW'), controller.listReceipts);
-router.post('/stock-receipts', requirePermission('STOCK_RECEIPT_CREATE'), controller.createReceipt);
+router.post('/stock-receipts', requirePermissionOrRole('STOCK_RECEIPT_CREATE', 'SHOP_OWNER'), controller.createReceipt);
 router.get('/stock-receipts/:id', requirePermission('INVENTORY_VIEW'), controller.getReceipt);
 router.post('/stock-receipts/:id/approve', requirePermission('STOCK_RECEIPT_APPROVE'), controller.approveReceipt);
 router.post('/stock-receipts/:id/reject', requirePermission('STOCK_RECEIPT_APPROVE'), controller.rejectReceipt);
 
 router.get('/stock-issues', requirePermission('INVENTORY_VIEW'), controller.listIssues);
-router.post('/stock-issues', requirePermissionOrRole('STOCK_ISSUE_CREATE', 'STAFF'), controller.createIssue);
+router.post('/stock-issues', requirePermissionOrRole('STOCK_ISSUE_CREATE', 'STAFF', 'SHOP_OWNER'), controller.createIssue);
 router.get('/stock-issues/:id', requirePermission('INVENTORY_VIEW'), controller.getIssue);
 router.post('/stock-issues/:id/approve', requirePermission('STOCK_ISSUE_APPROVE'), controller.approveIssue);
 router.post('/stock-issues/:id/reject', requirePermission('STOCK_ISSUE_APPROVE'), controller.rejectIssue);

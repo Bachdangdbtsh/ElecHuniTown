@@ -5,6 +5,7 @@ import { FaStarHalf } from "react-icons/fa";
 import ListImages from "./swiper";
 import ProductDescription from "./productDescription";
 import RightPart from "./rightPart";
+export const instant = false;
 export const metadata = {
   title: "Trang sản phẩm",
 };

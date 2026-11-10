@@ -69,8 +69,8 @@ export default function InventoryWorkspace({ initialView = 'dashboard', initialS
   const router = useRouter();
   const user = useInventoryUser();
   const permissions = user.permissions || [];
-  const canCreateReceipt = permissions.includes('STOCK_RECEIPT_CREATE');
-  const canCreateIssue = user.role === 'STAFF' || permissions.includes('STOCK_ISSUE_CREATE');
+  const canCreateReceipt = user.role === 'SHOP_OWNER' || permissions.includes('STOCK_RECEIPT_CREATE');
+  const canCreateIssue = ['STAFF', 'SHOP_OWNER'].includes(user.role) || permissions.includes('STOCK_ISSUE_CREATE');
   const canAccessRequests = user.role === 'SHOP_OWNER';
   const canApproveReceipt = canAccessRequests && permissions.includes('STOCK_RECEIPT_APPROVE');
   const canApproveIssue = canAccessRequests && permissions.includes('STOCK_ISSUE_APPROVE');
@@ -94,6 +94,8 @@ export default function InventoryWorkspace({ initialView = 'dashboard', initialS
   const [period, setPeriod] = useState('all');
   const [periodNow, setPeriodNow] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
+  const [createChooserOpen, setCreateChooserOpen] = useState(false);
+  const [createBackProduct, setCreateBackProduct] = useState(null);
   const [createKind, setCreateKind] = useState('');
   const [createProductId, setCreateProductId] = useState('');
   const [exportOpen, setExportOpen] = useState(false);
@@ -238,14 +240,21 @@ export default function InventoryWorkspace({ initialView = 'dashboard', initialS
   function startCreate(initialKind = '', productId = '') {
     if (initialKind === 'receipt' && !canCreateReceipt) return;
     if (initialKind === 'issue' && !canCreateIssue) return;
+    if (!initialKind) {
+      setCreateBackProduct(null);
+      setCreateChooserOpen(true);
+      return;
+    }
     setCreateKind(initialKind);
     setCreateProductId(productId ? String(productId) : '');
     setCreateOpen(true);
+    setCreateChooserOpen(false);
     setActiveProduct(null);
   }
 
   function finishCreate() {
     setCreateOpen(false);
+    setCreateBackProduct(null);
     changeView(canAccessRequests ? 'pending' : 'inventory');
     refreshData();
   }
@@ -266,8 +275,14 @@ export default function InventoryWorkspace({ initialView = 'dashboard', initialS
 
   function chooseAdjustment(kind) {
     if (!adjustingProduct) return;
+    setCreateBackProduct(adjustingProduct);
     startCreate(kind, adjustingProduct.id);
     setAdjustingProduct(null);
+  }
+
+  function chooseCreateKind(kind) {
+    setCreateBackProduct(null);
+    startCreate(kind);
   }
 
   function finishDocumentUpdate() {
@@ -624,6 +639,14 @@ export default function InventoryWorkspace({ initialView = 'dashboard', initialS
           onSelect={chooseAdjustment}
         />
       )}
+      {createChooserOpen && (
+        <ProductAdjustmentModal
+          canCreateReceipt={canCreateReceipt}
+          canCreateIssue={canCreateIssue}
+          onClose={() => setCreateChooserOpen(false)}
+          onSelect={chooseCreateKind}
+        />
+      )}
       {createOpen && (
         <InventoryCreateModal
           products={inventory}
@@ -633,6 +656,11 @@ export default function InventoryWorkspace({ initialView = 'dashboard', initialS
           initialKind={createKind}
           initialProductId={createProductId}
           onClose={() => setCreateOpen(false)}
+          onBack={() => {
+            setCreateOpen(false);
+            if (createBackProduct) setAdjustingProduct(createBackProduct);
+            else setCreateChooserOpen(true);
+          }}
           onCreated={finishCreate}
         />
       )}
@@ -811,16 +839,16 @@ function ProductAdjustmentModal({ product, canCreateReceipt, canCreateIssue, onC
       <section className="inv-modal inv-adjust-modal" role="dialog" aria-modal="true" aria-labelledby="adjust-title">
         <header className="inv-modal-header">
           <div>
-            <p className="inv-eyebrow">ĐIỀU CHỈNH TỒN KHO</p>
-            <h2 id="adjust-title">Chọn thao tác</h2>
-            <p>Chọn loại yêu cầu cần tạo cho sản phẩm này.</p>
+            <p className="inv-eyebrow">{product ? 'ĐIỀU CHỈNH TỒN KHO' : 'QUẢN LÝ KHO HÀNG'}</p>
+            <h2 id="adjust-title">{product ? 'Chọn thao tác' : 'Chọn loại phiếu'}</h2>
+            <p>{product ? 'Chọn loại yêu cầu cần tạo cho sản phẩm này.' : 'Chọn phiếu nhập hoặc phiếu xuất để tiếp tục.'}</p>
           </div>
           <button type="button" className="inv-close-button" onClick={onClose} aria-label="Đóng">
             <FiX aria-hidden="true" />
           </button>
         </header>
 
-        <div className="inv-adjust-product">
+        {product && <div className="inv-adjust-product">
           <span className="inv-product-large-thumb">
             {product.pictures?.[0]?.url
               ? <img src={product.pictures[0].url} alt="" />
@@ -831,7 +859,7 @@ function ProductAdjustmentModal({ product, canCreateReceipt, canCreateIssue, onC
             <strong>{product.productName}</strong>
             <small>Tồn kho hiện tại: {number(product.stock)} sản phẩm</small>
           </span>
-        </div>
+        </div>}
 
         <div className="inv-adjust-actions">
           {actions.map((action) => (

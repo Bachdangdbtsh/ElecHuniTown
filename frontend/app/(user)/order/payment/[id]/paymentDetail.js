@@ -10,15 +10,13 @@ export default function PaymentDetail({ id }) {
   const router=useRouter();
   const [order, setorder] = useState(null);
   const [error, setError] = useState("");
+  const [paying, setPaying] = useState(false);
   const searchParams = useSearchParams();
   const status = searchParams.get("payment");
   useEffect(() => {
-    if(status=="success"){
-      toast.success("Thanh toán thành công")
-    }
-
     fetch(`/api/backend/order/payment/${id}`, {
       method: "GET",
+      credentials: "include",
     })
       .then(res => {
         if (!res.ok) throw new Error(`Không tải được đơn hàng (${res.status})`);
@@ -27,6 +25,7 @@ export default function PaymentDetail({ id }) {
       .then((data) => {
         if (!data.order) throw new Error("Không tìm thấy đơn hàng");
         setorder(data.order);
+        if (status === 'success' && data.order.paymentMethodStatus) toast.success('Thanh toán thành công');
       })
       .catch((cause) => setError(cause.message || "Không tải được đơn hàng"));
   }, [id, status])
@@ -47,12 +46,13 @@ export default function PaymentDetail({ id }) {
     }
   };
   const pay=function(){
+    setPaying(true);
     fetch(`/api/backend/order/pay/${id}`,{
       method:"POST",
+      credentials: "include",
     })
     .then(res=>res.json())
     .then(data=>{
-      console.log(data);
       if(data.code === "success" && data.paymentUrl){
         window.location.assign(data.paymentUrl);
       } else {
@@ -60,6 +60,7 @@ export default function PaymentDetail({ id }) {
       }
     })
     .catch(() => toast.error("Không thể kết nối máy chủ thanh toán"))
+    .finally(() => setPaying(false));
   }
   if (error) return <div role="alert">{error}</div>;
   if (!order) return <div role="status">Đang tải thông tin đơn hàng...</div>;
@@ -85,7 +86,7 @@ export default function PaymentDetail({ id }) {
                       <div className="inner-infor">
                         <div className="label">{product.productName}</div>
                         <div className="product-id">Mã sản phẩm: <strong>{product.id}</strong></div>
-                        <div className="new-price product-id">Giá sản phẩm <strong className="color-red">{product.newPrice?.toLocaleString("vi-VN")}</strong></div>
+                        <div className="new-price product-id">Giá đã đặt <strong className="color-red">{item.price?.toLocaleString("vi-VN")}</strong></div>
                         <div className="old-price product-id">Giá niêm yết: <strong>{product.oldPrice?.toLocaleString("vi-VN")}</strong></div>
                       </div>
                     </div>
@@ -93,8 +94,8 @@ export default function PaymentDetail({ id }) {
                       <div className="label">Số Lượng </div>
                       <input type="number" defaultValue={item.quantity} readOnly></input>
                       <div className="price">
-                        <span>1 x </span>
-                        <span className="hl">{product.newPrice?.toLocaleString("vi-VN")}</span>
+                        <span>{item.quantity} x </span>
+                        <span className="hl">{item.price?.toLocaleString("vi-VN")}</span>
                       </div>
                     </div>
                   </div>
@@ -124,6 +125,8 @@ export default function PaymentDetail({ id }) {
       <div className="order-infor">
         <div className="inner-title">Thông tin đơn hàng</div>
         <div className="infor-detail">
+          {order.paymentMethod === 'money' && <div>Đơn hàng đã được ghi nhận. Bạn sẽ thanh toán khi nhận hàng.</div>}
+          {order.paymentMethodStatus && <div>Đơn hàng đã thanh toán thành công qua VNPay.</div>}
           <div>{order.recipient.recipientName}</div>
           <div>{order.recipient.recipientPhoneNumber}</div>
           <div>{order.recipient.address}</div>
@@ -140,9 +143,9 @@ export default function PaymentDetail({ id }) {
 
         </div>
         {
-          (order.paymentMethodStatus==false&&order.paymentMethod!="money")&&
+          (!order.paymentMethodStatus && order.paymentMethod === 'bank') &&
           <div className="payment">
-            <button onClick={()=>{pay()}}>THANH TOÁN</button>
+            <button onClick={pay} disabled={paying}>{paying ? 'ĐANG CHUYỂN ĐẾN VNPAY...' : 'THANH TOÁN QUA VNPAY'}</button>
           </div>
         }
       </div>

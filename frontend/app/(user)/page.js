@@ -2,25 +2,25 @@
 "use client";
 import Link from "next/link";
 import Product from "./component/product"
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 export default function Home() {
   const [featureProducts, setfeatureProducts] = useState(null);
   const [suggestProducts, setsuggestProducts] = useState(null);
-  const fetched = useRef(false);
 
   useEffect(() => {
-    if (featureProducts != null && suggestProducts != null)
-      return;
-    fetch("http://localhost:4000/", {
+    let active = true;
+    fetch("/api/backend", {
       method: "POST",
       credentials: "include",
     })
       .then(res => res.json())
       .then(data => {
-        console.log(data);
-        setfeatureProducts(data.featureProducts);
-        setsuggestProducts(data.suggestProducts);
+        if (active) {
+          setfeatureProducts(data.featureProducts);
+          setsuggestProducts(data.suggestProducts);
+        }
       })
+    return () => { active = false; };
   }, [])
   return (
     <>

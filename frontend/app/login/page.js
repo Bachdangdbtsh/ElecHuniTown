@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/api';
 import '../customer.css';
+
+const subscribe = () => () => {};
+const getReturnToCart = () => new URLSearchParams(window.location.search).get('returnTo') === '/cart';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,6 +15,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const returnToCart = useSyncExternalStore(subscribe, getReturnToCart, () => false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -26,7 +30,8 @@ export default function LoginPage() {
       } else if (role === 'STAFF' || role === 'SHOP_OWNER') {
         router.push('/inventory');
       } else {
-        router.push('/account/overview');
+        const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+        router.push(returnTo === '/cart' ? '/cart' : '/account/overview');
       }
     } catch (err) {
       setError(err.message);
@@ -47,7 +52,7 @@ export default function LoginPage() {
           <Link href="/login" className="auth-tab active">
             Đăng nhập
           </Link>
-          <Link href="/register" className="auth-tab">
+          <Link href={returnToCart ? '/register?returnTo=%2Fcart' : '/register'} className="auth-tab">
             Đăng ký
           </Link>
         </div>

@@ -276,6 +276,9 @@ button {
 }
 
 .product-wrapper .add-cart {
+  display: block;
+  width: 100%;
+  border: 0;
   padding: 9px 32px;
   border-radius: 8px;
   background-color: #2F7562;
@@ -285,6 +288,8 @@ button {
   text-align: center;
   cursor: pointer;
 }
+
+.product-wrapper .add-cart:disabled { opacity: .6; cursor: not-allowed; }
 
 .product-wrapper .product-footer {
   display: flex;
@@ -1153,6 +1158,34 @@ button {
 }
 
 /* end cart-page */
+
+.checkout-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: #102c20a6;
+}
+
+.checkout-confirm {
+  width: min(100%, 520px);
+  display: grid;
+  gap: 12px;
+  padding: 28px;
+  border-radius: 16px;
+  color: #24352c;
+  background: #fff;
+  box-shadow: 0 16px 50px #0003;
+}
+
+.checkout-confirm h2 { color: #2f7562; }
+.checkout-confirm ul { padding-left: 22px; }
+.checkout-confirm-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+.checkout-confirm-actions button { padding: 10px 15px; border-radius: 8px; cursor: pointer; }
+.checkout-confirm-actions button:last-child { color: #fff; background: #2f7562; }
+.checkout-confirm-actions button:disabled { opacity: .6; cursor: wait; }
 
 /* order-detail-page */
 .order-detail-page .order-infor {

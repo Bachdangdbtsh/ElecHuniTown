@@ -9,6 +9,7 @@ import { FaYoutube } from "react-icons/fa";
 import Link from "next/link";
 import { FaFacebookF } from "react-icons/fa";
 import CategoryList from "./categoryList";
+import CartCount from "./component/CartCount";
 import { Toaster } from 'sonner';
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,7 +44,7 @@ export default function RootLayout({
               <CiHeart size="24px" />
               <Link className="cart" href="/cart">
                 <IoCartOutline size="24px" />
-                <div>3</div>
+                <CartCount />
               </Link>
               <Link href="/login" className="login">
                 Đăng nhập

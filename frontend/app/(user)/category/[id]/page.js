@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Category from "./category";
+export const instant = false;
 
 export const metadata = {
   title: "Trang danh mục",

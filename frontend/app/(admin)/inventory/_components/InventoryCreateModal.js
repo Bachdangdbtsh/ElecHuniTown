@@ -7,9 +7,9 @@ import { apiPost } from '@/lib/api';
 
 const initialLine = () => ({ productId: '', quantity: '1', unitCost: '' });
 
-export default function InventoryCreateModal({ products, suppliers, permissions, userRole, initialKind = '', initialProductId = '', onClose, onCreated }) {
-  const canCreateReceipt = permissions.includes('STOCK_RECEIPT_CREATE');
-  const canCreateIssue = userRole === 'STAFF' || permissions.includes('STOCK_ISSUE_CREATE');
+export default function InventoryCreateModal({ products, suppliers, permissions, userRole, initialKind = '', initialProductId = '', onClose, onBack, onCreated }) {
+  const canCreateReceipt = userRole === 'SHOP_OWNER' || permissions.includes('STOCK_RECEIPT_CREATE');
+  const canCreateIssue = ['STAFF', 'SHOP_OWNER'].includes(userRole) || permissions.includes('STOCK_ISSUE_CREATE');
   const defaultKind = initialKind === 'receipt' && canCreateReceipt
     ? 'receipt'
     : initialKind === 'issue' && canCreateIssue
@@ -83,6 +83,7 @@ export default function InventoryCreateModal({ products, suppliers, permissions,
       <section className="inv-modal inv-create-modal" role="dialog" aria-modal="true" aria-labelledby="create-title">
         <header className="inv-modal-header">
           <div>
+            {onBack && <button type="button" className="inv-modal-back" onClick={onBack}>← Quay lại chọn loại phiếu</button>}
             <p className="inv-eyebrow">QUẢN LÝ KHO HÀNG</p>
             <h2 id="create-title">Tạo phiếu nhập / xuất kho</h2>
             <p>Phiếu sẽ được gửi đến chủ cửa hàng để kiểm tra và duyệt.</p>

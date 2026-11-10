@@ -4,7 +4,6 @@ import Link from "next/link";
 
 import {addCart} from "./editCart";
 export default function Product({ data }) {
-  console.log(data);
   if (!data) {
     return (<></>);
   }
@@ -39,11 +38,11 @@ export default function Product({ data }) {
       <div className="add-cart" onClick={(e) => { addCartFormat(e) }}>Thêm vào giỏ hàng</div>
         <div className="product-footer">
           <div className="rate">
-            <div className="point">4.9</div>
+            <div className="point">{data.rate}</div>
             <FaStar color="#FFD600" />
           </div>
           <div className="sold">
-            Đã bán 15.9k
+            Đã bán {data.sold}
           </div>
         </div>
     </div>

@@ -20,6 +20,7 @@ export default function LoginPage() {
 
     try {
       const data = await apiPost('/auth/login', { email, password });
+      localStorage.setItem("isLoggedIn", "true");
       const role = data.user.role;
       if (role === 'ADMIN') {
         router.push('/admin/dashboard');

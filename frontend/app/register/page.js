@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/api';
-import '../customer.css';
+import '../eht-ui.css';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -35,8 +35,7 @@ export default function RegisterPage() {
         confirmPassword,
       });
 
-      alert('Đăng ký thành công! Vui lòng đăng nhập.');
-      router.push('/login');
+      router.push('/login?registered=1');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -48,6 +47,7 @@ export default function RegisterPage() {
     <div className="auth-wrap">
       <div className="auth-card">
         <div className="auth-header">
+          <div className="auth-brand-mark">EH</div>
           <p className="auth-logo">ElecHuniTown</p>
           <p className="auth-subtitle">Thiết bị gia dụng thông minh cho cuộc sống sinh viên</p>
         </div>
@@ -108,7 +108,7 @@ export default function RegisterPage() {
               id="reg-pass"
               type="password"
               className="form-control"
-              placeholder="Tạo mật khẩu"
+              placeholder="Tối thiểu 8 ký tự, gồm hoa, thường, số"
               required
               minLength={8}
               value={password}

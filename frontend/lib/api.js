@@ -41,7 +41,16 @@ async function toError(res) {
   } catch {
     /* phản hồi không phải JSON */
   }
-  return new ApiError(body?.message ?? `Lỗi máy chủ (${res.status})`, { code: body?.code, status: res.status });
+  // Backend AppError: { code, message }; success wrapper: { { code: 'success', data }
+  const message =
+    body?.message ||
+    body?.error ||
+    (res.status === 401
+      ? 'Bạn chưa đăng nhập hoặc phiên đã hết hạn'
+      : res.status === 403
+        ? 'Bạn không có quyền thực hiện thao tác này'
+        : `Lỗi máy chủ (${res.status})`);
+  return new ApiError(message, { code: body?.code, status: res.status });
 }
 
 export async function apiGet(path, signal) {

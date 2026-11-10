@@ -7,7 +7,7 @@ export default function CategoryList() {
   const [activeId, setActiveId] = useState(null);
   const [children, setchildren] = useState(null);
   useEffect(() => {
-    fetch("http://localhost:4000/header/category/list", {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_URL) || "http://localhost:4000"}/header/category/list`, {
       method: "POST",
     })
       .then(res => res.json())

@@ -3,55 +3,52 @@
 import Link from 'next/link';
 import { useApi } from '../_lib/useApi';
 import AsyncSection from '../_components/AsyncSection';
+import ShellTopBar from '../_components/ShellTopBar';
 
 export default function AccountOverviewPage() {
   const userState = useApi('/auth/me');
   const addressesState = useApi('/recipients');
+  const addressCount = Array.isArray(addressesState.data) ? addressesState.data.length : null;
 
   return (
-    <div>
-      <h1 className="cust-title">Tổng quan tài khoản</h1>
-      <p className="cust-subtitle">Xem tóm tắt thông tin hoạt động gần đây của bạn</p>
-
-      <AsyncSection state={userState} minHeight={200}>
-        {(user) => (
-          <div className="cust-card-box">
-            <h2 style={{ fontSize: 18, fontWeight: 700 }}>Chào mừng trở lại, {user.fullName}!</h2>
-            <p style={{ fontSize: 14, color: 'var(--cust-muted)', marginTop: 4 }}>
-              Email: {user.email} | Số điện thoại: {user.phone || 'Chưa cập nhật'}
-            </p>
-
-            <div className="cust-grid-kpi">
-              <div className="cust-kpi-item">
-                <p className="cust-kpi-num">{addressesState.data?.length ?? '—'}</p>
-                <p className="cust-kpi-lbl">Địa chỉ nhận hàng</p>
+    <>
+      <ShellTopBar
+        title="Tổng quan"
+        subtitle="Tóm tắt tài khoản của bạn"
+        user={userState.data}
+      />
+      <div className="eht-content">
+        <AsyncSection state={userState} minHeight={160}>
+          {(user) => (
+            <>
+              <div className="eht-kpi-row">
+                <div className="eht-kpi">
+                  <p className="eht-kpi-num">{addressCount ?? '—'}</p>
+                  <p className="eht-kpi-lbl">Địa chỉ nhận hàng</p>
+                </div>
+                <div className="eht-kpi">
+                  <p className="eht-kpi-num" style={{ fontSize: 18 }}>{user.roleName || user.role || '—'}</p>
+                  <p className="eht-kpi-lbl">Vai trò</p>
+                </div>
+                <div className="eht-kpi">
+                  <p className="eht-kpi-num" style={{ fontSize: 18 }}>{user.isActive === false ? 'Khóa' : 'Hoạt động'}</p>
+                  <p className="eht-kpi-lbl">Trạng thái</p>
+                </div>
               </div>
-              <div className="cust-kpi-item">
-                <p className="cust-kpi-num">0</p>
-                <p className="cust-kpi-lbl">Đơn hàng đang giao</p>
+              <div className="eht-card">
+                <h2 className="eht-card-title">Xin chào, {user.fullName}!</h2>
+                <p className="eht-card-desc">{user.email}{user.phone ? ` · ${user.phone}` : ''}</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 18 }}>
+                  <Link href="/account/profile" className="eht-btn eht-btn-primary">Hồ sơ & mật khẩu</Link>
+                  <Link href="/account/addresses" className="eht-btn">Sổ địa chỉ</Link>
+                  <Link href="/account/orders" className="eht-btn">Đơn hàng</Link>
+                  <Link href="/" className="eht-btn">Mua sắm</Link>
+                </div>
               </div>
-              <div className="cust-kpi-item">
-                <p className="cust-kpi-num">0</p>
-                <p className="cust-kpi-lbl">Mã giảm giá</p>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 24 }}>
-              <Link
-                href="/account/addresses"
-                style={{
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: 'var(--cust-primary)',
-                  textDecoration: 'underline',
-                }}
-              >
-                Quản lý sổ địa chỉ giao hàng &rarr;
-              </Link>
-            </div>
-          </div>
-        )}
-      </AsyncSection>
-    </div>
+            </>
+          )}
+        </AsyncSection>
+      </div>
+    </>
   );
 }

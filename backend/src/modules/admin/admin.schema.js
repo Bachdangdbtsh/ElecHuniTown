@@ -12,7 +12,12 @@ export const createStaffUserSchema = z.object({
   roleCode: z.enum(['STAFF', 'SHOP_OWNER'], {
     errorMap: () => ({ message: 'Vai trò chỉ có thể là Nhân viên hoặc Chủ ứng dụng' }),
   }),
-  temporaryPassword: z.string().min(8, 'Mật khẩu tạm thời phải có ít nhất 8 ký tự'),
+  temporaryPassword: z
+    .string()
+    .min(8, 'Mật khẩu tạm thời phải có ít nhất 8 ký tự')
+    .regex(/[a-z]/, 'Mật khẩu phải có chữ thường')
+    .regex(/[A-Z]/, 'Mật khẩu phải có chữ hoa')
+    .regex(/[0-9]/, 'Mật khẩu phải có chữ số'),
 });
 
 export const userQuerySchema = z.object({
@@ -32,6 +37,8 @@ export const reviewChangeRequestSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED'], {
     errorMap: () => ({ message: 'Trạng thái xử lý chỉ có thể là APPROVED hoặc REJECTED' }),
   }),
+  // Ghi chú admin (tuỳ chọn). Chưa có cột DB — chấp nhận để FE gửi, không persist.
+  note: z.string().trim().max(500).optional(),
 });
 
 export const accessAnalyticsQuerySchema = z.object({

@@ -27,8 +27,7 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
         roleCode,
         temporaryPassword,
       });
-      alert('Tạo tài khoản nhân viên thành công!');
-      onSuccess();
+      onSuccess?.();
       onClose();
     } catch (err) {
       setError(err.message);

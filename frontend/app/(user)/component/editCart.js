@@ -1,13 +1,8 @@
 import { toast } from "sonner";
-
 export function addCart(product, quantity) {
   if (!product) return;
-  console.log({
-    productID: product.id,
-    quantity: quantity,
-  })
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  fetch(`${process.env.NEXT_PUBLIC_URL}/cart/add`, {
+  fetch(`${(process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_URL)}/cart/add`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -25,8 +20,9 @@ export function addCart(product, quantity) {
 
       if (data.code == "success") {
         toast.success(data.message);
-        localStorage.setItem("cart", JSON.stringify(data.currentCart));
-
+        if(data.currentCart)
+          localStorage.setItem("cart", JSON.stringify(data.currentCart));
+        window.dispatchEvent(new Event("cartUpdated"));
       }
     })
 }

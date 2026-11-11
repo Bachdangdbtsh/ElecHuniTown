@@ -5,7 +5,6 @@ import { env } from './config/env.js';
 import { prisma } from './lib/prisma.js';
 import { errorHandler } from './common/error/ErrorHandler.js';
 
-import categoryRouter from './source/Category/CategoryRouter.js';
 import router from './router/index.router.js';
 import statisticRoutes from './modules/statistic/statistic.routes.js';
 import authRoutes from './modules/auth/auth.route.js';
@@ -13,14 +12,13 @@ import recipientRoutes from './modules/recipient/recipient.route.js';
 import changeRequestRoutes from './modules/account-change-request/change-request.route.js';
 import adminRoutes from './modules/admin/admin.route.js';
 import roleRoutes from './modules/role/role.route.js';
+import staffRoutes from './modules/staff/staff.route.js';
 
 export const app = express();
 
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
-app.use('/categories', categoryRouter);
-
 app.get('/health', async (req, res) => {
   await prisma.$queryRaw`SELECT 1`;   // kiểm tra kết nối DB
   res.json({ status: 'ok' });
@@ -34,5 +32,6 @@ app.use('/recipients', recipientRoutes);
 app.use('/account-change-requests', changeRequestRoutes);
 app.use('/admin', adminRoutes);
 app.use('/roles', roleRoutes);
+app.use('/staff', staffRoutes);
 app.use('/statistics', statisticRoutes);
 app.use(errorHandler);                 

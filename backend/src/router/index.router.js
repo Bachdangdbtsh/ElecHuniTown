@@ -556,6 +556,31 @@ router.post("/order/create", async (req, res) => {
     }
 
     const newOrder = await prisma.$transaction(async (tx) => {
+      for (const item of cart) {
+        const productId = Number(item.id);
+        const quantity = Number(item.quantity);
+
+        if (!Number.isInteger(productId) || productId <= 0 ||
+            !Number.isInteger(quantity) || quantity <= 0) {
+          throw new Error('Sản phẩm hoặc số lượng không hợp lệ.');
+        }
+
+        const result = await tx.product.updateMany({
+          where: {
+            id: productId,
+            status: 'ACTIVE',
+            stock: { gte: quantity },
+          },
+          data: {
+            stock: { decrement: quantity },
+            sold: { increment: quantity },
+          },
+        });
+
+        if (result.count === 0) {
+          throw new Error('Sản phẩm không tồn tại hoặc không đủ tồn kho.');
+        }
+      }
       const order = await tx.order.create({
         data: {
           customerId: customerId,
@@ -600,7 +625,18 @@ router.post("/order/create", async (req, res) => {
 
   } catch (error) {
     console.error("Lỗi tạo order:", error);
-    return res.status(500).json({ code: "error", message: "Lỗi server khi tạo đơn hàng" });
+
+    const isExpectedOrderError = [
+      'Sản phẩm không tồn tại hoặc không đủ tồn kho.',
+      'Sản phẩm hoặc số lượng không hợp lệ.',
+    ].includes(error.message);
+
+    return res.status(isExpectedOrderError ? 400 : 500).json({
+      code: "error",
+      message: isExpectedOrderError
+        ? error.message
+        : "Lỗi server khi tạo đơn hàng",
+    });
   }
 })
 

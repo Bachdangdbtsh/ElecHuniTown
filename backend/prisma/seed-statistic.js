@@ -70,10 +70,25 @@ const VN_OFFSET_MS = 7 * 3600 * 1000;
 async function cleanup() {
   const like = `${EMAIL_PREFIX}%`;
   const slug = `${SLUG_PREFIX}%`;
-  const hasComment = (await prisma.$queryRaw`SELECT to_regclass('"Comment"') AS t`)[0].t !== null;
+  // Ép ::text vì Prisma không đọc được cột kiểu regclass (lỗi P2010).
+  const hasComment = (await prisma.$queryRaw`SELECT to_regclass('"Comment"')::text AS t`)[0].t !== null;
   if (hasComment) {
     await prisma.$executeRaw`DELETE FROM "Comment" WHERE "userId" IN (SELECT id FROM "User" WHERE email LIKE ${like})`;
   }
+  // Dữ liệu mẫu của UC_50/UC_51 phải xoá trước đơn hàng vì có khoá ngoại tới "Order".
+  await prisma.$executeRaw`DELETE FROM "ReturnRequestItem" WHERE "returnRequestId" IN
+    (SELECT rr.id FROM "ReturnRequest" rr JOIN "Order" o ON o.id = rr."orderId"
+     WHERE o."customerId" IN (SELECT id FROM "User" WHERE email LIKE ${like}))`;
+  await prisma.$executeRaw`DELETE FROM "ReturnImage" WHERE "returnRequestId" IN
+    (SELECT rr.id FROM "ReturnRequest" rr JOIN "Order" o ON o.id = rr."orderId"
+     WHERE o."customerId" IN (SELECT id FROM "User" WHERE email LIKE ${like}))`;
+  await prisma.$executeRaw`DELETE FROM "ReturnRequest" WHERE "orderId" IN
+    (SELECT id FROM "Order" WHERE "customerId" IN (SELECT id FROM "User" WHERE email LIKE ${like}))`;
+  await prisma.$executeRaw`DELETE FROM "StockIssueItem" WHERE "issueId" IN (SELECT id FROM "StockIssue" WHERE code LIKE ${'SEEDSTAT%'})`;
+  await prisma.$executeRaw`DELETE FROM "StockIssue" WHERE code LIKE ${'SEEDSTAT%'}`;
+  await prisma.$executeRaw`DELETE FROM "StockReceiptItem" WHERE "receiptId" IN (SELECT id FROM "StockReceipt" WHERE code LIKE ${'SEEDSTAT%'})`;
+  await prisma.$executeRaw`DELETE FROM "StockReceipt" WHERE code LIKE ${'SEEDSTAT%'}`;
+  await prisma.$executeRaw`DELETE FROM "Supplier" WHERE "businessRegistNum" LIKE ${'SEEDSTAT%'}`;
   await prisma.$executeRaw`DELETE FROM "Order_contain_product" WHERE "orderId" IN
     (SELECT id FROM "Order" WHERE "customerId" IN (SELECT id FROM "User" WHERE email LIKE ${like}))`;
   await prisma.$executeRaw`DELETE FROM "Order" WHERE "customerId" IN (SELECT id FROM "User" WHERE email LIKE ${like})`;
@@ -111,6 +126,38 @@ async function main() {
     p.id = rows[0].id;
   }
 
+  // Nhà cung cấp + phiếu nhập đã duyệt: nguồn tính giá vốn cho UC_50.
+  const supplierId = (
+    await prisma.$queryRaw`
+      INSERT INTO "Supplier" (name, "businessRegistNum", email, "updatedAt")
+      VALUES ('Nhà cung cấp mẫu (thống kê)', 'SEEDSTAT-001', 'seed.stat.supplier@elechunitown.test', NOW())
+      RETURNING id`
+  )[0].id;
+
+  // Người xử lý đơn có sẵn (STAFF/CHỦ/ADMIN) để UC_51 "theo nhân viên" có ý nghĩa.
+  const handlers = (
+    await prisma.$queryRaw`
+      SELECT u.id FROM "User" u JOIN "Role" r ON r.id = u."roleId"
+      WHERE r.code IN ('STAFF', 'SHOP_OWNER', 'ADMIN')
+      ORDER BY u.id`
+  ).map((r) => r.id);
+  const createdById = handlers[0] ?? null;
+
+  if (createdById) {
+    const receiptId = (
+      await prisma.$queryRaw`
+        INSERT INTO "StockReceipt" (code, status, content, "supplierId", "createdById", "createdAt")
+        VALUES ('SEEDSTAT-PN-001', 'APPROVED'::"DocumentStatus", 'Nhập hàng đầu kỳ (dữ liệu mẫu)',
+                ${supplierId}, ${createdById}, ${new Date(Date.now() - (DAYS + 5) * DAY_MS)})
+        RETURNING id`
+    )[0].id;
+    for (const p of PRODUCTS) {
+      await prisma.$executeRaw`
+        INSERT INTO "StockReceiptItem" ("productId", "receiptId", quantity, "unitCost")
+        VALUES (${p.id}, ${receiptId}, ${p.stock}, ${Math.round(p.price * 0.68)})`;
+    }
+  }
+
   // Khách hàng: ngày tạo tài khoản rải đều trong DAYS ngày để "khách hàng mới" có số liệu.
   const hash = await bcrypt.hash('Seed@123', 10);
   const now = Date.now();
@@ -136,6 +183,7 @@ async function main() {
   // Đơn hàng: mỗi ngày 6-14 đơn, giờ đặt 08:00-21:59 (giờ VN).
   const soldMap = new Map(PRODUCTS.map((p) => [p.id, 0]));
   const deliveredItems = []; // để tạo bình luận
+  const deliveredOrders = []; // để tạo yêu cầu hoàn tiền
   let orderCount = 0;
 
   for (let d = DAYS - 1; d >= 0; d--) {
@@ -173,6 +221,21 @@ async function main() {
       )[0].id;
       orderCount++;
 
+      if (handlers.length && (status === 'DELIVERED' || status === 'SHIPPING')) {
+        const handlerId = handlers[orderCount % handlers.length];
+        await prisma.$executeRaw`UPDATE "Order" SET "confirmedById" = ${handlerId} WHERE id = ${orderId}`;
+      }
+      if (status === 'DELIVERED') {
+        const firstLine = [...lineMap.values()][0];
+        deliveredOrders.push({
+          id: orderId,
+          totalCost,
+          productId: firstLine.p.id,
+          unitPrice: firstLine.p.price,
+          refundedAt: new Date(Math.min(now, orderDate.getTime() + 2 * DAY_MS)),
+        });
+      }
+
       for (const { p, qty } of lineMap.values()) {
         await prisma.$executeRaw`
           INSERT INTO "Order_contain_product" ("orderId", "productId", quantity, price)
@@ -182,6 +245,45 @@ async function main() {
           deliveredItems.push({ p, userId: customer.id, at: new Date(orderDate.getTime() + 3 * DAY_MS) });
         }
       }
+    }
+  }
+
+  // Yêu cầu đổi trả đã hoàn tiền (chi phí phát sinh của UC_50).
+  let refundCount = 0;
+  for (const o of deliveredOrders) {
+    if (rand() > 0.06) continue;
+    const refundAmount = Math.round(o.totalCost * 0.1);
+    const rrId = (
+      await prisma.$queryRaw`
+        INSERT INTO "ReturnRequest" ("orderId", status, reason, "rejectReason", "createdAt", "handledAt",
+                                     "refundAmount", "refundCode", "refundedAt")
+        VALUES (${o.id}, 'REFUNDED'::"ReturnStatus", 'Sản phẩm lỗi (dữ liệu mẫu)', '',
+                ${o.refundedAt}, ${o.refundedAt}, ${refundAmount},
+                ${'SEEDSTAT-RF-' + o.id}, ${o.refundedAt})
+        RETURNING id`
+    )[0].id;
+    await prisma.$executeRaw`
+      INSERT INTO "ReturnRequestItem" ("returnRequestId", "productId", condition, quantity, "unitCost")
+      VALUES (${rrId}, ${o.productId}, 'RESALEABLE'::"ReturnItemCondition", 1, ${o.unitPrice})`;
+    refundCount++;
+  }
+
+  // Phiếu xuất hàng hỏng đã duyệt (chi phí phát sinh khác của UC_50).
+  let damagedCount = 0;
+  if (createdById) {
+    const handledAt = new Date(now - 5 * DAY_MS);
+    const issueId = (
+      await prisma.$queryRaw`
+        INSERT INTO "StockIssue" (code, type, status, content, "createdById", "handledById", "createdAt", "handledAt")
+        VALUES ('SEEDSTAT-PX-001', 'DAMAGED'::"StockIssueType", 'APPROVED'::"DocumentStatus",
+                'Hàng hỏng trong kho (dữ liệu mẫu)', ${createdById}, ${createdById}, ${handledAt}, ${handledAt})
+        RETURNING id`
+    )[0].id;
+    for (const p of PRODUCTS.slice(0, 3)) {
+      await prisma.$executeRaw`
+        INSERT INTO "StockIssueItem" ("productId", "issueId", quantity, "unitCost")
+        VALUES (${p.id}, ${issueId}, 1, ${Math.round(p.price * 0.68)})`;
+      damagedCount++;
     }
   }
 
@@ -211,7 +313,8 @@ async function main() {
   }
 
   console.log(
-    `Seed thống kê xong: ${CUSTOMERS} khách, ${PRODUCTS.length} sản phẩm, ${orderCount} đơn` +
+    `Seed thống kê xong: ${CUSTOMERS} khách, ${PRODUCTS.length} sản phẩm, ${orderCount} đơn, ` +
+      `${refundCount} yêu cầu hoàn tiền, ${damagedCount} dòng hàng hỏng` +
       (hasComment ? `, ${commentCount} bình luận` : ' (bỏ qua bình luận: chưa có bảng Comment)'),
   );
 }

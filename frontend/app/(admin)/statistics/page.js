@@ -7,6 +7,7 @@ import PeriodPicker from './_components/PeriodPicker';
 import ExportButton from './_components/ExportButton';
 import KpiPanel from './_components/KpiPanel';
 import RevenueChart from './_components/RevenueChart';
+import ProfitSection from './_components/ProfitSection';
 import ProductRanking from './_components/ProductRanking';
 import RatingSection from './_components/RatingSection';
 
@@ -18,6 +19,7 @@ const getServerRange = () => null;
 
 export default function StatisticsPage() {
   const [picked, setRange] = useState(null);
+  const [groupBy, setGroupBy] = useState('category');
   const initial = useSyncExternalStore(subscribeNone, getClientRange, getServerRange);
   const range = picked ?? initial;
 
@@ -29,6 +31,8 @@ export default function StatisticsPage() {
   const top = useApi('/statistics/top-products', range && { ...range, limit: 5 });
   const slow = useApi('/statistics/slow-products', range && { ...range, limit: 5 });
   const ratings = useApi('/statistics/ratings', range && { ...range, limit: 5 });
+  const profit = useApi('/statistics/profit', range);
+  const breakdown = useApi('/statistics/breakdown', range && { ...range, groupBy, limit: 8 });
 
   return (
     <div className="st-page">
@@ -55,6 +59,19 @@ export default function StatisticsPage() {
         <div className="st-panel">
           <RevenueChart revenueState={revenue} previousState={prevRevenue} bestDate={dashboard.data?.bestDay?.date} />
         </div>
+      </section>
+
+      <section className="st-section" aria-labelledby="sec-profit">
+        <h2 id="sec-profit" className="st-h2">
+          Thống kê lợi nhuận
+        </h2>
+        <p className="st-sub">Doanh thu trừ giá vốn nhập hàng, tiền hoàn trả và chi phí phát sinh</p>
+        <ProfitSection
+          profitState={profit}
+          breakdownState={breakdown}
+          groupBy={groupBy}
+          onChangeGroupBy={setGroupBy}
+        />
       </section>
 
       <section className="st-section" aria-labelledby="sec-sales">

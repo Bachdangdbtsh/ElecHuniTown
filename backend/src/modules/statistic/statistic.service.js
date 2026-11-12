@@ -115,14 +115,70 @@ export async function getRatings(query) {
   }
 }
 
+/** Chuyển số gốc của UC_50 thành các chỉ số lợi nhuận đã tính sẵn. */
+function shapeProfit(t) {
+  const totalCost = t.cogs + t.refunds + t.otherCosts;
+  const profit = t.revenue - totalCost;
+  return {
+    revenue: t.revenue,
+    cogs: t.cogs,
+    refunds: t.refunds,
+    otherCosts: t.otherCosts,
+    totalCost,
+    profit,
+    marginPct: t.revenue ? Math.round((profit / t.revenue) * 1000) / 10 : null,
+  };
+}
+
+/** UC_50: lợi nhuận = doanh thu - giá vốn nhập - chi phí phát sinh, kèm so sánh kỳ trước. */
+export async function getProfit(query) {
+  const range = resolveRange(query);
+  const [cur, prev] = await Promise.all([
+    repo.getProfitTotals(range.start, range.end),
+    repo.getProfitTotals(range.prev.start, range.prev.end),
+  ]);
+  const current = shapeProfit(cur);
+  const previous = shapeProfit(prev);
+  return {
+    period: { from: range.from, to: range.to },
+    previousPeriod: { from: range.prev.from, to: range.prev.to },
+    ...current,
+    orders: cur.orders,
+    changePct: pctChange(current.profit, previous.profit),
+    previous: { profit: previous.profit, marginPct: previous.marginPct },
+    // Số dòng hàng chưa có giá vốn nhập: càng nhiều thì lợi nhuận càng bị tính cao.
+    itemsMissingCost: cur.itemsMissingCost,
+  };
+}
+
+/** UC_51: thống kê theo danh mục / sản phẩm / nhân viên xử lý đơn. */
+export async function getBreakdown(query) {
+  const range = resolveRange(query);
+  const rows = await repo.getBreakdown(range.start, range.end, query.groupBy ?? 'category', query.limit ?? 8);
+  const items = rows.map((r) => {
+    const profit = r.revenue - r.cogs;
+    return {
+      ...r,
+      profit,
+      marginPct: r.revenue ? Math.round((profit / r.revenue) * 1000) / 10 : null,
+    };
+  });
+  return { period: { from: range.from, to: range.to }, groupBy: query.groupBy ?? 'category', items };
+}
+
 /** Gom toàn bộ dữ liệu cho báo cáo Excel (UC_52). */
 export async function getReportData(query) {
   const base = { from: query.from, to: query.to };
-  const [dashboard, revenue, top, slow] = await Promise.all([
+  const [dashboard, revenue, top, slow, profit, byCategory, byStaff, ratings] = await Promise.all([
     getDashboard(base),
     getRevenueSeries({ ...base, groupBy: 'day' }),
     getTopProducts({ ...base, limit: 10 }),
     getSlowProducts({ ...base, limit: 10 }),
+    getProfit(base),
+    getBreakdown({ ...base, groupBy: 'category', limit: 50 }),
+    getBreakdown({ ...base, groupBy: 'staff', limit: 50 }),
+    // Bảng Comment có thể chưa tồn tại: báo cáo vẫn xuất bình thường, chỉ thiếu sheet đánh giá.
+    getRatings({ ...base, limit: 50 }).catch(() => null),
   ]);
-  return { dashboard, revenue, top, slow };
+  return { dashboard, revenue, top, slow, profit, byCategory, byStaff, ratings };
 }

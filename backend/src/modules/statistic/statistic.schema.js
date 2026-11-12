@@ -42,6 +42,24 @@ export const rankQuery = z
     path: ['from'],
   });
 
+// UC_51: gom theo danh mục, sản phẩm hoặc nhân viên xử lý đơn.
+export const breakdownQuery = z
+  .object({
+    from: dateStr.optional(),
+    to: dateStr.optional(),
+    groupBy: z.enum(['category', 'product', 'staff']).default('category'),
+    limit: z.coerce
+      .number({ error: 'limit phải là số' })
+      .int('limit phải là số nguyên')
+      .min(1, 'limit tối thiểu là 1')
+      .max(50, 'limit tối đa là 50')
+      .default(8),
+  })
+  .refine((q) => !q.from || !q.to || q.from <= q.to, {
+    message: 'Ngày bắt đầu không được sau ngày kết thúc',
+    path: ['from'],
+  });
+
 // ---------- Tiện ích thời gian (giờ Việt Nam) ----------
 
 const pad = (n) => String(n).padStart(2, '0');

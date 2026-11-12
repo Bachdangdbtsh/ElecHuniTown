@@ -10,6 +10,8 @@ router.use(authenticate);
 
 router.get('/dashboard', requirePermission(PERMISSIONS.VIEW), c.dashboard); // UC_53
 router.get('/revenue', requirePermission(PERMISSIONS.VIEW), c.revenue); // UC_49
+router.get('/profit', requirePermission(PERMISSIONS.VIEW), c.profit); // UC_50
+router.get('/breakdown', requirePermission(PERMISSIONS.VIEW), c.breakdown); // UC_51
 router.get('/top-products', requirePermission(PERMISSIONS.VIEW), c.topProducts); // UC_54
 router.get('/slow-products', requirePermission(PERMISSIONS.VIEW), c.slowProducts); // UC_54
 router.get('/ratings', requirePermission(PERMISSIONS.VIEW), c.ratings); // UC_55

@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { TZ_OFFSET } from './statistic.constants.js';
+import { AppError } from '../../common/error/AppError.js';
+import { MAX_RANGE_DAYS, TZ_OFFSET } from './statistic.constants.js';
 
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày phải có dạng YYYY-MM-DD');
 
@@ -100,6 +101,13 @@ export function resolveRange({ from, to }) {
     if (f > t) t = f;
   }
   const length = daysBetween(f, t) + 1;
+  if (length > MAX_RANGE_DAYS) {
+    throw new AppError(
+      400,
+      'RANGE_TOO_LARGE',
+      `Khoảng thời gian thống kê tối đa là ${MAX_RANGE_DAYS} ngày`,
+    );
+  }
   const prevFrom = addDays(f, -length);
   const prevTo = addDays(f, -1);
   const toDate = (d) => new Date(`${d}T00:00:00${TZ_OFFSET}`);

@@ -2,6 +2,7 @@
 
 Tất cả API dùng `GET`, trả `{ "code": "success", "data": ... }`. Tiền là số nguyên VND.
 `from`, `to` có dạng `YYYY-MM-DD`, tính trọn ngày theo giờ Việt Nam; bỏ trống = từ đầu tháng đến hôm nay.
+Khoảng cách tối đa giữa `from` và `to` là **366 ngày** (`MAX_RANGE_DAYS` trong `statistic.constants.js`); vượt quá trả 400 `RANGE_TOO_LARGE`.
 
 | Endpoint | UC | Tham số | Dữ liệu trả về (`data`) |
 |---|---|---|---|

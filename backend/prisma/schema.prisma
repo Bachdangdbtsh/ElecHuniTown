@@ -74,20 +74,12 @@ model User {
   ordersRefunded        ReturnRequest[]        @relation("OrderRefundedBy")
   shopOwner             ShopOwner?
   staff                 Staff?
-  cart                  Cart?  
+  cart                  Cart?
   issuesCreated         StockIssue[]           @relation("IssueCreatedBy")
   issuesHandled         StockIssue[]           @relation("IssueHandledBy")
   receiptsCreated       StockReceipt[]         @relation("ReceiptCreatedBy")
   receiptsHandled       StockReceipt[]         @relation("ReceiptHandledBy")
   role                  Role                   @relation(fields: [roleId], references: [id])
-  changeRequestsCreated AccountChangeRequest[] @relation("ChangeRequestCreatedBy")
-  changeRequestsHandled AccountChangeRequest[] @relation("ChangeRequestReviewedBy")
-  customer              Customer?
-  staff                 Staff?
-  shopOwner             ShopOwner?
-  admin                 Admin?
-  cart                  Cart?
-
   @@index([roleId])
 }
 
@@ -196,10 +188,8 @@ model Product {
   returnRequestItems    ReturnRequestItem[]
   staffManageLogs       StaffManageProduct[]
   stockIssueItems       StockIssueItem[]
-  cartItems             CartItem[]  
-  stockReceiptItems     StockReceiptItem[]
-  staffManageLogs       StaffManageProduct[]
   cartItems             CartItem[]
+  stockReceiptItems     StockReceiptItem[]
 }
 
 model Cart {
@@ -253,10 +243,6 @@ model Order {
   discount            Int
   subtotal            Int
   totalCost           Int
-  note                String?
-  paymentMethod       String?
-  paymentMethodStatus Boolean                 @default(false)
-  transactionID       String?
   confirmedBy         User?                   @relation("OrderConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
   customer            User                    @relation("OrderCustomer", fields: [customerId], references: [id])
   recipient           RecipientInfo           @relation(fields: [recipientId], references: [id])
@@ -510,27 +496,6 @@ model StaffManageCategory {
 
   @@index([staffId])
   @@index([categoryId])
-}
-
-model Cart {
-  id         Int        @id @default(autoincrement())
-  customerId Int        @unique
-  customer   User       @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  items      CartItem[]
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-}
-
-model CartItem {
-  id        Int      @id @default(autoincrement())
-  cartId    Int
-  productId Int
-  quantity  Int      @default(1)
-  
-  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
-  @@unique([cartId, productId])
 }
 
 enum AuditAction {

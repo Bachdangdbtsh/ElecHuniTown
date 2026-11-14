@@ -48,20 +48,6 @@ export default function CustomerInfor({ cart, setCart, loading }) {
     }
   }
 
-  // 2. Cập nhật form mỗi khi click chọn địa chỉ khác
-  useEffect(() => {
-    const formEl = document.querySelector("#customer-infor-form");
-    if (!formEl || !selectedAddress) return;
-
-    if (formEl.name) formEl.name.value = selectedAddress.recipientName || "";
-    if (formEl.phone) formEl.phone.value = selectedAddress.recipientPhoneNumber || "";
-    if (formEl.address) formEl.address.value = selectedAddress.address || "";
-    
-    if (formEl.addressType) {
-      formEl.addressType.value = selectedAddress.recipientType === 'Nhà' ? 'home' : 'company';
-    }
-  }, [selectedAddress]);
-
   return (
     <>
       <form className="inner-form" id="customer-infor-form" onSubmit={prepareOrder}>

@@ -10,11 +10,11 @@ const OWNER_MENU = [
   { label: 'Tiếp nhận & Xử lý đơn hàng', href: '/store/orders', icon: '🛒' },
   { label: 'Đổi trả, Hoàn tiền', href: '/store/returns', icon: '↺' },
   { label: 'Quản lý Danh mục Sản phẩm', href: '/store/categories', icon: '▦' },
-  { label: 'Quản lý Kho hàng', href: '/store/inventory', icon: '⌂' },
-  { label: 'Thống kê Tài chính', href: '/store/finance', icon: '▥' },
+  { label: 'Quản lý Kho hàng', href: '/inventory', icon: '⌂' },
+  { label: 'Thống kê Tài chính', href: '/statistics', icon: '▥' },
 ];
 
-const STAFF_MENU = OWNER_MENU.filter((m) => m.href !== '/store/finance');
+const STAFF_MENU = OWNER_MENU.filter((m) => m.href !== '/statistics');
 
 function initials(name) {
   return (name || 'SO')
@@ -31,11 +31,9 @@ export default function StoreLayout({ children }) {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [open, setOpen] = useState(false);
-  const [today, setToday] = useState('');
-
-  useEffect(() => {
-    setToday(new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long' }));
-  }, []);
+  const [today] = useState(() => new Date().toLocaleDateString('vi-VN', {
+    weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Ho_Chi_Minh',
+  }));
 
   useEffect(() => {
     apiFetch('/auth/me')

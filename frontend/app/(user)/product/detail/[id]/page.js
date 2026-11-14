@@ -1,9 +1,10 @@
 
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import ListImages from "./swiper";
 import ProductDescription from "./productDescription";
 import RightPart from "./rightPart";
-export const instant = false;
+import Comment from "./comment";
 export const metadata = {
   title: "Trang sản phẩm",
 };

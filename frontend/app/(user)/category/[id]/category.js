@@ -91,7 +91,7 @@ export default function Category({ id }) {
         <div className="list-tag">
           <div className="tag" onClick={() => removeParams("tag")}>Reset</div>
           {
-            tags.map(tag => <div className="tag" onClick={() => handleParams("tag", tag)}>{tag}</div>)
+            tags.map(tag => <div key={tag} className="tag" onClick={() => handleParams("tag", tag)}>{tag}</div>)
           }
         </div>
       </div>

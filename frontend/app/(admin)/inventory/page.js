@@ -1,7 +1,6 @@
 import { Suspense } from 'react';
 import InventoryPageContent from './_components/InventoryPageContent';
 
-export const instant = false;
 
 export default function InventoryPage() {
   return (

@@ -26,7 +26,10 @@ export default function AccountChangeRequests({ currentUser }) {
   }
 
   useEffect(() => {
-    reload().catch((err) => setError(err.message)).finally(() => setLoading(false));
+    apiGet('/account-change-requests/mine')
+      .then(setRequests)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
   }, []);
 
   async function submit(e) {

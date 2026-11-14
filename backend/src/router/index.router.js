@@ -3,6 +3,7 @@ import { Router } from "express";
 import slugify from "slugify";
 const router = Router();
 import { prisma } from '../lib/prisma.js';
+import { env } from '../config/env.js';
 import jwt from 'jsonwebtoken';
 
 const getMyCart = async (userId) => {

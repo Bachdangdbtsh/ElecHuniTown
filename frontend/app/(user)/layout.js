@@ -1,6 +1,5 @@
 export const dynamic = 'force-dynamic';
 
-import { Geist, Geist_Mono } from "next/font/google";
 import "./userstyle.css"
 import "./shop-enhancements.css";
 import { FaFacebook } from "react-icons/fa";
@@ -9,23 +8,16 @@ import { FaInstagram } from "react-icons/fa";
 import { FaYoutube } from "react-icons/fa";
 import Link from "next/link";
 import CategoryList from "./categoryList";
-import ShopHeader from "./component/ShopHeader";
 import { Toaster } from 'sonner';
 import { FaRegCircleUser } from "react-icons/fa6";
+import { FaFacebookF } from "react-icons/fa";
+import { CiHeart } from "react-icons/ci";
+import { IoSettings } from "react-icons/io5";
+import { IoCartOutline } from "react-icons/io5";
 import checkLogin from "./middleware/checkLogin";
-import CartIcon from "./component/cartIcon";
+import CartCount from "./component/CartCount";
 import LogoutButton from "./component/LogoutButton";
 import Search from "./search";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata = {
   title: "Create Next App",
@@ -43,7 +35,7 @@ function accountHomeByRole(role) {
 export default async function RootLayout({
   children,
 }) {
-  const { account, cart, isLogin } = await checkLogin();
+  const { account } = await checkLogin();
   return (
     <>
       <div className='header'>
@@ -55,7 +47,7 @@ export default async function RootLayout({
           <Search />
           <div className="small-icon">
             <CiHeart size="24px" />
-            <CartIcon cart={cart} isLogin={isLogin} />
+            <Link className="cart" href="/cart" aria-label="Giỏ hàng"><IoCartOutline size="24px" /><CartCount /></Link>
             {
               account ? (
                 <>
@@ -65,7 +57,7 @@ export default async function RootLayout({
                     style={{ textDecoration: 'none', color: 'inherit' }}
                     title="Khu vực tài khoản theo vai trò"
                   >
-                    {account.avatar ? null : <FaRegCircleUser className="avatar" />}
+                    {account.avatar ? <img className="avatar" src={account.avatar} alt="Ảnh đại diện" /> : <FaRegCircleUser className="avatar" />}
                     <div className="name">{account.fullName}</div>
                   </Link>
                   <Link

@@ -1,6 +1,3 @@
-export const dynamic = 'force-dynamic';
-
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -8,7 +5,6 @@ import { toast } from "sonner";
 import { loadCart } from "../component/cartStore";
 import CustomerInfor from "./customerForm";
 import Cart from "./cart"
-import checkLogin from "../middleware/checkLogin";
 
 export default function CartPage() {
   const [cart, setCart] = useState([]);

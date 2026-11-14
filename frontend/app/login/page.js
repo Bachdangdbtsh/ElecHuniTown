@@ -2,20 +2,22 @@
 
 import { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { apiPost } from '@/lib/api';
 import '../eht-ui.css';
 
 const subscribe = () => () => {};
-const getReturnToCart = () => new URLSearchParams(window.location.search).get('returnTo') === '/cart';
+const getSearch = () => window.location.search;
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const returnToCart = useSyncExternalStore(subscribe, getReturnToCart, () => false);
+  const search = useSyncExternalStore(subscribe, getSearch, () => '');
+  const params = new URLSearchParams(search);
+  const returnToCart = params.get('returnTo') === '/cart';
+  const justRegistered = params.get('registered') === '1';
+  const redirectTo = returnToCart ? '/cart' : params.get('redirect');
 
   function normalizeRole(role) {
     if (!role) return '';
@@ -47,14 +49,6 @@ export default function LoginPage() {
     try {
       const data = await apiPost('/auth/login', { email, password });
       const role = data.user.role;
-      if (role === 'ADMIN') {
-        router.push('/admin/dashboard');
-      } else if (role === 'STAFF' || role === 'SHOP_OWNER') {
-        router.push('/inventory');
-      } else {
-        const returnTo = new URLSearchParams(window.location.search).get('returnTo');
-        router.push(returnTo === '/cart' ? '/cart' : '/account/overview');
-      }
       window.location.assign(destinationForRole(role));
     } catch (err) {
       setError(err.message || 'Đăng nhập thất bại');

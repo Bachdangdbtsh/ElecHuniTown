@@ -1,4 +1,7 @@
 :root {
+  --font-geist-sans: Arial, Helvetica, sans-serif;
+  --font-geist-mono: Consolas, monospace;
+  --font-jakarta: Arial, Helvetica, sans-serif;
   --background: #ffffff;
   --foreground: #171717;
 }

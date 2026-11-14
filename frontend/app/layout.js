@@ -1,16 +1,5 @@
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import BackButton from "@/components/BackButton";
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ['latin', 'vietnamese'],
-  variable: '--font-jakarta',
-  display: 'swap',
-});
 
 export const metadata = {
   title: 'ElecHuniTown',
@@ -19,7 +8,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="vi">
       <body>{children}<BackButton /></body>
     </html>
   );

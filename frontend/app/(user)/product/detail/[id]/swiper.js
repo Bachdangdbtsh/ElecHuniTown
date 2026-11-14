@@ -33,8 +33,8 @@ export default function ListImages({ pictures }) {
       >
         {
           pictures.map(item =>
-            <SwiperSlide>
-              <img src={item.url} />
+            <SwiperSlide key={item.url}>
+              <img src={item.url} alt="Ảnh sản phẩm" />
             </SwiperSlide>)
         }
 
@@ -52,8 +52,8 @@ export default function ListImages({ pictures }) {
       >
         {
           pictures.map(item =>
-            <SwiperSlide>
-              <img src={item.url} />
+            <SwiperSlide key={item.url}>
+              <img src={item.url} alt="Ảnh sản phẩm" />
             </SwiperSlide>)
         }
 

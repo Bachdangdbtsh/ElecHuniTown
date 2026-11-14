@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { authenticate, requirePermission, requirePermissionOrRole } from '../../common/middleware/auth.js';
+import { authenticate, requirePermission, requirePermissionOrRole, requireRole } from '../../common/middleware/auth.js';
 import * as controller from './InventoryController.js';
 
 const router = Router();
 
-router.use(['/inventory', '/stock-receipts', '/stock-issues', '/suppliers'], authenticate);
+router.use(['/inventory', '/stock-receipts', '/stock-issues', '/suppliers'], authenticate, requireRole('SHOP_OWNER'));
 
 router.get('/inventory/low-stock', requirePermission('INVENTORY_VIEW'), controller.lowStock);
 router.get('/inventory', requirePermission('INVENTORY_VIEW'), controller.inventory);

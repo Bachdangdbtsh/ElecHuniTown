@@ -566,6 +566,34 @@ router.post("/order/create", async (req, res) => {
     }
 
     const newOrder = await prisma.$transaction(async (tx) => {
+      for (const item of cart) {
+        const productId = Number(item.id);
+        const quantity = Number(item.quantity);
+
+        if (!Number.isInteger(productId) || productId <= 0 ||
+            !Number.isInteger(quantity) || quantity <= 0) {
+          throw new Error('Sản phẩm hoặc số lượng không hợp lệ.');
+        }
+
+        const result = await tx.product.updateMany({
+          where: {
+            id: productId,
+            status: 'ACTIVE',
+            stock: { gte: quantity },
+          },
+          data: {
+            stock: { decrement: quantity },
+            sold: { increment: quantity },
+          },
+        });
+
+        if (result.count === 0) {
+          throw new Error('Sản phẩm không tồn tại hoặc không đủ tồn kho.');
+        }
+        await tx.inventoryTransaction.create({
+          data: { type: 'ISSUE', productId, quantity, unitCost: item.newPrice },
+        });
+      }
       const order = await tx.order.create({
         data: {
           customerId: customerId,
@@ -581,6 +609,9 @@ router.post("/order/create", async (req, res) => {
             create: orderItems
           }
         }
+      });
+      await tx.auditLog.create({
+        data: { actorId: customerId, action: 'CREATE', entityType: 'Order', entityId: order.id, details: { status: 'PENDING' } },
       });
       if (customerId) {
         const userCart = await tx.cart.findUnique({
@@ -610,7 +641,18 @@ router.post("/order/create", async (req, res) => {
 
   } catch (error) {
     console.error("Lỗi tạo order:", error);
-    return res.status(500).json({ code: "error", message: "Lỗi server khi tạo đơn hàng" });
+
+    const isExpectedOrderError = [
+      'Sản phẩm không tồn tại hoặc không đủ tồn kho.',
+      'Sản phẩm hoặc số lượng không hợp lệ.',
+    ].includes(error.message);
+
+    return res.status(isExpectedOrderError ? 400 : 500).json({
+      code: "error",
+      message: isExpectedOrderError
+        ? error.message
+        : "Lỗi server khi tạo đơn hàng",
+    });
   }
 })
 
@@ -695,6 +737,11 @@ router.post('/order/pay/:id', async (req, res) => {
       return res.status(503).json({ code: 'error', message: 'Cổng thanh toán chưa được cấu hình' });
     }
 
+    const paymentParts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+    }).formatToParts(new Date()).map((part) => [part.type, part.value]));
+    const paymentCreatedAt = Number(order.paymentCreatedAt || `${paymentParts.year}${paymentParts.month}${paymentParts.day}${paymentParts.hour}${paymentParts.minute}${paymentParts.second}`);
     const paymentUrl = vnpay.buildPaymentUrl({
       vnp_Amount: order.totalCost,
       vnp_IpAddr:
@@ -703,11 +750,13 @@ router.post('/order/pay/:id', async (req, res) => {
         req.socket.remoteAddress ||
         req.ip,
       vnp_TxnRef: order.id,
+      vnp_CreateDate: paymentCreatedAt,
       vnp_OrderInfo: `Thanh toan don hang ${order.id}`,
       vnp_OrderType: ProductCode.Other,
       vnp_ReturnUrl: `${env.serverOrigin.replace(/\/+$/, '')}/vnpay-return`,
       vnp_Locale: VnpLocale.VN,
     });
+    await prisma.order.update({ where: { id: orderId }, data: { paymentCreatedAt: String(paymentCreatedAt) } });
 
     return res.json({
       code: "success",

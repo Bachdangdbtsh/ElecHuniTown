@@ -33,7 +33,8 @@ export default function LoginPage() {
       return '/admin/dashboard';
     }
     if (role === 'SHOP_OWNER' || role === 'STAFF') {
-      if (r && (r === '/store' || r.startsWith('/store/') || r === '/statistics' || r === '/inventory')) return r;
+      if (r && (r === '/store/orders' || r === '/store/categories' || r === '/store/categories/list' || r === '/store/categories/products')) return r;
+      if (role === 'SHOP_OWNER' && r && (r === '/store/returns' || r === '/inventory' || r === '/statistics')) return r;
       return '/store/orders';
     }
     // CUSTOMER
@@ -48,6 +49,7 @@ export default function LoginPage() {
 
     try {
       const data = await apiPost('/auth/login', { email, password });
+      localStorage.setItem("isLoggedIn", "true");
       const role = data.user.role;
       window.location.assign(destinationForRole(role));
     } catch (err) {

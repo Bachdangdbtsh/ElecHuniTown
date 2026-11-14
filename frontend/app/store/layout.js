@@ -4,17 +4,20 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { apiFetch, apiPost } from '@/lib/api';
+import { FiBell, FiBox, FiGrid, FiLogOut, FiRefreshCw, FiSettings, FiShoppingBag, FiTrendingUp } from 'react-icons/fi';
 import '../eht-ui.css';
+import '../staff/staff.css';
+import './store.css';
 
 const OWNER_MENU = [
-  { label: 'Tiếp nhận & Xử lý đơn hàng', href: '/store/orders', icon: '🛒' },
-  { label: 'Đổi trả, Hoàn tiền', href: '/store/returns', icon: '↺' },
-  { label: 'Quản lý Danh mục Sản phẩm', href: '/store/categories', icon: '▦' },
-  { label: 'Quản lý Kho hàng', href: '/inventory', icon: '⌂' },
-  { label: 'Thống kê Tài chính', href: '/statistics', icon: '▥' },
+  { label: 'Xử lý & Quản lý Đơn hàng', href: '/store/orders', icon: FiShoppingBag },
+  { label: 'Đổi trả - Hoàn tiền', href: '/store/returns', icon: FiRefreshCw },
+  { label: 'Quản lý Danh mục Sản phẩm', href: '/store/categories', icon: FiGrid },
+  { label: 'Quản lý Kho hàng', href: '/inventory', icon: FiBox },
+  { label: 'Thống kê Tài chính', href: '/statistics', icon: FiTrendingUp },
 ];
 
-const STAFF_MENU = OWNER_MENU.filter((m) => m.href !== '/statistics');
+const STAFF_MENU = OWNER_MENU.filter((m) => ['/store/orders', '/store/categories'].includes(m.href));
 
 function initials(name) {
   return (name || 'SO')
@@ -30,6 +33,7 @@ export default function StoreLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState(null);
+  const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
   const [today] = useState(() => new Date().toLocaleDateString('vi-VN', {
     weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Ho_Chi_Minh',
@@ -40,16 +44,23 @@ export default function StoreLayout({ children }) {
       .then((u) => {
         setUser(u);
         const role = u.role || '';
-        if (!['ADMIN', 'SHOP_OWNER', 'STAFF', 'OWNER'].includes(role)) {
+        if (!['SHOP_OWNER', 'STAFF'].includes(role)) {
           router.replace('/account/overview');
+          return;
         }
+        setReady(true);
       })
       .catch(() => router.replace('/login?redirect=/store/orders'));
   }, [router]);
 
-  const isOwner = ['ADMIN', 'SHOP_OWNER', 'OWNER'].includes(user?.role);
-  const menu = isOwner ? OWNER_MENU : STAFF_MENU;
+  const isOwner = user?.role === 'SHOP_OWNER';
+  const menu = ready ? (isOwner ? OWNER_MENU : STAFF_MENU) : [];
   const roleLabel = isOwner ? 'Shop Owner' : 'Nhân viên';
+  const allowed = isOwner || pathname === '/store' || pathname.startsWith('/store/orders') || pathname.startsWith('/store/categories');
+
+  useEffect(() => {
+    if (ready && !allowed) router.replace('/store/orders');
+  }, [ready, allowed, router]);
   
   async function logout() {
     try {
@@ -62,8 +73,8 @@ export default function StoreLayout({ children }) {
   return (
     <div className="eht-shell">
       <aside className="eht-side">
-        <Link href="/" className="eht-side-brand">
-          <span className="eht-side-brand-icon">EH</span>
+        <Link href="/store/orders" className="eht-side-brand">
+          <span className="eht-side-brand-icon"><FiShoppingBag /></span>
           <span>
             <p className="eht-side-brand-title">ElecHuniTown</p>
             <p className="eht-side-brand-sub">Quản lý cửa hàng</p>
@@ -77,7 +88,7 @@ export default function StoreLayout({ children }) {
               return (
                 <li key={item.href}>
                   <Link href={item.href} className={active ? 'active' : undefined}>
-                    <span className="eht-nav-ico">{item.icon}</span>
+                    <span className="eht-nav-ico"><item.icon /></span>
                     {item.label}
                   </Link>
                 </li>
@@ -85,6 +96,7 @@ export default function StoreLayout({ children }) {
             })}
           </ul>
         </nav>
+        <button type="button" className="eht-side-logout" onClick={logout}><FiLogOut /> Đăng xuất</button>
       </aside>
 
       <div className="eht-body">
@@ -98,10 +110,8 @@ export default function StoreLayout({ children }) {
             </p>
           </div>
           <div className="eht-top-right">
-            <button type="button" className="eht-icon-btn">
-              🔔<span className="eht-icon-badge">4</span>
-            </button>
-            <button type="button" className="eht-icon-btn">⚙</button>
+            <span className="eht-icon-btn" aria-label="Thông báo"><FiBell /></span>
+            <span className="eht-icon-btn" aria-label="Cài đặt"><FiSettings /></span>
             <div style={{ position: 'relative' }}>
               <button type="button" className="eht-user-chip" onClick={() => setOpen((v) => !v)}>
                 <span className="eht-avatar">{initials(user?.fullName)}</span>
@@ -121,7 +131,7 @@ export default function StoreLayout({ children }) {
             </div>
           </div>
         </header>
-        <div className="eht-content">{children}</div>
+        <div className="eht-content">{ready && allowed ? children : <p>Đang kiểm tra quyền truy cập…</p>}</div>
       </div>
     </div>
   );

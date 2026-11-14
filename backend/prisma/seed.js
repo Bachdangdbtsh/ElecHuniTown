@@ -134,12 +134,6 @@ async function main() {
     'ORDER_PROCESS',
     'CATEGORY_MANAGE',
     'PRODUCT_MANAGE',
-    'INVENTORY_VIEW',
-    'STOCK_RECEIPT_CREATE',
-    'STOCK_ISSUE_CREATE',
-    'STOCK_ISSUE_MANAGE',
-    'SUPPLIER_MANAGE',
-    'STATISTIC_VIEW',
   ];
   const staffRoleId = roleMap.get('STAFF');
   for (const code of staffPermCodes) {

@@ -15,7 +15,7 @@ export default function InventoryAccess({ children }) {
     const controller = new AbortController();
     apiGet('/auth/me', controller.signal)
       .then((currentUser) => {
-        const allowed = ['STAFF', 'SHOP_OWNER'].includes(currentUser.role)
+        const allowed = currentUser.role === 'SHOP_OWNER'
           && currentUser.permissions?.includes('INVENTORY_VIEW');
         if (!allowed) {
           router.replace(currentUser.role === 'ADMIN' ? '/admin/dashboard' : '/account/overview');

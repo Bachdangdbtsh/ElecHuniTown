@@ -17,7 +17,7 @@ export default function Product({ data }) {
   return (<>
     <div className="product-wrapper">
       <Link className="product" href={`/product/detail/${data.id}`}>
-        <img className="image" src={data.pictures?.[0]?.url ?? "/placeholder.svg"}></img>
+        <img className="image" src={data.pictures?.[0]?.url ?? "/placeholder.png"} alt={data.productName}></img>
         <div className="discount">
           <BsLightningChargeFill color="#FFCB06" />
           <div className="label">
@@ -35,7 +35,9 @@ export default function Product({ data }) {
           <div className="new-price"> {data.newPrice.toLocaleString("vi-VN")} đ</div>
         </div>
       </Link>
-      <div className="add-cart" onClick={(e) => { addCartFormat(e) }}>Thêm vào giỏ hàng</div>
+      <button type="button" className="add-cart" onClick={addCartFormat} disabled={data.stock <= 0}>
+        {data.stock > 0 ? 'Thêm vào giỏ hàng' : 'Hết hàng'}
+      </button>
         <div className="product-footer">
           <div className="rate">
             <div className="point">{data.rate}</div>

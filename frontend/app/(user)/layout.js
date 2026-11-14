@@ -1,12 +1,15 @@
 export const dynamic = 'force-dynamic';
 
 import { Geist, Geist_Mono } from "next/font/google";
-import "./userstyle.css";
-import { CiHeart } from "react-icons/ci";
-import { FaFacebook, FaTwitter, FaInstagram, FaYoutube, FaFacebookF } from "react-icons/fa";
-import { IoSettings } from "react-icons/io5";
+import "./userstyle.css"
+import "./shop-enhancements.css";
+import { FaFacebook } from "react-icons/fa";
+import { FaTwitter } from "react-icons/fa";
+import { FaInstagram } from "react-icons/fa";
+import { FaYoutube } from "react-icons/fa";
 import Link from "next/link";
 import CategoryList from "./categoryList";
+import ShopHeader from "./component/ShopHeader";
 import { Toaster } from 'sonner';
 import { FaRegCircleUser } from "react-icons/fa6";
 import checkLogin from "./middleware/checkLogin";

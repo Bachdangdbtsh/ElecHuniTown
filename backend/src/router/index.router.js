@@ -1,23 +1,9 @@
 import { Router } from "express";
+
 import slugify from "slugify";
-import jwt from 'jsonwebtoken';
-import { prisma } from '../lib/prisma.js';
-import { env } from '../config/env.js';
-import { isSessionInvalidated } from '../common/sessionInvalidation.js';
-
 const router = Router();
-
-/** Extract userId from httpOnly cookie token without throwing (guest-safe). */
-function getUserIdFromCookie(req) {
-  const token = req.cookies?.token;
-  if (!token) return null;
-  try {
-    const decoded = jwt.verify(token, env.jwtSecret);
-    return decoded.userId ?? null;
-  } catch {
-    return null;
-  }
-}
+import { prisma } from '../lib/prisma.js';
+import jwt from 'jsonwebtoken';
 
 const getMyCart = async (userId) => {
   try {
@@ -55,24 +41,31 @@ const getMyCart = async (userId) => {
 
 router.post("/", async (req, res) => {
   try {
+    const limit = 10;
+    const featurePage = Math.max(1, Number.parseInt(req.query.featurePage, 10) || 1);
+    const suggestPage = Math.max(1, Number.parseInt(req.query.suggestPage, 10) || 1);
     const productInclude = {
       category: { select: { id: true, name: true, slug: true, imageUrl: true } },
       pictures: { select: { url: true } },
       tags: { select: { tag: true } },
     };
-    const [featureProducts, suggestProducts] = await Promise.all([
+    const [featureProducts, suggestProducts, featureTotal, suggestTotal] = await Promise.all([
       prisma.product.findMany({
         where: { isFeature: true, status: "ACTIVE" },
         include: productInclude,
         orderBy: { createdAt: "desc" },
-        take: 6,
+        take: limit,
+        skip: (featurePage - 1) * limit,
       }),
       prisma.product.findMany({
         where: { status: "ACTIVE" },
         include: productInclude,
         orderBy: { createdAt: "asc" },
-        take: 6,
+        take: limit,
+        skip: (suggestPage - 1) * limit,
       }),
+      prisma.product.count({ where: { isFeature: true, status: "ACTIVE" } }),
+      prisma.product.count({ where: { status: "ACTIVE" } }),
     ]);
 
     res.json({
@@ -80,6 +73,8 @@ router.post("/", async (req, res) => {
       message: "Lấy thành công",
       featureProducts,
       suggestProducts,
+      featureTotalPages: Math.ceil(featureTotal / limit),
+      suggestTotalPages: Math.ceil(suggestTotal / limit),
     });
   } catch (err) {
     res.status(500).json({ code: "error", message: err.message });
@@ -270,7 +265,8 @@ router.post("/product/detail/:id", async (req, res) => {
 router.post("/cart/add", async (req, res) => {
   try {
 
-    const { productID, quantity, currentCart } = req.body ?? {};
+    let { productID, quantity, currentCart } = req.body ?? {};
+    productID=Number(productID);
     if (quantity <= 0) {
       res.json({
         code: "error",
@@ -294,7 +290,7 @@ router.post("/cart/add", async (req, res) => {
     const token = req.cookies.token;
     if (token) {
       try {
-        const decoded = jwt.verify(token, env.jwtSecret);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         userId = decoded.userId;
       } catch (error) {
       }
@@ -368,7 +364,7 @@ router.post("/cart/get", async (req, res) => {
 
     if (token) {
       try {
-        const decoded = jwt.verify(token, env.jwtSecret);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         userId = decoded.userId;
       } catch (error) {
       }
@@ -440,7 +436,7 @@ router.post("/cart/remove", async (req, res) => {
     const token = req.cookies.token;
     if (token) {
       try {
-        const decoded = jwt.verify(token, env.jwtSecret);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         userId = decoded.userId;
       } catch (error) { }
     }
@@ -477,7 +473,7 @@ router.post("/cart/update", async (req, res) => {
     const token = req.cookies.token;
     if (token) {
       try {
-        const decoded = jwt.verify(token, env.jwtSecret);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         userId = decoded.userId;
       } catch (error) { }
     }
@@ -521,7 +517,7 @@ router.post("/order/create", async (req, res) => {
 
     if (token) {
       try {
-        const decoded = jwt.verify(token, env.jwtSecret);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         customerId = decoded.userId; // Lấy ID từ token
       } catch (error) {
         console.log("Token không hợp lệ:", error.message);
@@ -755,66 +751,39 @@ router.get('/vnpay-return', async (req, res) => {
   }
 });
 
-async function handleCheckLogin(req, res) {
+router.get("/checkLogin", async (req, res) => {
   try {
-    const token = req.cookies?.token;
+    const token = req.cookies.token;
     if (!token) {
-      return res.json({ code: 'error', message: 'Chưa đăng nhập' });
+      return res.json({ code: "error", message: "Chưa đăng nhập" });
     }
 
-    let decoded;
-    try {
-      decoded = jwt.verify(token, env.jwtSecret);
-    } catch {
-      return res.status(401).json({ code: 'error', message: 'Token không hợp lệ hoặc đã hết hạn' });
-    }
-
-    if (decoded.userId && decoded.iat && isSessionInvalidated(decoded.userId, decoded.iat)) {
-      return res.status(401).json({ code: 'error', message: 'Phiên đăng nhập đã hết hiệu lực' });
-    }
-
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        phone: true,
-        avatar: true,
-        isActive: true,
-        role: { select: { code: true, name: true } },
+      include: {
+        // role: {
+        //   include: {
+        //     permissions: {
+        //       include: { permission: true }
+        //     }
+        //   }
+        // },
         recipientInfos: true,
-      },
+      }
     });
-
-    if (!user || !user.isActive) {
-      return res.status(401).json({ code: 'error', message: 'Tài khoản không hợp lệ hoặc đã bị khóa' });
-    }
-
     const cart = await getMyCart(user.id);
-    return res.json({
-      code: 'success',
-      account: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        phone: user.phone,
-        avatar: user.avatar,
-        role: user.role?.code,
-        roleName: user.role?.name,
-        recipientInfos: user.recipientInfos,
-      },
+    res.json({
+      code: "success",
+      account: user,
       cart,
     });
-  } catch (error) {
-    console.error('[checkLogin]', error.message);
-    return res.status(401).json({ code: 'error', message: 'Token không hợp lệ hoặc đã hết hạn' });
-  }
-}
 
-// Accept both casings used by different frontend files.
-router.get('/checkLogin', handleCheckLogin);
-router.get('/checklogin', handleCheckLogin);
+  } catch (error) {
+    console.log(error);
+    return res.status(401).json({ message: "Token không hợp lệ hoặc đã hết hạn" });
+  }
+})
 
 router.post("/comment/create", async (req, res) => {
   try {
@@ -828,7 +797,7 @@ router.post("/comment/create", async (req, res) => {
     }
 
     try {
-      const decoded = jwt.verify(token, env.jwtSecret);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
       userId = decoded.userId;
     } catch (error) {
       return res.status(401).json({ code: "error", message: "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại" });
@@ -886,22 +855,24 @@ router.post("/comment/create", async (req, res) => {
 router.post("/search", async (req, res) => {
   try {
     let title = "";
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 9;
-    const skip = page > 0 ? (page - 1) * limit : 0;
-    let whereCondition = {}
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
+    const skip = (page - 1) * limit;
+    let whereCondition = { status: "ACTIVE" }
     let orderCondition = { createdAt: 'desc' }
     if (req.query.isFeature === "true") {
       whereCondition.isFeature = true;
       title = "Sản phẩm hot"
     }
-    if (req.query.key != "null") {
-      const keyword = slugify(req.query.key);
+    if (typeof req.query.key === 'string' && req.query.key.trim() && req.query.key !== 'null') {
+      const searchTerm = req.query.key.trim();
+      const keyword = slugify(searchTerm);
       title = `Kết quả tìm kiếm: ${req.query.key}`
-      whereCondition.slug = {
-        contains: keyword,       // Tìm slug có chứa keyword
-        mode: 'insensitive',     // Không phân biệt chữ hoa/thường 
-      }
+      whereCondition.OR = [
+        { productName: { contains: searchTerm, mode: 'insensitive' } },
+        { slug: { contains: keyword, mode: 'insensitive' } },
+        { category: { name: { contains: searchTerm, mode: 'insensitive' } } },
+      ];
     }
     if (req.query.tag && req.query.tag !== "null") {
       whereCondition.tags = {

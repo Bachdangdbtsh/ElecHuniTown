@@ -51,6 +51,57 @@ export function listSuppliers() {
   return inventoryRepository.findActiveSuppliers();
 }
 
+export function searchSuppliers(query) {
+  return inventoryRepository.findSuppliers(query);
+}
+
+async function ensureSupplier(id) {
+  const supplier = await inventoryRepository.findSupplierById(id);
+  if (!supplier) throw notFound('Nhà cung cấp không tồn tại');
+  return supplier;
+}
+
+function throwSupplierConflict(error) {
+  if (error?.code !== 'P2002') throw error;
+  const target = Array.isArray(error.meta?.target)
+    ? error.meta.target.join(',')
+    : String(error.meta?.target || '');
+  if (target.includes('businessRegistNum')) {
+    throw new AppError(409, 'SUPPLIER_REGISTRATION_EXISTS', 'Mã doanh nghiệp đã được sử dụng');
+  }
+  if (target.includes('email')) {
+    throw new AppError(409, 'SUPPLIER_EMAIL_EXISTS', 'Email liên hệ đã được sử dụng');
+  }
+  throw new AppError(409, 'SUPPLIER_DUPLICATE_DATA', 'Mã doanh nghiệp hoặc email đã được sử dụng');
+}
+
+export async function getSupplier(id) {
+  return ensureSupplier(id);
+}
+
+export async function createSupplier(payload) {
+  try {
+    return await inventoryRepository.createSupplier(payload);
+  } catch (error) {
+    throwSupplierConflict(error);
+  }
+}
+
+export async function updateSupplier(id, payload) {
+  await ensureSupplier(id);
+  try {
+    return await inventoryRepository.updateSupplier(id, payload);
+  } catch (error) {
+    throwSupplierConflict(error);
+  }
+}
+
+export async function deleteSupplier(id) {
+  await ensureSupplier(id);
+  await inventoryRepository.deactivateSupplier(id);
+  return { id };
+}
+
 export function listReceipts(query) {
   return inventoryRepository.findReceipts(query);
 }

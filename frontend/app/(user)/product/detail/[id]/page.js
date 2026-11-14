@@ -3,18 +3,14 @@ import Link from "next/link";
 import ListImages from "./swiper";
 import ProductDescription from "./productDescription";
 import RightPart from "./rightPart";
-import Comment from "./comment";
-import { notFound } from "next/navigation";
+export const instant = false;
 export const metadata = {
   title: "Trang sản phẩm",
 };
 
 export default async function ProductDetail({ params }) {
   const { id } = await params;
-  if (!/^\d+$/.test(id)) notFound();
-
-  const apiBase = (process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_URL || "http://localhost:4000").replace(/\/+$/, "");
-  const res = await fetch(`${apiBase}/product/detail/${id}`, {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/product/detail/${id}`, {
     method: "POST",
     cache: "no-store",
   });

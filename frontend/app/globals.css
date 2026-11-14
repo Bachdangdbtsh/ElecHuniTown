@@ -3,6 +3,33 @@
   --foreground: #171717;
 }
 
+.global-back-button {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px;
+  border: 1px solid #cbded3;
+  border-radius: 999px;
+  color: #123c2b;
+  background: #fff;
+  box-shadow: 0 4px 16px #102c201f;
+  font: 600 13px Arial, Helvetica, sans-serif;
+  cursor: pointer;
+}
+
+.global-back-button:hover {
+  background: #f2f9f5;
+}
+
+.global-back-button:focus-visible {
+  outline: 2px solid #238b57;
+  outline-offset: 2px;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;

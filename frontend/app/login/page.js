@@ -1,20 +1,21 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { apiPost } from '@/lib/api';
 import '../eht-ui.css';
 
-function LoginForm() {
-  const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect');
-  const justRegistered = searchParams.get('registered') === '1';
+const subscribe = () => () => {};
+const getReturnToCart = () => new URLSearchParams(window.location.search).get('returnTo') === '/cart';
 
+export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const returnToCart = useSyncExternalStore(subscribe, getReturnToCart, () => false);
 
   function normalizeRole(role) {
     if (!role) return '';
@@ -45,10 +46,14 @@ function LoginForm() {
 
     try {
       const data = await apiPost('/auth/login', { email, password });
-      const role = normalizeRole(data.user?.role);
-      if (!role) {
-        setError('Đăng nhập thành công nhưng không đọc được vai trò. Kiểm tra API /auth/login.');
-        return;
+      const role = data.user.role;
+      if (role === 'ADMIN') {
+        router.push('/admin/dashboard');
+      } else if (role === 'STAFF' || role === 'SHOP_OWNER') {
+        router.push('/inventory');
+      } else {
+        const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+        router.push(returnTo === '/cart' ? '/cart' : '/account/overview');
       }
       window.location.assign(destinationForRole(role));
     } catch (err) {
@@ -70,7 +75,7 @@ function LoginForm() {
           <Link href="/login" className="auth-tab active">
             Đăng nhập
           </Link>
-          <Link href="/register" className="auth-tab">
+          <Link href={returnToCart ? '/register?returnTo=%2Fcart' : '/register'} className="auth-tab">
             Đăng ký
           </Link>
         </div>
@@ -122,13 +127,5 @@ function LoginForm() {
         </form>
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<div className="auth-wrap"><div className="auth-card">Đang tải...</div></div>}>
-      <LoginForm />
-    </Suspense>
   );
 }

@@ -1,6 +1,10 @@
-import { Plus_Jakarta_Sans } from 'next/font/google';
-import './globals.css';
-import './eht-ui.css';
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import BackButton from "@/components/BackButton";
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin', 'vietnamese'],
@@ -15,10 +19,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="vi" className={jakarta.variable}>
-      <body style={{ fontFamily: 'var(--font-jakarta), system-ui, sans-serif', margin: 0 }}>
-        {children}
-      </body>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body>{children}<BackButton /></body>
     </html>
   );
 }

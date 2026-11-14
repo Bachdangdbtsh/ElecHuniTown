@@ -2,6 +2,7 @@ import { Plus_Jakarta_Sans } from 'next/font/google';
 import { Toaster } from 'sonner';
 import InventoryAccess from './_components/InventoryAccess';
 import './inventory.css';
+import './supplier-management.css';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin', 'vietnamese'],

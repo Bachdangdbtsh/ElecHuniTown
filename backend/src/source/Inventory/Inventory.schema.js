@@ -50,6 +50,24 @@ export const inventoryQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+export const supplierListQuerySchema = z.object({
+  search: z.string().trim().max(100).optional(),
+  searchBy: z.enum(['all', 'name', 'businessRegistNum', 'phoneNumber']).default('all'),
+  page: z.coerce.number().int().min(1).max(2147483647).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(4),
+});
+
+export const supplierSchema = z.object({
+  name: z.string().trim().min(1, 'Vui lòng nhập tên nhà cung cấp').max(150),
+  businessRegistNum: z.string().trim().min(1, 'Vui lòng nhập mã doanh nghiệp').max(50),
+  address: z.string().trim().min(1, 'Vui lòng nhập địa chỉ').max(500),
+  phoneNumber: z.string().trim().min(8, 'Số điện thoại không hợp lệ').max(30),
+  email: z.string().trim().email('Email liên hệ không hợp lệ').max(254),
+  contactPerson: z.string().trim().min(1, 'Vui lòng nhập người đại diện').max(150),
+  bankNumber: z.string().trim().min(1, 'Vui lòng nhập số tài khoản ngân hàng').max(50),
+  bankName: z.string().trim().min(1, 'Vui lòng nhập tên viết tắt ngân hàng').max(50),
+});
+
 export const documentListQuerySchema = z
   .object({
     status: z

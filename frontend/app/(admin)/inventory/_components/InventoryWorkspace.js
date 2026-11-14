@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   FiAlertTriangle,
   FiArrowDownCircle,
@@ -64,11 +65,12 @@ function escapeCsv(value) {
   return `"${String(value ?? '').replaceAll('"', '""')}"`;
 }
 
-export default function InventoryWorkspace() {
+export default function InventoryWorkspace({ initialView = 'dashboard', initialStatus = 'all' }) {
+  const router = useRouter();
   const user = useInventoryUser();
   const permissions = user.permissions || [];
-  const canCreateReceipt = permissions.includes('STOCK_RECEIPT_CREATE');
-  const canCreateIssue = user.role === 'STAFF' || permissions.includes('STOCK_ISSUE_CREATE');
+  const canCreateReceipt = user.role === 'SHOP_OWNER' || permissions.includes('STOCK_RECEIPT_CREATE');
+  const canCreateIssue = ['STAFF', 'SHOP_OWNER'].includes(user.role) || permissions.includes('STOCK_ISSUE_CREATE');
   const canAccessRequests = user.role === 'SHOP_OWNER';
   const canApproveReceipt = canAccessRequests && permissions.includes('STOCK_RECEIPT_APPROVE');
   const canApproveIssue = canAccessRequests && permissions.includes('STOCK_ISSUE_APPROVE');
@@ -82,20 +84,30 @@ export default function InventoryWorkspace() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [pageError, setPageError] = useState('');
-  const [view, setView] = useState('dashboard');
+  const [view, setView] = useState(
+    initialView === 'pending' && user.role === 'STAFF' ? 'dashboard' : initialView,
+  );
   const [category, setCategory] = useState('Tất cả');
   const [search, setSearch] = useState('');
   const [requestType, setRequestType] = useState('all');
-  const [requestStatus, setRequestStatus] = useState('all');
+  const [requestStatus, setRequestStatus] = useState(initialStatus);
   const [period, setPeriod] = useState('all');
   const [periodNow, setPeriodNow] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
+  const [createChooserOpen, setCreateChooserOpen] = useState(false);
+  const [createBackProduct, setCreateBackProduct] = useState(null);
   const [createKind, setCreateKind] = useState('');
   const [createProductId, setCreateProductId] = useState('');
   const [exportOpen, setExportOpen] = useState(false);
   const [activeProduct, setActiveProduct] = useState(null);
   const [adjustingProduct, setAdjustingProduct] = useState(null);
   const [activeDocument, setActiveDocument] = useState(null);
+
+  useEffect(() => {
+    if (initialView === 'pending' && user.role === 'STAFF') {
+      router.replace('/inventory');
+    }
+  }, [initialView, router, user.role]);
 
   const fetchData = useCallback(() => Promise.all([
     apiGet(`/inventory?page=1&pageSize=${pageSize}`),
@@ -228,32 +240,49 @@ export default function InventoryWorkspace() {
   function startCreate(initialKind = '', productId = '') {
     if (initialKind === 'receipt' && !canCreateReceipt) return;
     if (initialKind === 'issue' && !canCreateIssue) return;
+    if (!initialKind) {
+      setCreateBackProduct(null);
+      setCreateChooserOpen(true);
+      return;
+    }
     setCreateKind(initialKind);
     setCreateProductId(productId ? String(productId) : '');
     setCreateOpen(true);
+    setCreateChooserOpen(false);
     setActiveProduct(null);
   }
 
   function finishCreate() {
     setCreateOpen(false);
-    setView(canAccessRequests ? 'pending' : 'inventory');
-    setSearch('');
+    setCreateBackProduct(null);
+    changeView(canAccessRequests ? 'pending' : 'inventory');
     refreshData();
   }
 
-  function changeView(nextView) {
-    if (nextView === 'pending' && !canAccessRequests) return;
+  function changeView(nextView, nextStatus = 'all') {
+    if (nextView === 'pending' && user.role === 'STAFF') return;
     setView(nextView);
     setSearch('');
     setCategory('Tất cả');
     setRequestType('all');
-    setRequestStatus('all');
+    setRequestStatus(nextStatus);
+    const query = new URLSearchParams();
+    if (nextView !== 'dashboard') query.set('view', nextView);
+    if (nextStatus !== 'all') query.set('status', nextStatus);
+    const queryString = query.toString();
+    router.push(queryString ? `/inventory?${queryString}` : '/inventory');
   }
 
   function chooseAdjustment(kind) {
     if (!adjustingProduct) return;
+    setCreateBackProduct(adjustingProduct);
     startCreate(kind, adjustingProduct.id);
     setAdjustingProduct(null);
+  }
+
+  function chooseCreateKind(kind) {
+    setCreateBackProduct(null);
+    startCreate(kind);
   }
 
   function finishDocumentUpdate() {
@@ -354,7 +383,7 @@ export default function InventoryWorkspace() {
         <InventoryDashboard
           onOpenInventory={() => changeView('inventory')}
           onOpenRequests={() => changeView('pending')}
-          onOpenSuppliers={() => changeView('suppliers')}
+          onOpenSuppliers={() => router.push('/inventory/suppliers')}
           supplierCount={suppliers.length}
           canAccessRequests={canAccessRequests}
         />
@@ -367,8 +396,8 @@ export default function InventoryWorkspace() {
           <div className="inv-metric-grid inv-metric-grid-four">
             <MetricCard icon={<FiPackage />} value={documents.length} title="Tổng yêu cầu" subtitle="Phiếu nhập và phiếu xuất" tone="blue" onClick={() => setRequestStatus('all')} />
             <MetricCard icon={<FiRefreshCw />} value={pendingDocuments.length} title="Đang xử lý" subtitle="Cần xem xét" tone="orange" onClick={() => { changeView('pending'); }} />
-            <MetricCard icon={<FiCheck />} value={documents.filter((doc) => doc.status === 'APPROVED').length} title="Đã duyệt" subtitle="Hoàn tất xử lý" tone="green" onClick={() => { changeView('processed'); setRequestStatus('APPROVED'); }} />
-            <MetricCard icon={<FiX />} value={documents.filter((doc) => doc.status === 'DENIED').length} title="Từ chối" subtitle="Có lý do đi kèm" tone="red" onClick={() => { changeView('processed'); setRequestStatus('DENIED'); }} />
+            <MetricCard icon={<FiCheck />} value={documents.filter((doc) => doc.status === 'APPROVED').length} title="Đã duyệt" subtitle="Hoàn tất xử lý" tone="green" onClick={() => changeView('processed', 'APPROVED')} />
+            <MetricCard icon={<FiX />} value={documents.filter((doc) => doc.status === 'DENIED').length} title="Từ chối" subtitle="Có lý do đi kèm" tone="red" onClick={() => changeView('processed', 'DENIED')} />
           </div>
         ) : (
           <div className={`inv-metric-grid ${view === 'lowStock' ? 'inv-metric-grid-one' : !canAccessRequests ? 'inv-metric-grid-two' : ''}`}>
@@ -610,6 +639,14 @@ export default function InventoryWorkspace() {
           onSelect={chooseAdjustment}
         />
       )}
+      {createChooserOpen && (
+        <ProductAdjustmentModal
+          canCreateReceipt={canCreateReceipt}
+          canCreateIssue={canCreateIssue}
+          onClose={() => setCreateChooserOpen(false)}
+          onSelect={chooseCreateKind}
+        />
+      )}
       {createOpen && (
         <InventoryCreateModal
           products={inventory}
@@ -619,6 +656,11 @@ export default function InventoryWorkspace() {
           initialKind={createKind}
           initialProductId={createProductId}
           onClose={() => setCreateOpen(false)}
+          onBack={() => {
+            setCreateOpen(false);
+            if (createBackProduct) setAdjustingProduct(createBackProduct);
+            else setCreateChooserOpen(true);
+          }}
           onCreated={finishCreate}
         />
       )}
@@ -797,16 +839,16 @@ function ProductAdjustmentModal({ product, canCreateReceipt, canCreateIssue, onC
       <section className="inv-modal inv-adjust-modal" role="dialog" aria-modal="true" aria-labelledby="adjust-title">
         <header className="inv-modal-header">
           <div>
-            <p className="inv-eyebrow">ĐIỀU CHỈNH TỒN KHO</p>
-            <h2 id="adjust-title">Chọn thao tác</h2>
-            <p>Chọn loại yêu cầu cần tạo cho sản phẩm này.</p>
+            <p className="inv-eyebrow">{product ? 'ĐIỀU CHỈNH TỒN KHO' : 'QUẢN LÝ KHO HÀNG'}</p>
+            <h2 id="adjust-title">{product ? 'Chọn thao tác' : 'Chọn loại phiếu'}</h2>
+            <p>{product ? 'Chọn loại yêu cầu cần tạo cho sản phẩm này.' : 'Chọn phiếu nhập hoặc phiếu xuất để tiếp tục.'}</p>
           </div>
           <button type="button" className="inv-close-button" onClick={onClose} aria-label="Đóng">
             <FiX aria-hidden="true" />
           </button>
         </header>
 
-        <div className="inv-adjust-product">
+        {product && <div className="inv-adjust-product">
           <span className="inv-product-large-thumb">
             {product.pictures?.[0]?.url
               ? <img src={product.pictures[0].url} alt="" />
@@ -817,7 +859,7 @@ function ProductAdjustmentModal({ product, canCreateReceipt, canCreateIssue, onC
             <strong>{product.productName}</strong>
             <small>Tồn kho hiện tại: {number(product.stock)} sản phẩm</small>
           </span>
-        </div>
+        </div>}
 
         <div className="inv-adjust-actions">
           {actions.map((action) => (

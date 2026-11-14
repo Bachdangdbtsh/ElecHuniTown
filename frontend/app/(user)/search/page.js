@@ -1,14 +1,12 @@
-import { Suspense } from "react";
-import ListProductSearch from "./listProductSearch";
-export const metadata = {
-  title: "Trang kết quả tìm kiếm",
-};
+import SearchResults from './SearchResults';
+import { Suspense } from 'react';
 
-export default async function CategoryPage() {
+async function SearchContent({ searchParams }) {
+  const params = await searchParams;
+  const query = typeof params.q === 'string' ? params.q.trim() : '';
+  return <SearchResults key={query} query={query} />;
+}
 
-  return (
-    <Suspense fallback={<div>Đang tải ...</div>}>
-      <ListProductSearch/>
-    </Suspense>
-  );
+export default function SearchPage({ searchParams }) {
+  return <Suspense fallback={<main className="search-page"><p>Đang tải kết quả tìm kiếm...</p></main>}><SearchContent searchParams={searchParams} /></Suspense>;
 }

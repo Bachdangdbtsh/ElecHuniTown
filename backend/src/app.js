@@ -5,6 +5,7 @@ import { env } from './config/env.js';
 import { prisma } from './lib/prisma.js';
 import { errorHandler } from './common/error/ErrorHandler.js';
 import router from './router/index.router.js';
+import { guardCheckout, guardPaymentReturn } from './common/middleware/checkout.js';
 import statisticRoutes from './modules/statistic/statistic.routes.js';
 import authRoutes from './modules/auth/auth.route.js';
 import recipientRoutes from './modules/recipient/recipient.route.js';
@@ -40,6 +41,10 @@ app.get('/health', async (req, res, next) => {
     next(err);
   }
 });
+app.use('/order', guardCheckout);
+app.use('/vnpay-return', guardPaymentReturn);
+app.use("/",router);
+// các module sẽ được gắn ở đây: app.use('/products', productRoutes), ...
 
 // Shopping / catalog / cart / order (module của thành viên khác)
 app.use('/', router);

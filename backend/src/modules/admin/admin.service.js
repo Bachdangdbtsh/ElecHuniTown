@@ -105,7 +105,7 @@ export async function getUserDetail(userId) {
   }
 
   const permissions = user.role.permissions.map((rp) => rp.permission.code);
-  const totalOrders = user.customer?.orders?.length ?? 0;
+  const totalOrders = user.orders?.length ?? 0;
 
   return {
     id: user.id,

@@ -18,6 +18,7 @@ import checkLogin from "./middleware/checkLogin";
 import CartCount from "./component/CartCount";
 import LogoutButton from "./component/LogoutButton";
 import Search from "./search";
+import BrandLogo from "@/components/BrandLogo";
 
 export const metadata = {
   title: "Create Next App",
@@ -41,7 +42,7 @@ export default async function RootLayout({
       <div className='header'>
         <div className="container">
           <Link href="/" className='logo'>
-            <img src="/Container.svg" alt="Logo" />
+            <BrandLogo variant="smallMark" />
             <div className="brand">ElecHuniTown</div>
           </Link>
           <Search />
@@ -101,7 +102,7 @@ export default async function RootLayout({
           </div>
           <div className="end-footer">
             <div className="label-homepage">Trang chủ</div>
-            <img className="logo" src="/logo.png" alt="Footer Logo" />
+            <BrandLogo variant="wordmarkCompact" className="footer-brand-logo" />
             <div className="social-list">
               <Link href="#">
                 <FaFacebook />

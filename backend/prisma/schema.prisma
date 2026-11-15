@@ -137,14 +137,14 @@ model AdminManageRole {
 
 model RecipientInfo {
   id                   Int     @id @default(autoincrement())
-  customerId           Int
+  customerId           Int?
   recipientName        String?
   recipientPhoneNumber String
   address              String
   recipientType        String?
   isDefault            Boolean @default(false)
   orders               Order[]
-  customer             User    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer             User?   @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([customerId])
 }
@@ -230,7 +230,7 @@ model Product_Tags {
 
 model Order {
   id                  Int                     @id @default(autoincrement())
-  customerId          Int
+  customerId          Int?
   recipientId         Int
   confirmedById       Int?
   orderDate           DateTime                @default(now())
@@ -245,7 +245,7 @@ model Order {
   subtotal            Int
   totalCost           Int
   confirmedBy         User?                   @relation("OrderConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
-  customer            User                    @relation("OrderCustomer", fields: [customerId], references: [id])
+  customer            User?                   @relation("OrderCustomer", fields: [customerId], references: [id])
   recipient           RecipientInfo           @relation(fields: [recipientId], references: [id])
   items               Order_contain_product[]
   returnRequests      ReturnRequest[]

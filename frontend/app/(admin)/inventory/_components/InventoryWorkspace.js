@@ -69,7 +69,7 @@ export default function InventoryWorkspace({ initialView = 'dashboard', initialS
   const router = useRouter();
   const user = useInventoryUser();
   const permissions = user.permissions || [];
-  const canCreateReceipt = user.role === 'SHOP_OWNER' || permissions.includes('STOCK_RECEIPT_CREATE');
+  const canCreateReceipt = ['SHOP_OWNER', 'STAFF'].includes(user.role) || permissions.includes('STOCK_RECEIPT_CREATE');
   const canCreateIssue = ['STAFF', 'SHOP_OWNER'].includes(user.role) || permissions.includes('STOCK_ISSUE_CREATE');
   const canAccessRequests = user.role === 'SHOP_OWNER';
   const canApproveReceipt = canAccessRequests && permissions.includes('STOCK_RECEIPT_APPROVE');
@@ -84,6 +84,7 @@ export default function InventoryWorkspace({ initialView = 'dashboard', initialS
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [pageError, setPageError] = useState('');
+  const [accessNotice, setAccessNotice] = useState(initialView === 'pending' && user.role === 'STAFF' ? 'Chỉ có Shop Owner mới có quyền truy cập.' : '');
   const [view, setView] = useState(
     initialView === 'pending' && user.role === 'STAFF' ? 'dashboard' : initialView,
   );
@@ -260,7 +261,11 @@ export default function InventoryWorkspace({ initialView = 'dashboard', initialS
   }
 
   function changeView(nextView, nextStatus = 'all') {
-    if (nextView === 'pending' && user.role === 'STAFF') return;
+    if (nextView === 'pending' && user.role === 'STAFF') {
+      setAccessNotice('Chỉ có Shop Owner mới có quyền truy cập.');
+      return;
+    }
+    setAccessNotice('');
     setView(nextView);
     setSearch('');
     setCategory('Tất cả');
@@ -378,6 +383,8 @@ export default function InventoryWorkspace({ initialView = 'dashboard', initialS
           <button type="button" onClick={refreshData}><FiRefreshCw aria-hidden="true" /> Thử lại</button>
         </div>
       )}
+
+      {accessNotice && <div className="inv-page-error" role="status">{accessNotice}</div>}
 
       {view === 'dashboard' ? (
         <InventoryDashboard
@@ -700,7 +707,7 @@ function InventoryDashboard({ onOpenInventory, onOpenRequests, onOpenSuppliers, 
       title: 'Duyệt phiếu nhập/xuất kho',
       description: 'Quản lý nhập xuất hàng hóa và toàn bộ lịch sử giao dịch kho.',
       onClick: onOpenRequests,
-      disabled: !canAccessRequests,
+      ownerOnly: !canAccessRequests,
     },
     {
       icon: <FiUsers aria-hidden="true" />,
@@ -730,10 +737,8 @@ function InventoryDashboard({ onOpenInventory, onOpenRequests, onOpenSuppliers, 
               type="button"
               className="inv-feature-action"
               onClick={feature.onClick}
-              disabled={feature.disabled}
-              aria-disabled={feature.disabled || undefined}
             >
-              <span>{feature.disabled ? 'Chỉ dành cho Shop Owner' : 'Mở chức năng'}</span>
+              <span>{feature.ownerOnly ? 'Chỉ dành cho Shop Owner' : 'Mở chức năng'}</span>
               <FiArrowRight aria-hidden="true" />
             </button>
           </article>

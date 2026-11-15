@@ -11,7 +11,7 @@ router.use(authenticate);
 
 const includeOrder = {
   recipient: true,
-  items: { include: { product: { select: { productName: true } } } },
+  items: { include: { product: { select: { productName: true, pictures: { take: 1, select: { url: true } } } } } },
 };
 const includeReturn = {
   order: { include: { customer: { select: { fullName: true, email: true } }, ...includeOrder } },

@@ -23,7 +23,7 @@ export const createStaffUserSchema = z.object({
 export const userQuerySchema = z.object({
   role: z.string().optional(),
   status: z.enum(['active', 'locked', 'all']).optional().default('all'),
-  search: z.string().trim().optional(),
+  search: z.string().trim().refine(val => val !== 'undefined', { message: 'Từ khóa không hợp lệ' }).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
 });

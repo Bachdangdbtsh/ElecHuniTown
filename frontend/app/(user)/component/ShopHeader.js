@@ -8,6 +8,7 @@ import { CiHeart } from 'react-icons/ci';
 import { IoCartOutline } from 'react-icons/io5';
 import { FiSearch } from 'react-icons/fi';
 import CartCount from './CartCount';
+import BrandLogo from '@/components/BrandLogo';
 
 export default function ShopHeader() {
   const router = useRouter();
@@ -33,7 +34,7 @@ export default function ShopHeader() {
     <div className="header">
       <div className="container">
         <Link href="/" className="logo">
-          <Image src="/Container.svg" alt="" width={36} height={36} />
+          <BrandLogo variant="smallMark" />
           <div className="brand">ElecHuniTown</div>
         </Link>
         <form className="search" role="search" onSubmit={handleSearch}>

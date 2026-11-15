@@ -4,20 +4,21 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { apiFetch, apiPost } from '@/lib/api';
-import { FiBell, FiBox, FiGrid, FiLogOut, FiRefreshCw, FiSettings, FiShoppingBag, FiTrendingUp } from 'react-icons/fi';
+import BrandLogo from '@/components/BrandLogo';
+import { FiBell, FiBox, FiChevronDown, FiClipboard, FiGrid, FiPackage, FiRefreshCw, FiSettings, FiShoppingBag, FiTrendingUp, FiUsers } from 'react-icons/fi';
 import '../eht-ui.css';
 import '../staff/staff.css';
 import './store.css';
 
 const OWNER_MENU = [
   { label: 'Xử lý & Quản lý Đơn hàng', href: '/store/orders', icon: FiShoppingBag },
-  { label: 'Đổi trả - Hoàn tiền', href: '/store/returns', icon: FiRefreshCw },
+  { label: 'Đổi trả - Hoàn tiền', href: '/store/returns', icon: FiRefreshCw, ownerOnly: true },
   { label: 'Quản lý Danh mục Sản phẩm', href: '/store/categories', icon: FiGrid },
   { label: 'Quản lý Kho hàng', href: '/inventory', icon: FiBox },
-  { label: 'Thống kê Tài chính', href: '/statistics', icon: FiTrendingUp },
+  { label: 'Thống kê Tài chính', href: '/statistics', icon: FiTrendingUp, ownerOnly: true },
 ];
 
-const STAFF_MENU = OWNER_MENU.filter((m) => ['/store/orders', '/store/categories'].includes(m.href));
+const OWNER_ONLY_NOTICE = 'Chỉ có Shop Owner mới có quyền truy cập.';
 
 function initials(name) {
   return (name || 'SO')
@@ -35,6 +36,8 @@ export default function StoreLayout({ children }) {
   const [user, setUser] = useState(null);
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
+  const [accessNotice, setAccessNotice] = useState('');
+  const [inventoryOpen, setInventoryOpen] = useState(() => pathname.startsWith('/inventory'));
   const [today] = useState(() => new Date().toLocaleDateString('vi-VN', {
     weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Ho_Chi_Minh',
   }));
@@ -54,14 +57,11 @@ export default function StoreLayout({ children }) {
   }, [router]);
 
   const isOwner = user?.role === 'SHOP_OWNER';
-  const menu = ready ? (isOwner ? OWNER_MENU : STAFF_MENU) : [];
+  const menu = ready ? OWNER_MENU : [];
   const roleLabel = isOwner ? 'Shop Owner' : 'Nhân viên';
-  const allowed = isOwner || pathname === '/store' || pathname.startsWith('/store/orders') || pathname.startsWith('/store/categories');
+  const restrictedPath = !isOwner && (pathname.startsWith('/store/returns') || pathname.startsWith('/statistics'));
+  const allowed = !restrictedPath;
 
-  useEffect(() => {
-    if (ready && !allowed) router.replace('/store/orders');
-  }, [ready, allowed, router]);
-  
   async function logout() {
     try {
       await apiPost('/auth/logout');
@@ -74,7 +74,7 @@ export default function StoreLayout({ children }) {
     <div className="eht-shell">
       <aside className="eht-side">
         <Link href="/store/orders" className="eht-side-brand">
-          <span className="eht-side-brand-icon"><FiShoppingBag /></span>
+          <BrandLogo className="eht-side-brand-icon" />
           <span>
             <p className="eht-side-brand-title">ElecHuniTown</p>
             <p className="eht-side-brand-sub">Quản lý cửa hàng</p>
@@ -85,18 +85,43 @@ export default function StoreLayout({ children }) {
           <ul className="eht-nav">
             {menu.map((item) => {
               const active = pathname === item.href || pathname.startsWith(item.href + '/');
+              const disabled = item.ownerOnly && !isOwner;
+              if (item.href === '/inventory') return (
+                <li key={item.href}>
+                  <div className={`eht-nav-inventory ${active ? 'active' : ''}`}>
+                    <Link href="/inventory" onClick={() => setInventoryOpen(true)}>
+                      <span className="eht-nav-ico"><FiBox /></span>
+                      {item.label}
+                    </Link>
+                    <button type="button" className="eht-nav-expand" aria-label={inventoryOpen ? 'Thu gọn mục kho hàng' : 'Mở mục kho hàng'} aria-expanded={inventoryOpen} aria-controls="store-inventory-submenu" onClick={() => setInventoryOpen((value) => !value)}><FiChevronDown /></button>
+                  </div>
+                  {inventoryOpen && <ul className="eht-nav-submenu" id="store-inventory-submenu">
+                    <li><Link href="/inventory?view=inventory"><FiPackage /> Quản lý hàng tồn kho</Link></li>
+                    <li>{isOwner ? <Link href="/inventory?view=pending"><FiClipboard /> Duyệt phiếu nhập/xuất kho</Link> : <button type="button" onClick={() => setAccessNotice('inventory-approval')}><FiClipboard /> Duyệt phiếu nhập/xuất kho</button>}</li>
+                    <li><Link href="/inventory/suppliers"><FiUsers /> Quản lý nhà cung cấp</Link></li>
+                  </ul>}
+                  {!isOwner && accessNotice === 'inventory-approval' && <small className="eht-nav-notice" role="status">{OWNER_ONLY_NOTICE}</small>}
+                </li>
+              );
               return (
                 <li key={item.href}>
-                  <Link href={item.href} className={active ? 'active' : undefined}>
+                  {disabled ? <button
+                    type="button"
+                    className="eht-nav-disabled"
+                    onClick={() => setAccessNotice(item.href)}
+                  >
                     <span className="eht-nav-ico"><item.icon /></span>
                     {item.label}
-                  </Link>
+                  </button> : <Link href={item.href} className={active ? 'active' : undefined}>
+                    <span className="eht-nav-ico"><item.icon /></span>
+                    {item.label}
+                  </Link>}
+                  {disabled && accessNotice === item.href && <small className="eht-nav-notice" role="status">{OWNER_ONLY_NOTICE}</small>}
                 </li>
               );
             })}
           </ul>
         </nav>
-        <button type="button" className="eht-side-logout" onClick={logout}><FiLogOut /> Đăng xuất</button>
       </aside>
 
       <div className="eht-body">
@@ -131,7 +156,7 @@ export default function StoreLayout({ children }) {
             </div>
           </div>
         </header>
-        <div className="eht-content">{ready && allowed ? children : <p>Đang kiểm tra quyền truy cập…</p>}</div>
+        <div className="eht-content">{ready && allowed ? children : ready ? <div className="store-access-notice" role="status">{OWNER_ONLY_NOTICE}</div> : <p>Đang kiểm tra quyền truy cập…</p>}</div>
       </div>
     </div>
   );

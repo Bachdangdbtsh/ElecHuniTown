@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiGet, apiPost } from '@/lib/api';
-import InventoryShell from './InventoryShell';
+import { apiGet } from '@/lib/api';
 import { InventoryUserProvider } from './InventoryUserContext';
 
 export default function InventoryAccess({ children }) {
@@ -15,8 +14,7 @@ export default function InventoryAccess({ children }) {
     const controller = new AbortController();
     apiGet('/auth/me', controller.signal)
       .then((currentUser) => {
-        const allowed = currentUser.role === 'SHOP_OWNER'
-          && currentUser.permissions?.includes('INVENTORY_VIEW');
+        const allowed = ['SHOP_OWNER', 'STAFF'].includes(currentUser.role);
         if (!allowed) {
           router.replace(currentUser.role === 'ADMIN' ? '/admin/dashboard' : '/account/overview');
           return;
@@ -31,14 +29,6 @@ export default function InventoryAccess({ children }) {
     return () => controller.abort();
   }, [router]);
 
-  async function logout() {
-    try {
-      await apiPost('/auth/logout');
-    } finally {
-      router.replace('/login');
-    }
-  }
-
   if (status !== 'ready') {
     return (
       <div className="inv-access-state" role="status">
@@ -49,9 +39,7 @@ export default function InventoryAccess({ children }) {
 
   return (
     <InventoryUserProvider user={user}>
-      <InventoryShell user={user} onLogout={logout}>
-        {children}
-      </InventoryShell>
+      <div className="inv-root">{children}</div>
     </InventoryUserProvider>
   );
 }

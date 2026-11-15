@@ -8,7 +8,7 @@ import { apiPost } from '@/lib/api';
 const initialLine = () => ({ productId: '', quantity: '1', unitCost: '' });
 
 export default function InventoryCreateModal({ products, suppliers, permissions, userRole, initialKind = '', initialProductId = '', onClose, onBack, onCreated }) {
-  const canCreateReceipt = userRole === 'SHOP_OWNER' || permissions.includes('STOCK_RECEIPT_CREATE');
+  const canCreateReceipt = ['SHOP_OWNER', 'STAFF'].includes(userRole) || permissions.includes('STOCK_RECEIPT_CREATE');
   const canCreateIssue = ['STAFF', 'SHOP_OWNER'].includes(userRole) || permissions.includes('STOCK_ISSUE_CREATE');
   const defaultKind = initialKind === 'receipt' && canCreateReceipt
     ? 'receipt'

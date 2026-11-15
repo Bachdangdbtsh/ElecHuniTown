@@ -1,5 +1,6 @@
 import { Toaster } from 'sonner';
 import InventoryAccess from './_components/InventoryAccess';
+import StoreLayout from '../../store/layout';
 import './inventory.css';
 import './supplier-management.css';
 
@@ -9,9 +10,9 @@ export const metadata = {
 
 export default function InventoryLayout({ children }) {
   return (
-    <div className="inv-root">
+    <StoreLayout>
       <Toaster position="top-right" richColors />
       <InventoryAccess>{children}</InventoryAccess>
-    </div>
+    </StoreLayout>
   );
 }

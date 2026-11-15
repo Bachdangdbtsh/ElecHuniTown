@@ -48,17 +48,11 @@ export default function KpiPanel({ state }) {
           <dl className="st-kpi-side">
             <div>
               <dt>Giá trị đơn trung bình</dt>
-              <dd>{formatVnd(d.averageOrderValue)}</dd>
-            </div>
-            <div>
-              <dt>Ngày bán tốt nhất</dt>
-              <dd>
-                {d.bestDay ? `${formatDate(d.bestDay.date)} · ${formatCompactVnd(d.bestDay.revenue)} ₫` : '—'}
-              </dd>
-            </div>
-            <div>
-              <dt>Sản phẩm đang bán</dt>
-              <dd>{formatNumber(d.activeProducts)}</dd>
+              <dd className="st-kpi-value">{formatCompactVnd(d.averageOrderValue)} <span className="st-kpi-unit">₫</span></dd>
+              <div className="st-kpi-extra">
+                <p><span>Ngày bán tốt nhất</span><strong>{d.bestDay ? `${formatDate(d.bestDay.date)} · ${formatCompactVnd(d.bestDay.revenue)} ₫` : '—'}</strong></p>
+                <p><span>Sản phẩm đang bán</span><strong>{formatNumber(d.activeProducts)}</strong></p>
+              </div>
             </div>
           </dl>
         </div>

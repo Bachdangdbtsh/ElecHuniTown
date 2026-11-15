@@ -51,5 +51,5 @@
   .search-product-grid { grid-template-columns: 1fr; }
   .header .container { flex-wrap: wrap; }
   .header .search { order: 3; flex-basis: 100%; }
-  .container { margin: 0 20px; }
+  .container { width: 100%; margin: 0 auto; padding: 0 16px; }
 }

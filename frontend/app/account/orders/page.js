@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { apiGet, apiPost } from '@/lib/api';
 import ShellTopBar from '../_components/ShellTopBar';
 import './orders.css';
@@ -78,7 +79,11 @@ export default function AccountOrdersPage() {
       {loading ? <p>Đang tải đơn hàng…</p> : orders.length === 0 ? <div className="eht-card"><p>Bạn chưa có đơn hàng.</p><Link href="/">Tiếp tục mua sắm</Link></div> : (
         <div className="account-order-list">{orders.map((order) => <article className="eht-card account-order-card" key={order.id}>
           <div className="account-order-head"><div><strong>Đơn hàng #{order.id}</strong><small>{new Date(order.orderDate).toLocaleString('vi-VN')}</small></div><span className="eht-badge">{labels[order.status] || order.status}</span></div>
-          <div className="account-order-items">{order.items.map((item) => <p key={item.productId}>{item.product?.productName || `Sản phẩm #${item.productId}`} <span>× {item.quantity}</span></p>)}</div>
+          <div className="account-order-items">{order.items.map((item) => <p key={item.productId}>
+            <Image src={item.product?.pictures?.[0]?.url || '/placeholder.png'} alt="" width={60} height={60} unoptimized />
+            <span className="account-order-item-name">{item.product?.productName || `Sản phẩm #${item.productId}`}</span>
+            <span className="account-order-item-quantity">× {item.quantity}</span>
+          </p>)}</div>
           <div className="account-order-foot"><strong>{money(order.totalCost)}</strong><div><Link href={`/order/detail/${order.id}`} className="eht-btn eht-btn-sm">Xem chi tiết</Link>{order.status === 'DELIVERED' && !order.returnRequests?.length && <button type="button" className="eht-btn eht-btn-primary eht-btn-sm" onClick={() => { setSelected(order); setError(''); }}>Đổi trả - hoàn tiền</button>}{order.returnRequests?.length > 0 && <span className="eht-badge">Yêu cầu đổi trả: {order.returnRequests[0].status}</span>}</div></div>
         </article>)}</div>
       )}

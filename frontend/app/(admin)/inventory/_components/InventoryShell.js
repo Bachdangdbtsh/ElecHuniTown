@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import BrandLogo from '@/components/BrandLogo';
 import {
   FiBarChart2,
   FiBell,
@@ -10,7 +11,6 @@ import {
   FiChevronDown,
   FiClipboard,
   FiGrid,
-  FiLogOut,
   FiPackage,
   FiRefreshCw,
   FiSettings,
@@ -24,10 +24,11 @@ const navigation = [
   { label: 'Quản lý danh mục sản phẩm', icon: FiGrid, disabled: true },
 ];
 
-export default function InventoryShell({ user, onLogout, children }) {
+export default function InventoryShell({ user, children }) {
   const pathname = usePathname();
   const [inventoryMenuOpen, setInventoryMenuOpen] = useState(() => pathname.startsWith('/inventory'));
   const [accessNotice, setAccessNotice] = useState(false);
+  const [financeNotice, setFinanceNotice] = useState(false);
   const today = new Intl.DateTimeFormat('vi-VN', {
     weekday: 'long',
     day: 'numeric',
@@ -40,7 +41,7 @@ export default function InventoryShell({ user, onLogout, children }) {
     <div className="inv-shell">
       <aside className="inv-sidebar">
         <Link className="inv-brand" href="/inventory" aria-label="ElecHuniTown - Quản lý cửa hàng">
-          <img src="/inventory/brand-logo.png" alt="ElecHuniTown" width="118" height="42" />
+          <BrandLogo variant="smallMark" />
           <span>
             <strong>ElecHuniTown</strong>
             <small>Quản lý cửa hàng</small>
@@ -126,13 +127,30 @@ export default function InventoryShell({ user, onLogout, children }) {
               </div>
             )}
           </div>
-          <Link
-            href="/statistics"
-            className={`inv-nav-link ${pathname.startsWith('/statistics') ? 'is-active' : ''}`}
-          >
-            <span className="inv-nav-icon"><FiBarChart2 aria-hidden="true" /></span>
-            <span>Thống kê tài chính</span>
-          </Link>
+          {user.role === 'STAFF' ? (
+            <button
+              type="button"
+              className="inv-nav-link inv-nav-disabled inv-nav-button"
+              aria-describedby={financeNotice ? 'finance-access-notice' : undefined}
+              onClick={() => setFinanceNotice(true)}
+            >
+              <span className="inv-nav-icon"><FiBarChart2 aria-hidden="true" /></span>
+              <span>Thống kê tài chính</span>
+            </button>
+          ) : (
+            <Link
+              href="/statistics"
+              className={`inv-nav-link ${pathname.startsWith('/statistics') ? 'is-active' : ''}`}
+            >
+              <span className="inv-nav-icon"><FiBarChart2 aria-hidden="true" /></span>
+              <span>Thống kê tài chính</span>
+            </Link>
+          )}
+          {financeNotice && user.role === 'STAFF' && (
+            <small className="inv-nav-access-notice" id="finance-access-notice" role="status">
+              Chỉ có Shop Owner mới có quyền truy cập.
+            </small>
+          )}
         </nav>
 
         <div className="inv-sidebar-bottom">
@@ -143,10 +161,6 @@ export default function InventoryShell({ user, onLogout, children }) {
               <small>{user.roleName || (user.role === 'STAFF' ? 'Nhân viên' : 'Chủ cửa hàng')}</small>
             </span>
           </div>
-          <button type="button" className="inv-logout" onClick={onLogout}>
-            <FiLogOut aria-hidden="true" />
-            Đăng xuất
-          </button>
         </div>
       </aside>
 

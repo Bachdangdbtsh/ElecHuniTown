@@ -18,9 +18,9 @@ export default function AdminUsersPage() {
   const query = {
     role,
     status,
-    search: search.trim() || undefined,
     page,
     limit: 10,
+    ...(search.trim() ? { search: search.trim() } : {}),
   };
 
   const usersState = useApi('/admin/users', query);

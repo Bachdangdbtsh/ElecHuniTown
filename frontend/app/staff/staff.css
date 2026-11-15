@@ -1,14 +1,14 @@
 .staff-shell {
   --ink: #1e293b;
-  --mint: #8fe3a9;
-  --mint-soft: #e8f8ee;
+  --mint: #059669;
+  --mint-soft: #ecfdf5;
   --paper: #fff;
   --line: #e2e8f0;
   --muted: #5b6b80;
 
   min-height: 100vh;
   display: flex;
-  background: var(--paper);
+  background: #f8fafc;
   color: var(--ink);
   font-family: var(--font-jakarta), system-ui, sans-serif;
 }
@@ -20,7 +20,8 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: var(--mint);
+  background: #f8fafc;
+  border-right: 1px solid var(--line);
 }
 
 .staff-brand {
@@ -57,8 +58,8 @@
 }
 
 .staff-nav a.active {
-  background: var(--ink);
-  color: white;
+  background: var(--mint-soft);
+  color: #047857;
 }
 
 .staff-user {
@@ -142,14 +143,14 @@
   padding: 10px 15px;
   border: 0;
   border-radius: 8px;
-  background: var(--ink);
+  background: #059669;
   color: white;
   font-weight: 700;
   cursor: pointer;
 }
 
 .staff-button:hover {
-  background: #334155;
+  background: #047857;
 }
 
 .staff-button:disabled {

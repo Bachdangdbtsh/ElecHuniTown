@@ -6,6 +6,7 @@ import { BsFillArrowDownLeftSquareFill } from "react-icons/bs";
 import Product from "../../component/product";
 import { FaFilter } from "react-icons/fa";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getApiBase } from "@/lib/apiBase";
 
 export default function Category({ id }) {
   const router = useRouter();
@@ -32,7 +33,7 @@ export default function Category({ id }) {
   const [category, setcategory] = useState(null);
   useEffect(() => {
 
-    const url = new URL(`${process.env.NEXT_PUBLIC_URL}/category/${id}`);
+    const url = new URL(`/category/${id}`, getApiBase());
     if (sort) url.searchParams.append("sort", sort);
     if (tag) url.searchParams.append("tag", tag);
     if (page) url.searchParams.append("page", page);

@@ -290,6 +290,24 @@ Trong thư mục `frontend`:
 - Tiền tệ lưu bằng **số nguyên VND**, không dùng số thực.
 - Tên endpoint dạng số nhiều, `kebab-case`: `/products`, `/stock-receipts`.
 
+### API quản lý kho
+
+Các API dưới đây yêu cầu đăng nhập và kiểm tra quyền ở backend. Sau khi cập nhật seed, chạy `npm run db:seed` trong thư mục `backend` để cấp quyền mới:
+
+| API | Quyền |
+|---|---|
+| `GET /inventory`, `GET /inventory/low-stock`, `GET /inventory/suppliers` | `INVENTORY_VIEW` |
+| `GET /stock-receipts`, `GET /stock-receipts/:id` | `INVENTORY_VIEW` |
+| `POST /stock-receipts` | `STOCK_RECEIPT_CREATE` |
+| `POST /stock-receipts/:id/approve`, `POST /stock-receipts/:id/reject` | `STOCK_RECEIPT_APPROVE` |
+| `GET /stock-issues`, `GET /stock-issues/:id` | `INVENTORY_VIEW` |
+| `POST /stock-issues` | `STOCK_ISSUE_CREATE` hoặc vai trò `STAFF` |
+| `POST /stock-issues/:id/approve`, `POST /stock-issues/:id/reject` | `STOCK_ISSUE_APPROVE` |
+
+`/inventory/low-stock` chỉ trả các sản phẩm có tồn kho không quá 3. Phiếu nhập/xuất được tạo ở trạng thái chờ duyệt; chỉ khi chủ cửa hàng duyệt, tồn kho và lịch sử giao dịch mới được cập nhật trong cùng transaction. Khi từ chối, gửi `{ "rejectReason": "..." }`; các phiếu xuất không thể được duyệt nếu tồn kho hiện tại không đủ.
+
+Tạo phiếu nhập bằng `supplierId`, `content` và danh sách `items` gồm `productId`, `quantity`, `unitCost`. Tạo phiếu xuất bằng `content`, danh sách `items` gồm `productId`, `quantity`, và tùy chọn `type` (`SALE`, `DAMAGED`, `RETURN_TO_SUPPLIER`); sản phẩm, giá hiện tại, tồn kho và nhà cung cấp được kiểm tra/lấy từ database.
+
 ## 12. Xử lý lỗi thường gặp
 
 | Thông báo hoặc hiện tượng | Nguyên nhân và cách xử lý |

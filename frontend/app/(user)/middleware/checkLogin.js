@@ -16,14 +16,14 @@ export default async function checkLogin() {
       token = cookieStore.get('token')?.value;
     } catch {
       // Prerender / incomplete request — treat as guest
-      return { account: null, cart: null, isLogin: false };
+      return { account: null };
     }
 
     if (!token) {
-      return { account: null, cart: null, isLogin: false };
+      return { account: null };
     }
 
-    const res = await fetch(`${API_BASE}/checkLogin`, {
+    const res = await fetch(`${API_BASE}/auth/me`, {
       method: 'GET',
       headers: {
         Cookie: `token=${token}`,
@@ -33,21 +33,19 @@ export default async function checkLogin() {
     });
 
     if (!res.ok) {
-      return { account: null, cart: null, isLogin: false };
+      return { account: null };
     }
 
     const data = await res.json();
-    if (data.code !== 'success' || !data.account) {
-      return { account: null, cart: null, isLogin: false };
+    if (data.code !== 'success' || !data.data) {
+      return { account: null };
     }
 
     return {
-      account: data.account,
-      cart: data.cart ?? null,
-      isLogin: true,
+      account: data.data,
     };
   } catch (error) {
     console.error('[checkLogin]', error.message);
-    return { account: null, cart: null, isLogin: false };
+    return { account: null };
   }
 }

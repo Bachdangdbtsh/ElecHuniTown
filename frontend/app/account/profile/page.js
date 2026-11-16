@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch, apiPost } from '@/lib/api';
 import ShellTopBar from '../_components/ShellTopBar';
+import AccountChangeRequests from '../_components/AccountChangeRequests';
 
 export default function AccountProfilePage() {
   const router = useRouter();
@@ -143,6 +144,8 @@ export default function AccountProfilePage() {
             </form>
           )}
         </section>
+
+        <AccountChangeRequests currentUser={user} />
 
         {/* Đổi mật khẩu */}
         <section className="eht-card">

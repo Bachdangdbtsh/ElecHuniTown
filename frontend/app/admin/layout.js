@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useApi } from './_lib/useApi';
 import AdminTopBar from './_components/AdminTopBar';
+import BrandLogo from '@/components/BrandLogo';
 import '../eht-ui.css';
 
 const MENU = [
@@ -80,7 +81,7 @@ export default function AdminLayout({ children }) {
     <div className="eht-shell">
       <aside className="eht-side">
         <Link href="/" className="eht-side-brand">
-          <span className="eht-side-brand-icon">EH</span>
+          <BrandLogo className="eht-side-brand-icon" />
           <span>
             <p className="eht-side-brand-title">ElecHuniTown</p>
             <p className="eht-side-brand-sub">Quản trị hệ thống</p>

@@ -1,28 +1,24 @@
 export const dynamic = 'force-dynamic';
 
-import { Geist, Geist_Mono } from "next/font/google";
-import "./userstyle.css";
-import { CiHeart } from "react-icons/ci";
-import { FaFacebook, FaTwitter, FaInstagram, FaYoutube, FaFacebookF } from "react-icons/fa";
-import { IoSettings } from "react-icons/io5";
+import "./userstyle.css"
+import "./shop-enhancements.css";
+import { FaFacebook } from "react-icons/fa";
+import { FaTwitter } from "react-icons/fa";
+import { FaInstagram } from "react-icons/fa";
+import { FaYoutube } from "react-icons/fa";
 import Link from "next/link";
 import CategoryList from "./categoryList";
 import { Toaster } from 'sonner';
 import { FaRegCircleUser } from "react-icons/fa6";
+import { FaFacebookF } from "react-icons/fa";
+import { CiHeart } from "react-icons/ci";
+import { IoSettings } from "react-icons/io5";
+import { IoCartOutline } from "react-icons/io5";
 import checkLogin from "./middleware/checkLogin";
-import CartIcon from "./component/cartIcon";
+import CartCount from "./component/CartCount";
 import LogoutButton from "./component/LogoutButton";
 import Search from "./search";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import BrandLogo from "@/components/BrandLogo";
 
 export const metadata = {
   title: "Create Next App",
@@ -40,19 +36,19 @@ function accountHomeByRole(role) {
 export default async function RootLayout({
   children,
 }) {
-  const { account, cart, isLogin } = await checkLogin();
+  const { account } = await checkLogin();
   return (
     <>
       <div className='header'>
         <div className="container">
           <Link href="/" className='logo'>
-            <img src="/Container.svg" alt="Logo" />
+            <BrandLogo variant="smallMark" />
             <div className="brand">ElecHuniTown</div>
           </Link>
           <Search />
           <div className="small-icon">
             <CiHeart size="24px" />
-            <CartIcon cart={cart} isLogin={isLogin} />
+            <Link className="cart" href="/cart" aria-label="Giỏ hàng"><IoCartOutline size="24px" /><CartCount /></Link>
             {
               account ? (
                 <>
@@ -62,7 +58,7 @@ export default async function RootLayout({
                     style={{ textDecoration: 'none', color: 'inherit' }}
                     title="Khu vực tài khoản theo vai trò"
                   >
-                    {account.avatar ? null : <FaRegCircleUser className="avatar" />}
+                    {account.avatar ? <img className="avatar" src={account.avatar} alt="Ảnh đại diện" /> : <FaRegCircleUser className="avatar" />}
                     <div className="name">{account.fullName}</div>
                   </Link>
                   <Link
@@ -106,7 +102,7 @@ export default async function RootLayout({
           </div>
           <div className="end-footer">
             <div className="label-homepage">Trang chủ</div>
-            <img className="logo" src="/logo.png" alt="Footer Logo" />
+            <BrandLogo variant="wordmarkCompact" className="footer-brand-logo" />
             <div className="social-list">
               <Link href="#">
                 <FaFacebook />

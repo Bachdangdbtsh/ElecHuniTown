@@ -1,21 +1,24 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { apiPost } from '@/lib/api';
+import BrandLogo from '@/components/BrandLogo';
 import '../eht-ui.css';
 
-function LoginForm() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect');
-  const justRegistered = searchParams.get('registered') === '1';
+const subscribe = () => () => {};
+const getSearch = () => window.location.search;
 
+export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const search = useSyncExternalStore(subscribe, getSearch, () => '');
+  const params = new URLSearchParams(search);
+  const returnToCart = params.get('returnTo') === '/cart';
+  const justRegistered = params.get('registered') === '1';
+  const redirectTo = returnToCart ? '/cart' : params.get('redirect');
 
   function normalizeRole(role) {
     if (!role) return '';
@@ -23,23 +26,20 @@ function LoginForm() {
     return role.code || role.name || '';
   }
 
-  /**
-   * Admin/Owner/Staff KHÔNG theo redirect về `/` hay `/account/*`
-   * (log thực tế: login?redirect=/  → admin bị đưa về shop/profile).
-   */
   function destinationForRole(role) {
     const r = redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : null;
 
     if (role === 'ADMIN') {
-      if (r && r.startsWith('/admin')) return r;
+      if (r && r.startsWith('/admin/')) return r;
       return '/admin/dashboard';
     }
     if (role === 'SHOP_OWNER' || role === 'STAFF') {
-      if (r && (r.startsWith('/store') || r.startsWith('/statistics'))) return r;
+      if (r && (r === '/store/orders' || r === '/store/categories' || r === '/store/categories/list' || r === '/store/categories/products')) return r;
+      if (role === 'SHOP_OWNER' && r && (r === '/store/returns' || r === '/inventory' || r === '/statistics')) return r;
       return '/store/orders';
     }
     // CUSTOMER
-    if (r && !r.startsWith('/admin') && !r.startsWith('/store')) return r;
+    if (r && !/^\/(admin|store|statistics|inventory)(\/|\?|$)/.test(r)) return r;
     return '/account/overview';
   }
 
@@ -50,13 +50,9 @@ function LoginForm() {
 
     try {
       const data = await apiPost('/auth/login', { email, password });
-      const role = normalizeRole(data.user?.role);
-      if (!role) {
-        setError('Đăng nhập thành công nhưng không đọc được vai trò. Kiểm tra API /auth/login.');
-        return;
-      }
-      // Sau login: luôn về trang chủ; vào console/account qua icon tài khoản theo role
-      window.location.assign('/');
+      localStorage.setItem("isLoggedIn", "true");
+      const role = data.user.role;
+      window.location.assign(destinationForRole(role));
     } catch (err) {
       setError(err.message || 'Đăng nhập thất bại');
       setLoading(false);
@@ -67,7 +63,7 @@ function LoginForm() {
     <div className="auth-wrap">
       <div className="auth-card">
         <div className="auth-header">
-          <div className="auth-brand-mark">EH</div>
+          <BrandLogo variant="authMark" className="auth-brand-mark" />
           <p className="auth-logo">ElecHuniTown</p>
           <p className="auth-subtitle">Thiết bị gia dụng thông minh cho cuộc sống sinh viên</p>
         </div>
@@ -76,7 +72,7 @@ function LoginForm() {
           <Link href="/login" className="auth-tab active">
             Đăng nhập
           </Link>
-          <Link href="/register" className="auth-tab">
+          <Link href={returnToCart ? '/register?returnTo=%2Fcart' : '/register'} className="auth-tab">
             Đăng ký
           </Link>
         </div>
@@ -128,13 +124,5 @@ function LoginForm() {
         </form>
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<div className="auth-wrap"><div className="auth-card">Đang tải...</div></div>}>
-      <LoginForm />
-    </Suspense>
   );
 }

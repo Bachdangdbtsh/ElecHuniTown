@@ -10,6 +10,8 @@ export default function AddressModal({ initialData, isOpen, onClose, onSave, err
   const [isDefault, setDefault] = useState(false);
 
   useEffect(() => {
+    // Reinitialize the editable form when the selected address or modal changes.
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (initialData) {
       setName(initialData.recipientName || '');
       setPhone(initialData.recipientPhone || initialData.recipientPhoneNumber || '');
@@ -23,6 +25,7 @@ export default function AddressModal({ initialData, isOpen, onClose, onSave, err
       setType('Nhà');
       setDefault(false);
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [initialData, isOpen]);
 
   if (!isOpen) return null;

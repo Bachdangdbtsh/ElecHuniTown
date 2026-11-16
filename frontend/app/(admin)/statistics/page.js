@@ -52,7 +52,7 @@ export default function StatisticsPage() {
           Doanh thu theo thời gian
         </h2>
         <p className="st-sub">Tổng doanh số theo ngày, so với kỳ liền trước cùng độ dài</p>
-        <div className="st-panel">
+        <div className="st-panel st-revenue-panel">
           <RevenueChart revenueState={revenue} previousState={prevRevenue} bestDate={dashboard.data?.bestDay?.date} />
         </div>
       </section>

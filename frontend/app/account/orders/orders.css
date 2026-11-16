@@ -1,0 +1,24 @@
+.account-orders { width: 100%; max-width: 900px; margin: 0 auto; }
+.account-order-list { display: grid; gap: 14px; }
+.account-order-card { margin: 0; }
+.account-order-head, .account-order-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.account-order-head small { display: block; margin-top: 5px; color: #64748b; }
+.account-order-items { padding: 12px 0; border-block: 1px solid #e8eee9; margin: 14px 0; }
+.account-order-items p { display: grid; grid-template-columns: 60px minmax(0, 1fr) auto; align-items: center; gap: 12px; margin: 8px 0; }
+.account-order-items img { width: 60px; height: 60px; border-radius: 8px; object-fit: contain; background: #f8fafc; }
+.account-order-item-name { min-width: 0; font-weight: 600; }
+.account-order-item-quantity { color: #64748b; white-space: nowrap; }
+.account-order-foot > div, .account-return-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.account-order-error { padding: 12px; background: #fef2f2; color: #9f1239; border-radius: 10px; }
+.account-return-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: #0f172a99; padding: 15px; }
+.account-return-modal { display: flex; flex-direction: column; gap: 10px; width: min(100%, 650px); max-height: 90vh; overflow: auto; padding: 26px; border-radius: 17px; background: #fff; box-shadow: 0 20px 70px #0003; }
+.account-return-modal h2, .account-return-modal p { margin: 0; }
+.account-return-modal label { margin-top: 8px; font-weight: 700; }
+.account-return-modal textarea, .account-return-modal input { padding: 11px; border: 1px solid #d7e1da; border-radius: 9px; font: inherit; }
+.account-return-products { padding: 12px; border-radius: 10px; background: #f3faf5; }
+.account-return-actions { justify-content: flex-end; margin-top: 12px; }
+@media (max-width: 600px) {
+  .account-order-head, .account-order-foot { align-items: flex-start; flex-direction: column; }
+  .account-order-items p { grid-template-columns: 48px minmax(0, 1fr) auto; gap: 9px; }
+  .account-order-items img { width: 48px; height: 48px; }
+}

@@ -165,7 +165,7 @@ export async function getPendingChangeRequests() {
   }));
 }
 
-export async function reviewChangeRequest(requestId, adminId, status, note) {
+export async function reviewChangeRequest(requestId, adminId, status) {
   const request = await repo.findChangeRequestById(requestId);
   if (!request) {
     throw new AppError(404, 'REQUEST_NOT_FOUND', 'Yêu cầu thay đổi không tồn tại');
@@ -195,7 +195,6 @@ export async function reviewChangeRequest(requestId, adminId, status, note) {
     requestId,
     reviewedById: adminId,
     status,
-    reviewNote: note,
     changes: request.changes,
     requestedUserId: request.requestedById,
   });

@@ -5,6 +5,7 @@
   gap: 16px;
   margin: 0 auto;
   color: #172033;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
 .supplier-heading {
@@ -15,9 +16,9 @@
 }
 
 .supplier-heading h1 {
-  font-size: clamp(23px, 2.2vw, 29px);
-  font-weight: 800;
-  letter-spacing: -0.035em;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: normal;
   line-height: 1.25;
 }
 
@@ -31,15 +32,15 @@
 .supplier-secondary-button,
 .supplier-danger-button {
   display: inline-flex;
-  min-height: 42px;
+  min-height: 40px;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 0 17px;
+  padding: 0 18px;
   border: 1px solid transparent;
   border-radius: 10px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
 }
@@ -97,7 +98,7 @@
 .supplier-search {
   display: flex;
   min-width: 0;
-  height: 43px;
+  height: 42px;
   flex: 1;
   align-items: center;
   gap: 10px;
@@ -114,9 +115,9 @@
 }
 
 .supplier-search > svg {
-  width: 17px;
-  height: 17px;
-  flex: 0 0 17px;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
   color: #718096;
 }
 
@@ -169,10 +170,10 @@
 
 .supplier-filter-button {
   display: inline-flex;
-  height: 43px;
+  height: 42px;
   align-items: center;
   gap: 8px;
-  padding: 0 14px;
+  padding: 0 16px;
   border: 1px solid #dfe5ec;
   border-radius: 10px;
   color: #263345;
@@ -244,8 +245,8 @@
   border-bottom: 1px solid #e0e7e9;
   color: #758193;
   background: #f3f8f5;
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 600;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -267,7 +268,7 @@
   padding: 8px 16px;
   border-bottom: 1px solid #e1e6eb;
   color: #273244;
-  font-size: 12px;
+  font-size: 13px;
   white-space: nowrap;
 }
 
@@ -287,15 +288,15 @@
 
 .supplier-avatar {
   display: grid;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
   place-items: center;
   border-radius: 10px;
   color: #176d43;
   background: #e6f4ea;
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .supplier-company > span:last-child {
@@ -309,19 +310,19 @@
   max-width: 280px;
   overflow: hidden;
   color: #1c2638;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 600;
   text-overflow: ellipsis;
 }
 
 .supplier-company small {
   color: #8290a1;
-  font-size: 9px;
+  font-size: 13px;
 }
 
 .supplier-code {
   color: #273244;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -343,11 +344,11 @@
 
 .supplier-row-actions button {
   display: grid;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   place-items: center;
   border: 1px solid #b9dfc8;
-  border-radius: 7px;
+  border-radius: 8px;
   color: #147247;
   background: #f7fcf8;
   cursor: pointer;
@@ -368,8 +369,8 @@
 }
 
 .supplier-row-actions svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
 }
 
 .supplier-table-state {
@@ -400,11 +401,11 @@
 .supplier-pagination button,
 .supplier-pagination span {
   display: grid;
-  width: 31px;
-  height: 31px;
+  width: 34px;
+  height: 34px;
   place-items: center;
   border: 1px solid #dfe5ec;
-  border-radius: 7px;
+  border-radius: 8px;
   color: #6f7b8d;
   background: #fff;
 }
@@ -427,7 +428,7 @@
   color: #fff;
   background: #176d43;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .supplier-pagination svg {
@@ -472,7 +473,7 @@
   border: 0;
   color: inherit;
   background: transparent;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -515,7 +516,7 @@
 .supplier-modal-heading h2 {
   color: #172033;
   font-size: 21px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.3;
 }
 
@@ -685,7 +686,7 @@
 .supplier-delete-dialog h2 {
   color: #172033;
   font-size: 21px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .supplier-delete-dialog p {
@@ -724,7 +725,7 @@
   .supplier-heading .supplier-primary-button {
     min-height: 38px;
     padding: 0 11px;
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .supplier-toolbar {
@@ -738,19 +739,19 @@
   }
 
   .supplier-search input {
-    font-size: 11px;
+    font-size: 13px;
   }
 
   .supplier-filter-button {
     height: 40px;
     gap: 5px;
     padding: 0 9px;
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .supplier-table-footer {
     padding: 0 10px;
-    font-size: 9px;
+    font-size: 11px;
   }
 
   .supplier-overlay {

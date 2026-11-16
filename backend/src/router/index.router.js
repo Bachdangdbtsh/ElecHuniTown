@@ -791,6 +791,7 @@ router.get('/vnpay-return', async (req, res) => {
       data: {
         paymentMethodStatus: true,
         transactionID: transactionID,
+        paymentCreatedAt: String(verifyResult.vnp_PayDate || ''),
       }
     });
     return res.redirect(`${env.clientOrigin.replace(/\/+$/, '')}/order/payment/${orderId}?payment=success`);

@@ -37,8 +37,6 @@ export const reviewChangeRequestSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED'], {
     errorMap: () => ({ message: 'Trạng thái xử lý chỉ có thể là APPROVED hoặc REJECTED' }),
   }),
-  // Ghi chú admin được lưu cùng kết quả duyệt.
-  note: z.string().trim().max(500).optional(),
 });
 
 export const accessAnalyticsQuerySchema = z.object({

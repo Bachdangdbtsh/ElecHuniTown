@@ -1,8 +1,12 @@
+export const dynamic = 'force-dynamic';
+
 
 import CustomerInfor from "./customerForm";
 import Cart from "./cart"
 import checkLogin from "../middleware/checkLogin";
-
+export const metadata = {
+  title: "Trang giỏ hàng",
+};
 export default async function CartPage() {
   const { account, cart,isLogin } = await checkLogin();
   return (<>

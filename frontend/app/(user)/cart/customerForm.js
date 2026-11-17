@@ -54,7 +54,7 @@ export default function CustomerInfor({ recipientInfos = [], isLogin }) {
         }
 
         // Gọi API tạo đơn hàng
-        fetch(`${process.env.NEXT_PUBLIC_URL}/order/create`, {
+        fetch(`${(process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_URL)}/order/create`, {
           method: "POST",
           credentials: "include",
           headers: {
@@ -181,7 +181,7 @@ export default function CustomerInfor({ recipientInfos = [], isLogin }) {
               />
               <label htmlFor="money">Thanh toán tiền mặt khi nhận hàng</label>
             </div>
-            {/* <div className="method-detail">
+            <div className="method-detail">
               <input
                 type="radio"
                 id="momo"
@@ -190,7 +190,7 @@ export default function CustomerInfor({ recipientInfos = [], isLogin }) {
                 value="momo"
               />
               <label htmlFor="momo">Ví MoMo</label>
-            </div> */}
+            </div>
             <div className="method-detail">
               <input
                 type="radio"

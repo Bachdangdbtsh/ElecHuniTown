@@ -1,9 +1,24 @@
 import { Router } from "express";
-
 import slugify from "slugify";
-const router = Router();
-import { prisma } from '../lib/prisma.js';
 import jwt from 'jsonwebtoken';
+import { prisma } from '../lib/prisma.js';
+import { env } from '../config/env.js';
+import { isSessionInvalidated } from '../common/sessionInvalidation.js';
+
+import upload from "./cloudinary.js";
+const router = Router();
+
+/** Extract userId from httpOnly cookie token without throwing (guest-safe). */
+function getUserIdFromCookie(req) {
+  const token = req.cookies?.token;
+  if (!token) return null;
+  try {
+    const decoded = jwt.verify(token, env.jwtSecret);
+    return decoded.userId ?? null;
+  } catch {
+    return null;
+  }
+}
 
 const getMyCart = async (userId) => {
   try {
@@ -152,9 +167,9 @@ router.post("/category/:id", async (req, res) => {
     const total = await prisma.product.count({
       where: whereCondition,
     });
-    const totalPage=Math.ceil(total / limit);
-    if(page<=0) page=1;
-    if(page>totalPage) page=totalPage;
+    const totalPage = Math.ceil(total / limit);
+    if (page <= 0) page = 1;
+    if (page > totalPage) page = totalPage;
     const pagination = {
       page,
       totalPage,
@@ -256,8 +271,7 @@ router.post("/product/detail/:id", async (req, res) => {
 router.post("/cart/add", async (req, res) => {
   try {
 
-    let { productID, quantity, currentCart } = req.body ?? {};
-    productID=Number(productID);
+    const { productID, quantity, currentCart } = req.body ?? {};
     if (quantity <= 0) {
       res.json({
         code: "error",
@@ -281,7 +295,7 @@ router.post("/cart/add", async (req, res) => {
     const token = req.cookies.token;
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, env.jwtSecret);
         userId = decoded.userId;
       } catch (error) {
       }
@@ -355,7 +369,7 @@ router.post("/cart/get", async (req, res) => {
 
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, env.jwtSecret);
         userId = decoded.userId;
       } catch (error) {
       }
@@ -427,7 +441,7 @@ router.post("/cart/remove", async (req, res) => {
     const token = req.cookies.token;
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, env.jwtSecret);
         userId = decoded.userId;
       } catch (error) { }
     }
@@ -464,7 +478,7 @@ router.post("/cart/update", async (req, res) => {
     const token = req.cookies.token;
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, env.jwtSecret);
         userId = decoded.userId;
       } catch (error) { }
     }
@@ -508,7 +522,7 @@ router.post("/order/create", async (req, res) => {
 
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, env.jwtSecret);
         customerId = decoded.userId; // Lấy ID từ token
       } catch (error) {
         console.log("Token không hợp lệ:", error.message);
@@ -649,8 +663,8 @@ router.get("/order/payment/:id", async (req, res) => {
 import { VNPay, HashAlgorithm, ProductCode, ignoreLogger, VnpLocale } from 'vnpay';
 
 const vnpay = new VNPay({
-  tmnCode: 'SUYBCG99',
-  secureSecret: 'JODQGSBQOVJOTXBQRELQCRHWKGGSRAGP',
+  tmnCode: env.vnpayTmnCode,
+  secureSecret: env.vnpaySecureSecret,
   vnpayHost: 'https://sandbox.vnpayment.vn',
   queryDrAndRefundHost: 'https://sandbox.vnpayment.vn', // tùy chọn, trường hợp khi url của querydr và refund khác với url khởi tạo thanh toán (thường sẽ sử dụng cho production)
 
@@ -732,39 +746,66 @@ router.get('/vnpay-return', async (req, res) => {
   }
 });
 
-router.get("/checkLogin", async (req, res) => {
+async function handleCheckLogin(req, res) {
   try {
-    const token = req.cookies.token;
+    const token = req.cookies?.token;
     if (!token) {
-      return res.json({ code: "error", message: "Chưa đăng nhập" });
+      return res.json({ code: 'error', message: 'Chưa đăng nhập' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    let decoded;
+    try {
+      decoded = jwt.verify(token, env.jwtSecret);
+    } catch {
+      return res.status(401).json({ code: 'error', message: 'Token không hợp lệ hoặc đã hết hạn' });
+    }
+
+    if (decoded.userId && decoded.iat && isSessionInvalidated(decoded.userId, decoded.iat)) {
+      return res.status(401).json({ code: 'error', message: 'Phiên đăng nhập đã hết hiệu lực' });
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      include: {
-        // role: {
-        //   include: {
-        //     permissions: {
-        //       include: { permission: true }
-        //     }
-        //   }
-        // },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        phone: true,
+        avatar: true,
+        isActive: true,
+        role: { select: { code: true, name: true } },
         recipientInfos: true,
-      }
-    });
-    const cart = await getMyCart(user.id);
-    res.json({
-      code: "success",
-      account: user,
-      cart,
+      },
     });
 
+    if (!user || !user.isActive) {
+      return res.status(401).json({ code: 'error', message: 'Tài khoản không hợp lệ hoặc đã bị khóa' });
+    }
+
+    const cart = await getMyCart(user.id);
+    return res.json({
+      code: 'success',
+      account: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        phone: user.phone,
+        avatar: user.avatar,
+        role: user.role?.code,
+        roleName: user.role?.name,
+        recipientInfos: user.recipientInfos,
+      },
+      cart,
+    });
   } catch (error) {
-    console.log(error);
-    return res.status(401).json({ message: "Token không hợp lệ hoặc đã hết hạn" });
+    console.error('[checkLogin]', error.message);
+    return res.status(401).json({ code: 'error', message: 'Token không hợp lệ hoặc đã hết hạn' });
   }
-})
+}
+
+// Accept both casings used by different frontend files.
+router.get('/checkLogin', handleCheckLogin);
+router.get('/checklogin', handleCheckLogin);
 
 router.post("/comment/create", async (req, res) => {
   try {
@@ -778,7 +819,7 @@ router.post("/comment/create", async (req, res) => {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, env.jwtSecret);
       userId = decoded.userId;
     } catch (error) {
       return res.status(401).json({ code: "error", message: "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại" });
@@ -911,6 +952,33 @@ router.post("/search", async (req, res) => {
     });
   }
 })
+
+router.post("/update/avatar",
+  upload.single('avatar'),
+  async (req, res) => {
+    // console.log(req.file);
+    const token = req.cookies?.token;
+    if (!token) {
+      return res.status(401).json({ error: "Chưa đăng nhập" });
+    }
+
+    let payload;
+    try {
+      payload = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      return res.status(401).json({ error: "Token không hợp lệ" });
+    }
+    console.log(payload);
+    const updated = await prisma.user.update({
+      where: { id: payload.userId },
+      data: { avatar: req.file?.path||null },
+    });
+    return res.json({
+      code:"success",
+      message: "Cập nhật avatar thành công",
+      avatar: updated.avatar,
+    });
+  })
 
 
 export default router;

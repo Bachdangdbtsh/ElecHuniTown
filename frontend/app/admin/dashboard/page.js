@@ -1,7 +1,7 @@
 'use client';
 
 import { useApi } from '../_lib/useApi';
-import AsyncSection from '../_components/AsyncSecction';
+import AsyncSection from '../_components/AsyncSection';
 
 export default function AdminDashboardPage() {
   const usersState = useApi('/admin/users', { page: 1, limit: 1 });

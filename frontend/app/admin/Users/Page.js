@@ -27,41 +27,32 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 800 }}>Quản lý tài khoản</h1>
-          <p style={{ fontSize: 14, color: 'var(--muted)', marginTop: 4 }}>
-            Quản lý tài khoản khách hàng, nhân viên và đối tác
-          </p>
+          <h1 className="eht-page-title">Quản lý tài khoản</h1>
+          <p className="eht-page-sub">Quản lý tài khoản khách hàng, nhân viên và đối tác</p>
         </div>
-        <button
-          type="button"
-          className="st-btn st-btn-primary"
-          onClick={() => setIsModalOpen(true)}
-        >
+        <button type="button" className="eht-btn eht-btn-primary" onClick={() => setIsModalOpen(true)}>
           + Tạo tài khoản nhân viên
         </button>
       </div>
 
-      {/* KPI */}
-      <div className="adm-grid-kpi">
-        <div className="adm-kpi-card">
-          <p className="adm-kpi-title">Tổng số người dùng</p>
-          <p className="adm-kpi-value">{usersState.data?.kpis?.totalUsers ?? '—'}</p>
+      <div className="eht-kpi-row">
+        <div className="eht-kpi">
+          <p className="eht-kpi-num">{usersState.data?.kpis?.totalUsers ?? '—'}</p>
+          <p className="eht-kpi-lbl">Tổng người dùng</p>
         </div>
-        <div className="adm-kpi-card">
-          <p className="adm-kpi-title">Khách hàng</p>
-          <p className="adm-kpi-value">{usersState.data?.kpis?.customerCount ?? '—'}</p>
+        <div className="eht-kpi">
+          <p className="eht-kpi-num">{usersState.data?.kpis?.customerCount ?? '—'}</p>
+          <p className="eht-kpi-lbl">Khách hàng</p>
         </div>
-        <div className="adm-kpi-card">
-          <p className="adm-kpi-title">Nhân viên / Quản trị viên</p>
-          <p className="adm-kpi-value">{usersState.data?.kpis?.staffAndAdminCount ?? '—'}</p>
+        <div className="eht-kpi">
+          <p className="eht-kpi-num">{usersState.data?.kpis?.staffAndAdminCount ?? '—'}</p>
+          <p className="eht-kpi-lbl">Nhân viên / Quản trị</p>
         </div>
-        <div className="adm-kpi-card">
-          <p className="adm-kpi-title">Đã khóa</p>
-          <p className="adm-kpi-value" style={{ color: 'var(--down)' }}>
-            {usersState.data?.kpis?.lockedCount ?? '—'}
-          </p>
+        <div className="eht-kpi">
+          <p className="eht-kpi-num" style={{ color: 'var(--eht-danger, #dc2626)' }}>{usersState.data?.kpis?.lockedCount ?? '—'}</p>
+          <p className="eht-kpi-lbl">Bị khóa</p>
         </div>
       </div>
 

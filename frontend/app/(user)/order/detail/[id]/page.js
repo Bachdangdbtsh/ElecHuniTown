@@ -1,6 +1,9 @@
 import { IoMdClose } from "react-icons/io";
 import Link from "next/link";
 import { FaChevronRight } from "react-icons/fa";
+export const metadata = {
+  title: "Trang chi tiết đơn hàng",
+};
 export default function OrderDetail() {
   return (<>
     <div className="order-detail-page">

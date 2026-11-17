@@ -29,7 +29,7 @@ export default function ProductCart({ item, }) {
     }
 
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_URL}/cart/update`, {
+      await fetch(`${(process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_URL)}/cart/update`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

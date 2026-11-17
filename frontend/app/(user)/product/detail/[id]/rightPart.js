@@ -41,7 +41,7 @@ export default function RightPart({product}) {
       <div className="quantity">
         <div className="quantity-input">
           <div className="label">Số lượng</div>
-          <input type="number" defaultValue={quantity} onChange={(event)=>{setquantity(event.target.value)}}></input>
+          <input type="number" min="1" max={product.stock} value={quantity} onChange={(event)=>{setquantity(event.target.value)}}></input>
         </div>
         <div className="quantity-detail">
           <div className="number">{quantity} x </div>

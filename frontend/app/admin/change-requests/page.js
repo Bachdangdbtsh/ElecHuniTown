@@ -16,8 +16,7 @@ export default function AdminChangeRequestsPage() {
     setFeedback('');
     setFeedbackErr('');
     try {
-      const note = window.prompt('Ghi chú (tuỳ chọn):') || undefined;
-      await apiPatch(`/admin/change-requests/${id}/review`, { status, note });
+      await apiPatch(`/admin/change-requests/${id}/review`, { status });
       setFeedback(`Đã ${actionText} thành công.`);
       requestsState.reload();
     } catch (err) {

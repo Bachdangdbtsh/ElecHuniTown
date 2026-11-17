@@ -101,13 +101,10 @@ export async function findUserDetailById(id) {
           },
         },
       },
-      customer: {
-        include: {
-          orders: {
-            select: { id: true },
-          },
-        },
+      orders: {
+        select: { id: true },
       },
+      customer: true,
       staff: true,
       shopOwner: true,
       admin: true,

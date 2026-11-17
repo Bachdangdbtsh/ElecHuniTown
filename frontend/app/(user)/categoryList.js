@@ -2,21 +2,24 @@
 import { FaListUl } from "react-icons/fa";
 import { useEffect, useState } from "react"
 import Link from "next/link";
+import Image from "next/image";
+import { getApiBase } from "@/lib/apiBase";
 export default function CategoryList() {
   const [categories, setcategories] = useState(null);
   const [activeId, setActiveId] = useState(null);
-  const [children, setchildren] = useState(null);
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_URL) || "http://localhost:4000"}/header/category/list`, {
+    fetch(`${getApiBase()}/header/category/list`, {
       method: "POST",
     })
       .then(res => res.json())
       .then(data => {
-        setcategories(data.categories);
-        setActiveId(data.categories?.[0]?.id ?? null);
-        setchildren(data.categories?.[0]?.children ?? null);
+        const loadedCategories = Array.isArray(data.categories) ? data.categories : [];
+        setcategories(loadedCategories);
+        setActiveId(loadedCategories[0]?.id ?? null);
       })
   }, [])
+  const activeCategory = categories?.find((category) => category.id === activeId) || categories?.[0];
+  const currentChildren = Array.isArray(activeCategory?.children) ? activeCategory.children : [];
   return (categories &&
     <>
       <div className="category-list">
@@ -29,35 +32,41 @@ export default function CategoryList() {
             <div className="category-list-more">
               <div className="category-list-more--left">
                 {categories.map((cat) => (
-                  <div
+                  <Link
                     key={cat.id}
+                    href={`/category/${cat.id}`}
                     className={`category-item ${activeId === cat.id ? "active" : ""
                       }`}
                     onMouseEnter={() => setActiveId(cat.id)}
-                    onClick={() => {
-                      setActiveId(cat.id);
-                      setchildren(cat.children);
-                    }}
+                    onFocus={() => setActiveId(cat.id)}
                   >
                     {cat.name}
-                  </div>
+                  </Link>
                 ))}
               </div>
 
               <div className="category-list-more--right">
-                {children.length === 0 ? (
-                  <p className="category-empty">Danh mục này chưa có mục con</p>
+                {currentChildren.length === 0 ? (
+                  <div className="category-empty">
+                    <p>Danh mục này chưa có mục con.</p>
+                    {activeCategory && <Link href={`/category/${activeCategory.id}`}>
+                      Xem toàn bộ sản phẩm của danh mục này →
+                    </Link>}
+                  </div>
                 ) : (
-                  children.map((child) => (
+                  currentChildren.map((child) => (
                     <Link
                       key={child.id}
                       className="category-card"
                       href={`/category/${child.id}`}
                     >
-                      <img
+                      <Image
                         className="card-image"
-                        src={child.imageUrl || "/placeholder.jpg"}
+                        src={child.imageUrl || "/placeholder.svg"}
                         alt={child.name}
+                        width={100}
+                        height={80}
+                        unoptimized
                       />
                       <div className="card-label">{child.name}</div>
                     </Link>

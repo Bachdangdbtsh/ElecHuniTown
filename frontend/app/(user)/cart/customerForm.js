@@ -1,172 +1,129 @@
-"use client";
-import { useEffect, useRef, useState } from "react";
-import JustValidate from "just-validate";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+'use client';
 
-export default function CustomerInfor({ recipientInfos = [], isLogin }) {
-  const validatorRef = useRef(null);
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { postShop, saveCart } from '../component/cartStore';
+
+export default function CustomerInfor({ cart, setCart, loading }) {
   const router = useRouter();
+  const [confirmation, setConfirmation] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [customer, setCustomer] = useState({ name: '', phone: '', address: '', addressType: '' });
+  const selected = cart.filter((item) => item.selected !== false);
+  const amount = selected.reduce((sum, item) => sum + item.newPrice * item.quantity, 0);
+  const shippingFee = amount > 1000000 ? 0 : 30000;
 
-  // 1. Lưu trạng thái địa chỉ đang được chọn (Mặc định chọn cái isDefault hoặc cái đầu tiên)
-  const [selectedAddress, setSelectedAddress] = useState(() => {
-    if (!recipientInfos || recipientInfos.length === 0) return null;
-    const defaultAddr = recipientInfos.find((addr) => addr.isDefault);
-    return defaultAddr || recipientInfos[0];
-  });
-
-  const order = () => {
-    const formEl = document.querySelector("#customer-infor-form");
-    if (!formEl) return;
-    if (validatorRef.current) return;
-
-    const validator = new JustValidate("#customer-infor-form", {
-      errorLabelCssClass: "my-error-message",
-    });
-
-    validator
-      .addField("#name", [{ rule: "required", errorMessage: "Vui lòng nhập họ và tên" }])
-      .addField("#phone", [{ rule: "required", errorMessage: "Vui lòng nhập số điện thoại" }])
-      .addField("#address", [{ rule: "required", errorMessage: "Vui lòng nhập địa chỉ giao hàng" }])
-      .onSuccess((event) => {
-        const form = event.target;
-        const name = form.name.value;
-        const phone = form.phone.value;
-        const address = form.address.value;
-        const note = form.note.value;
-        const addressType = form.addressType.value;
-
-        // Lấy phương thức thanh toán
-        let paymentMethod = "money";
-        form.querySelectorAll(".paymentMethod").forEach((item) => {
-          if (item.checked) paymentMethod = item.value;
-        });
-
-        // Lấy giỏ hàng từ LocalStorage
-        const cartString = localStorage.getItem("cart");
-        const cart = cartString ? JSON.parse(cartString) : [];
-        const cartChecked = cart.filter((p) => p.selected === true);
-
-        if (cartChecked.length === 0) {
-          toast.error("Vui lòng chọn ít nhất 1 sản phẩm để thanh toán!");
-          return;
-        }
-
-        // Gọi API tạo đơn hàng
-        fetch(`${(process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_URL)}/order/create`, {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name, phone, address, note, paymentMethod,
-            cart: cartChecked,
-            addressType,
-          })
-        })
-        .then(res => res.json())
-        .then(data => {
-          if (data.code === "success") {
-            toast.success(data.message);
-            const remainCart = cart.filter((p) => p.selected !== true);
-            localStorage.setItem("cart", JSON.stringify(remainCart));
-            router.push(`/order/payment/${data.newOrder.id}`);
-          } else {
-            toast.error(data.message || "Có lỗi xảy ra khi đặt hàng");
-          }
-        })
-        .catch((error) => {
-          console.error(error);
-          toast.error("Lỗi kết nối đến server");
-        });
-      });
-
-    validatorRef.current = validator;
-    
-    return () => {
-      const errorLabels = formEl.querySelectorAll(".my-error-message");
-      errorLabels.forEach((label) => label.remove());
-    };
-  };
-
-  useEffect(order, []);
-
-  // 2. Cập nhật form mỗi khi click chọn địa chỉ khác
   useEffect(() => {
-    const formEl = document.querySelector("#customer-infor-form");
-    if (!formEl || !selectedAddress) return;
-
-    if (formEl.name) formEl.name.value = selectedAddress.recipientName || "";
-    if (formEl.phone) formEl.phone.value = selectedAddress.recipientPhoneNumber || "";
-    if (formEl.address) formEl.address.value = selectedAddress.address || "";
-    
-    if (formEl.addressType) {
-      formEl.addressType.value = selectedAddress.recipientType === 'Nhà' ? 'home' : 'company';
+    const controller = new AbortController();
+    async function loadAddresses() {
+      try {
+        const response = await fetch('/api/backend/recipients', {
+          credentials: 'include', signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const result = await response.json();
+        const list = Array.isArray(result.data) ? result.data : [];
+        setAddresses(list);
+        const preferred = list.find((item) => item.isDefault) || list[0];
+        if (preferred) {
+          setSelectedAddressId(preferred.id);
+          setCustomer((current) => ({
+            name: current.name || preferred.recipientName || '',
+            phone: current.phone || preferred.recipientPhoneNumber || '',
+            address: current.address || preferred.address || '',
+            addressType: current.addressType || (preferred.recipientType === 'Công ty' ? 'company' : 'home'),
+          }));
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') console.error('Không thể tải địa chỉ giao hàng', error);
+      }
     }
-  }, [selectedAddress]);
+    loadAddresses();
+    return () => controller.abort();
+  }, []);
+
+  function selectAddress(item) {
+    setSelectedAddressId(item.id);
+    setCustomer({
+      name: item.recipientName || '',
+      phone: item.recipientPhoneNumber || '',
+      address: item.address || '',
+      addressType: item.recipientType === 'Công ty' ? 'company' : 'home',
+    });
+  }
+
+  function changeField(event) {
+    const { name, value } = event.target;
+    setCustomer((current) => ({ ...current, [name]: value }));
+    setSelectedAddressId(null);
+  }
+
+  function prepareOrder(event) {
+    event.preventDefault();
+    if (!selected.length) {
+      toast.error('Vui lòng chọn ít nhất một sản phẩm');
+      return;
+    }
+    const fields = Object.fromEntries(new FormData(event.currentTarget));
+    setConfirmation({
+      name: fields.name.trim(), phone: fields.phone.trim(), address: fields.address.trim(),
+      addressType: fields.addressType, note: fields.note.trim(),
+      paymentMethod: fields.paymentMethod, cart: selected,
+    });
+  }
+
+  async function confirmOrder() {
+    if (!confirmation || submitting) return;
+    setSubmitting(true);
+    try {
+      const data = await postShop('/order/create', confirmation);
+      const remaining = cart.filter((item) => !confirmation.cart.some((ordered) => ordered.id === item.id));
+      setCart(saveCart(remaining));
+      toast.success(data.message);
+      router.push(`/order/payment/${data.newOrder.id}`);
+    } catch (error) {
+      if (error.message.includes('đăng nhập') || error.message.includes('Phiên đăng nhập') || error.message.includes('Tài khoản không thể đặt hàng')) {
+        toast.error('Vui lòng đăng nhập bằng tài khoản khách hàng để hoàn tất đặt hàng');
+        router.push('/login?returnTo=%2Fcart');
+      } else {
+        toast.error(error.message);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
-    <div className="checkout-container">
-      {/* HIỂN THỊ ĐỊA CHỈ NẾU ĐÃ ĐĂNG NHẬP VÀ CÓ ĐỊA CHỈ */}
-      {isLogin && recipientInfos.length > 0 && (
-        <div className="address-list-section" style={{ marginBottom: "20px", paddingLeft:"20px" }}>
+    <>
+      {addresses.length > 0 && (
+        <div className="address-list-section" style={{ marginBottom: 20, paddingLeft: 20 }}>
           <h3>Chọn địa chỉ giao hàng</h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop:"20px" }}>
-            {recipientInfos.map((addr) => (
-              <div 
-                key={addr.id} 
-                onClick={() => setSelectedAddress(addr)}
-                style={{
-                  padding: "10px",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  backgroundColor: selectedAddress?.id === addr.id ? "#f9f9f9" : "white"
-                }}
-              >
-                <div style={{ fontWeight: "bold" }}>
-                  {addr.recipientName} | {addr.recipientPhoneNumber}
-                  {addr.isDefault && <span style={{ color: "red", marginLeft: "10px" }}>[Mặc định]</span>}
-                </div>
-                <div style={{ fontSize: "14px", color: "#666", marginTop:"10px"  }}>{addr.address}</div>
-              </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 20 }}>
+            {addresses.map((item) => (
+              <button key={item.id} type="button" onClick={() => selectAddress(item)}
+                aria-pressed={selectedAddressId === item.id}
+                style={{ padding: 10, borderRadius: 8, cursor: 'pointer', textAlign: 'left', border: '1px solid #ddd', backgroundColor: selectedAddressId === item.id ? '#f9f9f9' : 'white' }}>
+                <strong>{item.recipientName} | {item.recipientPhoneNumber}</strong>
+                {item.isDefault && <span style={{ color: 'red', marginLeft: 10 }}>[Mặc định]</span>}
+                <div style={{ fontSize: 14, color: '#666', marginTop: 10 }}>{item.address}</div>
+              </button>
             ))}
           </div>
         </div>
       )}
-
-      {/* FORM ĐIỀN THÔNG TIN */}
-      <form className="inner-form" id="customer-infor-form">
+      <form className="inner-form" id="customer-infor-form" onSubmit={prepareOrder}>
         <div className="inrow">
-          <div className="field">
-            <input className="input-text" type="text" id="name" name="name" placeholder="Họ và tên" />
-          </div>
-          <div className="field">
-            <input className="input-text" type="text" id="phone" name="phone" placeholder="Số điện thoại" />
-          </div>
+          <div className="field"><input className="input-text" type="text" name="name" placeholder="Họ và tên" required value={customer.name} onChange={changeField} /></div>
+          <div className="field"><input className="input-text" type="tel" name="phone" placeholder="Số điện thoại" required pattern="[0-9]{9,15}" value={customer.phone} onChange={changeField} /></div>
         </div>
-
-        {/* address */}
         <div className="inrow">
-          <div className="field">
-            <input className="input-text" type="text" id="address" name="address" placeholder="Địa chỉ" />
-          </div>
-          <div className="field">
-            <select className="input-text" id="addressType" name="addressType">
-              <option value="">Chọn loại địa chỉ</option>
-              <option value="home">Nhà riêng</option>
-              <option value="company">Công ty</option>
-            </select>
-          </div>
+          <div className="field"><input className="input-text" type="text" name="address" placeholder="Địa chỉ giao hàng" required value={customer.address} onChange={changeField} /></div>
+          <div className="field"><select className="input-text" name="addressType" required value={customer.addressType} onChange={changeField}><option value="" disabled>Chọn loại địa chỉ</option><option value="home">Nhà riêng</option><option value="company">Công ty</option></select></div>
         </div>
-
-        {/* note */}
-        <div className="field">
-          <textarea className="input-text" id="note" name="note" placeholder="Ghi chú"></textarea>
-        </div>
-
-        {/* PHƯƠNG THỨC THANH TOÁN */}
+        <div className="field"><textarea className="input-text" name="note" placeholder="Ghi chú" /></div>
         <div className="inner-method">
           <div className="inner-title">Chọn phương thức thanh toán</div>
           <div className="inner-list">
@@ -181,7 +138,7 @@ export default function CustomerInfor({ recipientInfos = [], isLogin }) {
               />
               <label htmlFor="money">Thanh toán tiền mặt khi nhận hàng</label>
             </div>
-            <div className="method-detail">
+            {/* <div className="method-detail">
               <input
                 type="radio"
                 id="momo"
@@ -190,7 +147,7 @@ export default function CustomerInfor({ recipientInfos = [], isLogin }) {
                 value="momo"
               />
               <label htmlFor="momo">Ví MoMo</label>
-            </div>
+            </div> */}
             <div className="method-detail">
               <input
                 type="radio"
@@ -203,11 +160,24 @@ export default function CustomerInfor({ recipientInfos = [], isLogin }) {
             </div>
           </div>
         </div>
-
-        <div className="order">
-          <button type="submit" form="customer-infor-form">ĐẶT HÀNG</button>
-        </div>
+        <div className="order"><button type="submit" disabled={loading || !selected.length}>XEM LẠI ĐƠN HÀNG</button></div>
       </form>
-    </div>
+      {confirmation && (
+        <div className="checkout-confirm-backdrop" role="presentation">
+          <section className="checkout-confirm" role="dialog" aria-modal="true" aria-labelledby="checkout-confirm-title">
+            <h2 id="checkout-confirm-title">Xác nhận đặt hàng</h2>
+            <p>Người nhận: {confirmation.name} · {confirmation.phone}</p>
+            <p>Giao đến: {confirmation.address}</p>
+            <ul>{confirmation.cart.map((item) => <li key={item.id}>{item.productName} × {item.quantity}</li>)}</ul>
+            <p>Phương thức: {confirmation.paymentMethod === 'bank' ? 'VNPay' : 'Thanh toán khi nhận hàng'}</p>
+            <strong>Tổng thanh toán: {(amount + shippingFee).toLocaleString('vi-VN')} đ</strong>
+            <div className="checkout-confirm-actions">
+              <button type="button" onClick={() => setConfirmation(null)} disabled={submitting}>Quay lại chỉnh sửa</button>
+              <button type="button" onClick={confirmOrder} disabled={submitting}>{submitting ? 'Đang đặt hàng...' : 'Xác nhận đặt hàng'}</button>
+            </div>
+          </section>
+        </div>
+      )}
+    </>
   );
 }

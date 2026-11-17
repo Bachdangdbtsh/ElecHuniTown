@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/api';
+import BrandLogo from '@/components/BrandLogo';
 import '../eht-ui.css';
 
 /**
@@ -71,7 +72,7 @@ export default function ForgotPasswordPage() {
     <div className="auth-wrap">
       <div className="auth-card">
         <div className="auth-header">
-          <div className="auth-brand-mark">EH</div>
+          <BrandLogo variant="authMark" className="auth-brand-mark" />
           <p className="auth-logo">ElecHuniTown</p>
           <p className="auth-subtitle">Khôi phục mật khẩu tài khoản</p>
         </div>

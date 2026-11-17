@@ -18,18 +18,10 @@ function initials(name) {
 export default function AdminTopBar({ user, notifications = 0 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [today, setToday] = useState('');
+  const [today] = useState(() => new Date().toLocaleDateString('vi-VN', {
+    weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Ho_Chi_Minh',
+  }));
   const ref = useRef(null);
-
-  useEffect(() => {
-    setToday(
-      new Date().toLocaleDateString('vi-VN', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-      }),
-    );
-  }, []);
 
   useEffect(() => {
     const close = (e) => {

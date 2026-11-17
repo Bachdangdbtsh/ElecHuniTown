@@ -6,7 +6,7 @@ export const metadata = {
 };
 
 async function CategoryLoader({ id }) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_URL}/category/${id}`, {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/category/${id}`, {
     method: "POST",
     cache: "no-store",       
   });
@@ -24,7 +24,7 @@ export default async function CategoryPage({ params }) {
 
   return (
     <Suspense fallback={<div>Đang tải danh mục...</div>}>
-      <CategoryLoader id={id} />
+      <Category id={id}/>
     </Suspense>
   );
 }

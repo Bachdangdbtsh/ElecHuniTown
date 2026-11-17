@@ -1,0 +1,194 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import BrandLogo from '@/components/BrandLogo';
+import {
+  FiBarChart2,
+  FiBell,
+  FiBox,
+  FiChevronDown,
+  FiClipboard,
+  FiGrid,
+  FiPackage,
+  FiRefreshCw,
+  FiSettings,
+  FiTag,
+  FiUsers,
+} from 'react-icons/fi';
+
+const navigation = [
+  { label: 'Quản lý đơn hàng', icon: FiClipboard, disabled: true },
+  { label: 'Đổi trả - Hoàn tiền', icon: FiRefreshCw, disabled: true },
+  { label: 'Quản lý danh mục sản phẩm', icon: FiGrid, disabled: true },
+];
+
+export default function InventoryShell({ user, children }) {
+  const pathname = usePathname();
+  const [inventoryMenuOpen, setInventoryMenuOpen] = useState(() => pathname.startsWith('/inventory'));
+  const [accessNotice, setAccessNotice] = useState(false);
+  const [financeNotice, setFinanceNotice] = useState(false);
+  const today = new Intl.DateTimeFormat('vi-VN', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'Asia/Ho_Chi_Minh',
+  }).format(new Date());
+  const isInventory = pathname.startsWith('/inventory');
+
+  return (
+    <div className="inv-shell">
+      <aside className="inv-sidebar">
+        <Link className="inv-brand" href="/inventory" aria-label="ElecHuniTown - Quản lý cửa hàng">
+          <BrandLogo variant="smallMark" />
+          <span>
+            <strong>ElecHuniTown</strong>
+            <small>Quản lý cửa hàng</small>
+          </span>
+        </Link>
+
+        <p className="inv-nav-caption">MENU CHÍNH</p>
+        <nav className="inv-nav" aria-label="Menu quản lý">
+          {navigation.map(({ label, icon: Icon }) => (
+            <span className="inv-nav-link inv-nav-disabled" key={label} aria-disabled="true">
+              <span className="inv-nav-icon"><Icon aria-hidden="true" /></span>
+              <span>{label}</span>
+            </span>
+          ))}
+          <div className="inv-nav-group">
+            <div className={`inv-nav-parent-row ${isInventory ? 'is-active' : ''}`}>
+              <Link
+                href="/inventory"
+                className="inv-nav-parent-link"
+                aria-current={pathname === '/inventory' ? 'page' : undefined}
+                onClick={() => setInventoryMenuOpen(true)}
+              >
+                <span className="inv-nav-icon"><FiBox aria-hidden="true" /></span>
+                <span>Quản lý kho hàng</span>
+              </Link>
+              <button
+                type="button"
+                className={`inv-nav-toggle ${inventoryMenuOpen ? 'is-open' : ''}`}
+                aria-label={inventoryMenuOpen ? 'Thu gọn tính năng kho hàng' : 'Mở tính năng kho hàng'}
+                aria-expanded={inventoryMenuOpen}
+                aria-controls="inventory-submenu"
+                onClick={() => setInventoryMenuOpen((open) => !open)}
+              >
+                <FiChevronDown aria-hidden="true" />
+              </button>
+            </div>
+            {inventoryMenuOpen && (
+              <div className="inv-nav-submenu" id="inventory-submenu">
+                <Link
+                  href="/inventory?view=inventory"
+                  className={`inv-nav-sub-link ${pathname === '/inventory' ? 'is-current' : ''}`}
+                  onClick={() => setAccessNotice(false)}
+                >
+                  <FiPackage aria-hidden="true" />
+                  <span>Quản lý hàng tồn kho</span>
+                </Link>
+                {user.role === 'STAFF' ? (
+                  <>
+                    <button
+                      type="button"
+                      className="inv-nav-sub-link inv-nav-sub-button"
+                      aria-describedby={accessNotice ? 'inventory-access-notice' : undefined}
+                      onClick={() => setAccessNotice(true)}
+                    >
+                      <FiClipboard aria-hidden="true" />
+                      <span>Duyệt phiếu nhập/xuất kho</span>
+                    </button>
+                    {accessNotice && (
+                      <small className="inv-nav-access-notice" id="inventory-access-notice" role="status">
+                        Chỉ có shop owner mới có quyền truy cập.
+                      </small>
+                    )}
+                  </>
+                ) : (
+                  <Link
+                    href="/inventory?view=pending"
+                    className="inv-nav-sub-link"
+                    onClick={() => setAccessNotice(false)}
+                  >
+                    <FiClipboard aria-hidden="true" />
+                    <span>Duyệt phiếu nhập/xuất kho</span>
+                  </Link>
+                )}
+                <Link
+                  href="/inventory/suppliers"
+                  className={`inv-nav-sub-link ${pathname.startsWith('/inventory/suppliers') ? 'is-current' : ''}`}
+                  aria-current={pathname.startsWith('/inventory/suppliers') ? 'page' : undefined}
+                  onClick={() => setAccessNotice(false)}
+                >
+                  <FiUsers aria-hidden="true" />
+                  <span>Quản lý nhà cung cấp</span>
+                </Link>
+              </div>
+            )}
+          </div>
+          {user.role === 'STAFF' ? (
+            <button
+              type="button"
+              className="inv-nav-link inv-nav-disabled inv-nav-button"
+              aria-describedby={financeNotice ? 'finance-access-notice' : undefined}
+              onClick={() => setFinanceNotice(true)}
+            >
+              <span className="inv-nav-icon"><FiBarChart2 aria-hidden="true" /></span>
+              <span>Thống kê tài chính</span>
+            </button>
+          ) : (
+            <Link
+              href="/statistics"
+              className={`inv-nav-link ${pathname.startsWith('/statistics') ? 'is-active' : ''}`}
+            >
+              <span className="inv-nav-icon"><FiBarChart2 aria-hidden="true" /></span>
+              <span>Thống kê tài chính</span>
+            </Link>
+          )}
+          {financeNotice && user.role === 'STAFF' && (
+            <small className="inv-nav-access-notice" id="finance-access-notice" role="status">
+              Chỉ có Shop Owner mới có quyền truy cập.
+            </small>
+          )}
+        </nav>
+
+        <div className="inv-sidebar-bottom">
+          <div className="inv-sidebar-user">
+            <span className="inv-avatar">{user.fullName?.slice(0, 1)?.toUpperCase() || 'U'}</span>
+            <span className="inv-user-copy">
+              <strong>{user.fullName}</strong>
+              <small>{user.roleName || (user.role === 'STAFF' ? 'Nhân viên' : 'Chủ cửa hàng')}</small>
+            </span>
+          </div>
+        </div>
+      </aside>
+
+      <div className="inv-main-column">
+        <header className="inv-topbar">
+          <div className="inv-date">
+            <span>{today}</span>
+            <small><i /> Hệ thống vận hành ổn định</small>
+          </div>
+          <div className="inv-topbar-actions">
+            <button type="button" className="inv-icon-button" aria-label="Thông báo">
+              <FiBell aria-hidden="true" />
+              <span className="inv-notification-dot" />
+            </button>
+            <button type="button" className="inv-icon-button" aria-label="Cài đặt">
+              <FiSettings aria-hidden="true" />
+            </button>
+            <span className="inv-topbar-divider" />
+            <span className="inv-avatar inv-avatar-top">{user.role === 'STAFF' ? 'STF' : 'QT'}</span>
+            <span className="inv-greeting">
+              <small>TÀI KHOẢN {user.role === 'STAFF' ? 'STAFF' : 'SHOP OWNER'}</small>
+              <strong>Chào mừng, {user.role === 'STAFF' ? 'Staff' : 'Shop Owner'}</strong>
+            </span>
+            <FiGrid className="inv-greeting-chevron" aria-hidden="true" />
+          </div>
+        </header>
+        <main className="inv-content">{children}</main>
+      </div>
+    </div>
+  );
+}

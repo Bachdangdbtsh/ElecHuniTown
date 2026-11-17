@@ -104,11 +104,17 @@ export default function AdminRolesPage() {
                   </div>
                   <button
                     type="button"
-                    className="st-btn st-btn-primary"
+                    className="eht-btn eht-btn-primary"
                     disabled={saving}
                     onClick={handleSavePermissions}
+                    style={{
+                      boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
+                      transition: 'all 0.2s ease',
+                      cursor: saving ? 'not-allowed' : 'pointer',
+                      opacity: saving ? 0.75 : 1,
+                    }}
                   >
-                    {saving ? 'Đang lưu...' : 'Lưu phân quyền'}
+                    {saving ? '⏳ Đang lưu...' : '💾 Lưu phân quyền'}
                   </button>
                 </div>
 

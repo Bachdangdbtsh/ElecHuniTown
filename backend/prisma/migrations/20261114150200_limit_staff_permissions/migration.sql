@@ -1,0 +1,10 @@
+DELETE FROM "RolePermission" rp
+USING "Role" r, "Permission" p
+WHERE rp."roleId" = r.id
+  AND rp."permissionId" = p.id
+  AND r.code = 'STAFF'
+  AND p.code IN (
+    'INVENTORY_VIEW', 'STOCK_RECEIPT_CREATE', 'STOCK_RECEIPT_APPROVE',
+    'STOCK_ISSUE_CREATE', 'STOCK_ISSUE_APPROVE', 'STOCK_ISSUE_MANAGE',
+    'SUPPLIER_MANAGE', 'RETURN_MANAGE', 'STATISTIC_VIEW', 'STATISTIC_EXPORT'
+  );

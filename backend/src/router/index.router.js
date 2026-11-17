@@ -956,7 +956,6 @@ router.post("/search", async (req, res) => {
 router.post("/update/avatar",
   upload.single('avatar'),
   async (req, res) => {
-    // console.log(req.file);
     const token = req.cookies?.token;
     if (!token) {
       return res.status(401).json({ error: "Chưa đăng nhập" });

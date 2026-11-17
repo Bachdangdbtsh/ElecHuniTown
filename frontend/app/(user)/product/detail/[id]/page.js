@@ -17,7 +17,6 @@ export default async function ProductDetail({ params }) {
 
   const data = await res.json();
   const product = data.product;
-  console.log(data);
 
   return (<>
     <div className="product-detail-page">

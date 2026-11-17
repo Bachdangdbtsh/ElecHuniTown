@@ -42,14 +42,12 @@ export default function Category({ id }) {
     })
       .then(res => res.json())
       .then(data => {
-        console.log(data);
         if (data.code == "success") {
           setproductList(data.productList);
           settags(data.tags);
           setpagination(data.pagination);
           setparent(data.parent);
           setcategory(data.category);
-          console.log(data.pagination);
         }
       })
   }, [id, sort, tag, page])

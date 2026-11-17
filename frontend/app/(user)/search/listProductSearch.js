@@ -36,13 +36,11 @@ export default function ListProductSearch() {
     })
       .then(res => res.json())
       .then(data => {
-        console.log(data);
         if (data.code == "success") {
           setproductList(data.productList);
           settitle(data.title);
           settags(data.tags);
           setpagination(data.pagination);
-          console.log(data.pagination);
         }
       })
   }, [key, isFeature, isSuggest, sort, tag,page])

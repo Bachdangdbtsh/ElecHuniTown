@@ -20,7 +20,6 @@ export default function PaymentDetail({ id }) {
     })
       .then(res => res.json())
       .then((data) => {
-        console.log(data.order);
         setorder(data.order)
       })
   }, [])
@@ -46,7 +45,6 @@ export default function PaymentDetail({ id }) {
     })
     .then(res=>res.json())
     .then(data=>{
-      console.log(data);
       if(data.code="success"){
         router.push(data.paymentUrl);
       }

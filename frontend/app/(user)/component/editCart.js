@@ -16,7 +16,6 @@ export function addCart(product, quantity) {
   })
     .then(res => res.json())
     .then(data => {
-      console.log(data);
 
       if (data.code == "success") {
         toast.success(data.message);

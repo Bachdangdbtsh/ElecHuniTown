@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useSyncExternalStore } from 'react';
+import Link from 'next/link';
 import { useApi } from './_lib/useApi';
 import { formatDate, presetRange, previousRange } from './_lib/dates';
 import PeriodPicker from './_components/PeriodPicker';
@@ -16,7 +17,15 @@ import RatingSection from './_components/RatingSection';
 // Khoảng ngày mặc định (tháng này) chỉ tính trên trình duyệt: server trả null để không lệch giờ khi hydrate.
 let defaultRange;
 const subscribeNone = () => () => {};
-const getClientRange = () => (defaultRange ??= presetRange('thisMonth'));
+const getClientRange = () => {
+  if (defaultRange) return defaultRange;
+  // Quay lại từ trang xem trước báo cáo: giữ đúng kỳ báo cáo trên URL.
+  const params = new URLSearchParams(window.location.search);
+  const from = params.get('from');
+  const to = params.get('to');
+  defaultRange = from && to ? { from, to } : presetRange('thisMonth');
+  return defaultRange;
+};
 const getServerRange = () => null;
 
 export default function StatisticsPage() {
@@ -55,6 +64,9 @@ export default function StatisticsPage() {
         <div className="st-tools">
           <PeriodPicker range={range} onChange={setRange} />
           <ExportButton range={range} />
+          <Link className="st-btn" href={range ? `/statistics/report?${new URLSearchParams(range)}` : '/statistics/report'}>
+            Xem trước báo cáo
+          </Link>
         </div>
       </header>
 

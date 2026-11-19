@@ -24,6 +24,13 @@ export function useApi(path, params) {
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
 
+  // A login in another tab replaces the shared session cookie. Recheck on return.
+  useEffect(() => {
+    if (!path) return;
+    window.addEventListener('focus', reload);
+    return () => window.removeEventListener('focus', reload);
+  }, [path, reload]);
+
   if (key === null) return { status: 'idle', data: null, error: null, reload };
   if (result.key === key) {
     return result.error

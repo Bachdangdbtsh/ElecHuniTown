@@ -1,5 +1,6 @@
 import { prisma } from '../../lib/prisma.js';
 import { recordSale } from '../finance/finance.service.js';
+import { notify } from '../../utils/notify.js';
 
 const productInclude = {
   category: true,
@@ -273,6 +274,8 @@ export function updateOrderStatus(id, status, expectedStatus, actorId) {
     if (status === 'DELIVERED' && order?.paymentMethod === 'money') {
       await recordSale(tx, order, actorId);
     }
+    const recipient = await tx.order.findUnique({ where: { id }, select: { customerId: true } });
+    await notify({ userId: recipient?.customerId, role: 'CUSTOMER', type: 'ORDER_STATUS', message: `Đơn hàng #${id} đã chuyển sang trạng thái ${status}.`, url: '/account/orders', payload: { orderId: id, status } }, tx);
     await tx.auditLog.create({
       data: { actorId, action: status === 'CONFIRMED' ? 'APPROVE' : 'UPDATE', entityType: 'Order', entityId: id, details: { from: expectedStatus, to: status } },
     });
@@ -312,6 +315,7 @@ export function cancelOrderAndRestock(id, expectedStatus, actorId) {
     await tx.auditLog.create({
       data: { actorId, action: 'REJECT', entityType: 'Order', entityId: id, details: { from: expectedStatus, to: 'CANCELLED' } },
     });
+    await notify({ userId: order.customerId, role: 'CUSTOMER', type: 'ORDER_STATUS', message: `Đơn hàng #${id} đã bị hủy.`, url: '/account/orders', payload: { orderId: id, status: 'CANCELLED' } }, tx);
 
     return true;
   });

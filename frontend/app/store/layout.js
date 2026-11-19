@@ -6,7 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { apiFetch, apiPost } from '@/lib/api';
 import BrandLogo from '@/components/BrandLogo';
 import Avatar from '@/app/(common)/Avatar';
-import { FiBell, FiBox, FiChevronDown, FiClipboard, FiGrid, FiPackage, FiRefreshCw, FiSettings, FiShoppingBag, FiTrendingUp, FiUsers } from 'react-icons/fi';
+import { FiBox, FiChevronDown, FiClipboard, FiGrid, FiPackage, FiRefreshCw, FiSettings, FiShoppingBag, FiTrendingUp, FiUsers } from 'react-icons/fi';
+import BellIcon from '@/app/(common)/BellIcon';
 import '../eht-ui.css';
 import '../staff/staff.css';
 import './store.css';
@@ -136,7 +137,7 @@ export default function StoreLayout({ children }) {
             </p>
           </div>
           <div className="eht-top-right">
-            <span className="eht-icon-btn" aria-label="Thông báo"><FiBell /></span>
+            <BellIcon user={user} />
             <span className="eht-icon-btn" aria-label="Cài đặt"><FiSettings /></span>
             <div style={{ position: 'relative' }}>
               <button type="button" className="eht-user-chip" onClick={() => setOpen((v) => !v)}>

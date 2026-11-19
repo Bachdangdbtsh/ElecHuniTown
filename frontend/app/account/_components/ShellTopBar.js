@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Avatar from '@/app/(common)/Avatar';
 import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/api';
+import BellIcon from '@/app/(common)/BellIcon';
 
 function initials(name) {
   return (name || 'U')
@@ -75,9 +76,7 @@ export default function ShellTopBar({ title, subtitle, user, action }) {
         {user && <Link href={workspaceLink.href} className="eht-btn eht-btn-sm" title={workspaceLink.label}>
           {workspaceLink.label}
         </Link>}
-        <button type="button" className="eht-icon-btn" title="Thông báo" aria-label="Thông báo">
-          🔔
-        </button>
+        <BellIcon user={user} />
         <Link href="/account/profile" className="eht-icon-btn" title="Cài đặt" aria-label="Cài đặt">
           ⚙
         </Link>

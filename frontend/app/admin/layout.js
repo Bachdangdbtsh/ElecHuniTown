@@ -108,7 +108,7 @@ export default function AdminLayout({ children }) {
         </nav>
       </aside>
       <div className="eht-body">
-        <AdminTopBar user={userState.data} notifications={pending + 4} />
+        <AdminTopBar user={userState.data} />
         <div className="eht-content">{children}</div>
       </div>
     </div>

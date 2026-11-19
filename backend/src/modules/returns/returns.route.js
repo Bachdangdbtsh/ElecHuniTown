@@ -6,6 +6,7 @@ import { AppError } from '../../common/error/AppError.js';
 import { prisma } from '../../lib/prisma.js';
 import { recordRefund, recordSale } from '../finance/finance.service.js';
 import { env } from '../../config/env.js';
+import { notify } from '../../utils/notify.js';
 
 const router = Router();
 router.use(authenticate);
@@ -64,6 +65,8 @@ router.post('/', requireRole('CUSTOMER'), async (req, res) => {
         images: { create: images.map((url) => ({ url })) },
       },
     });
+    const owners = await tx.user.findMany({ where: { role: { code: 'SHOP_OWNER' }, isActive: true }, select: { id: true } });
+    for (const owner of owners) await notify({ userId: owner.id, role: 'SHOP_OWNER', type: 'NEW_RETURN', message: `Có yêu cầu đổi trả mới cho đơn hàng #${orderId}.`, url: '/store/returns', payload: { returnId: request.id, orderId } }, tx);
     await tx.auditLog.create({ data: { actorId: req.user.id, action: 'CREATE', entityType: 'ReturnRequest', entityId: request.id, details: { orderId } } });
     return request;
   });
@@ -105,6 +108,8 @@ router.patch('/:id/decision', requireRole('SHOP_OWNER'), async (req, res) => {
       }
     }
     await tx.auditLog.create({ data: { actorId: req.user.id, action: decision === 'APPROVED' ? 'APPROVE' : 'REJECT', entityType: 'ReturnRequest', entityId: id, details: { decision, rejectReason } } });
+    const customer = await tx.order.findUnique({ where: { id: request.orderId }, select: { customerId: true } });
+    await notify({ userId: customer?.customerId, role: 'CUSTOMER', type: 'RETURN_DECISION', message: `Yêu cầu đổi trả #${id} đã ${decision === 'APPROVED' ? 'được chấp thuận' : 'bị từ chối'}.`, url: '/account/orders', payload: { returnId: id, decision } }, tx);
     return tx.returnRequest.findUnique({ where: { id }, include: includeReturn });
   });
   res.json({ data: updated });

@@ -9,7 +9,7 @@ import { FaYoutube } from "react-icons/fa";
 import Link from "next/link";
 import CategoryList from "./categoryList";
 import { Toaster } from 'sonner';
-import { FaRegCircleUser } from "react-icons/fa6";
+import Avatar from "../(common)/Avatar";
 import { FaFacebookF } from "react-icons/fa";
 import { CiHeart } from "react-icons/ci";
 import { IoSettings } from "react-icons/io5";
@@ -58,7 +58,7 @@ export default async function RootLayout({
                     style={{ textDecoration: 'none', color: 'inherit' }}
                     title="Khu vực tài khoản theo vai trò"
                   >
-                    {account.avatar ? <img className="avatar" src={account.avatar} alt="Ảnh đại diện" /> : <FaRegCircleUser className="avatar" />}
+                    <Avatar src={account.avatar} size={38} alt="Ảnh đại diện" />
                     <div className="name">{account.fullName}</div>
                   </Link>
                   <Link

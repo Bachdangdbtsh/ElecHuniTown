@@ -53,13 +53,14 @@ export async function getRevenueSeries(query) {
 /** UC_53: KPI tổng quan + so sánh với kỳ trước liền kề. */
 export async function getDashboard(query) {
   const range = resolveRange(query);
-  const [cur, prev, newCur, newPrev, activeProducts, daily] = await Promise.all([
+  const [cur, prev, newCur, newPrev, activeProducts, daily, finance] = await Promise.all([
     repo.getSummary(range.start, range.end),
     repo.getSummary(range.prev.start, range.prev.end),
     repo.countNewCustomers(range.start, range.end),
     repo.countNewCustomers(range.prev.start, range.prev.end),
     repo.countActiveProducts(),
     repo.getRevenueBuckets(range.start, range.end, 'day'),
+    repo.getFinance(),
   ]);
 
   const best = daily.reduce((b, r) => (!b || r.revenue > b.revenue ? r : b), null);
@@ -81,6 +82,8 @@ export async function getDashboard(query) {
     averageOrderValue: cur.orders ? Math.round(cur.revenue / cur.orders) : 0,
     bestDay: best ? { date: best.bucket, revenue: best.revenue } : null,
     activeProducts,
+    cashBalance: finance.cashBalance,
+    totalExpense: finance.totalExpense,
   };
 }
 

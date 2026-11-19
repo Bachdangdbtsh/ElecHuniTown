@@ -4,6 +4,7 @@ import { VNPay } from 'vnpay';
 import { authenticate, requireRole } from '../../common/middleware/auth.js';
 import { AppError } from '../../common/error/AppError.js';
 import { prisma } from '../../lib/prisma.js';
+import { recordRefund, recordSale } from '../finance/finance.service.js';
 import { env } from '../../config/env.js';
 
 const router = Router();
@@ -142,13 +143,21 @@ router.post('/:id/refund', requireRole('SHOP_OWNER'), async (req, res) => {
     });
     const succeeded = result.isVerified && result.isSuccess && String(result.vnp_TransactionStatus) === '00' && String(result.vnp_TxnRef) === String(order.id) && Number(result.vnp_Amount) === order.totalCost;
     const sandboxMock = isSandbox && String(result.vnp_ResponseCode) === '99';
-    const updated = await prisma.returnRequest.update({
-      where: { id }, data: {
-        ...(succeeded || sandboxMock ? { status: 'REFUNDED', refundAmount: order.totalCost, refundedById: req.user.id, refundedAt: new Date() } : {}),
-        refundMessage: sandboxMock ? 'Môi trường Sandbox: Đã xác nhận hoàn tiền thành công (giả lập đối soát)' : succeeded ? 'Đã hoàn tiền qua VNPay' : result.message || result.vnp_Message || 'VNPay đang xử lý yêu cầu',
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      const refunded = succeeded || sandboxMock;
+      const saved = await tx.returnRequest.update({
+        where: { id }, data: {
+          ...(refunded ? { status: 'REFUNDED', refundAmount: order.totalCost, refundedById: req.user.id, refundedAt: new Date() } : {}),
+          refundMessage: sandboxMock ? 'Môi trường Sandbox: Đã xác nhận hoàn tiền thành công (giả lập đối soát)' : succeeded ? 'Đã hoàn tiền qua VNPay' : result.message || result.vnp_Message || 'VNPay đang xử lý yêu cầu',
+        },
+      });
+      if (refunded) {
+        await recordSale(tx, order, req.user.id);
+        await recordRefund(tx, order, req.user.id);
+      }
+      await tx.auditLog.create({ data: { actorId: req.user.id, action: 'UPDATE', entityType: 'ReturnRequest', entityId: id, details: { refundRequestId: requestId, responseCode: result.vnp_ResponseCode, transactionStatus: result.vnp_TransactionStatus, sandboxMock } } });
+      return saved;
     });
-    await prisma.auditLog.create({ data: { actorId: req.user.id, action: 'UPDATE', entityType: 'ReturnRequest', entityId: id, details: { refundRequestId: requestId, responseCode: result.vnp_ResponseCode, transactionStatus: result.vnp_TransactionStatus, sandboxMock } } });
     res.json({ data: updated });
   } catch (error) {
     await prisma.returnRequest.update({ where: { id }, data: { refundMessage: 'Chưa xác định kết quả VNPay. Không gửi lại; cần đối soát mã ' + requestId } });

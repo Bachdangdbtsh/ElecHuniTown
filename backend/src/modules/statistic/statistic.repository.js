@@ -7,6 +7,14 @@ const num = (v) => (v === null || v === undefined ? 0 : Number(v));
 
 const STATUS = COUNTED_ORDER_STATUS;
 
+export async function getFinance() {
+  const finance = await prisma.finance.findUnique({ where: { id: 1 } });
+  return {
+    cashBalance: num(finance?.cashBalance),
+    totalExpense: num(finance?.totalExpense),
+  };
+}
+
 /** Tổng doanh thu + số đơn trong khoảng [start, end). */
 export async function getSummary(start, end) {
   const rows = await prisma.$queryRaw`

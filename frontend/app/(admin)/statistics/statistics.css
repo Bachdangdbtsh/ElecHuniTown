@@ -156,6 +156,10 @@
 .st-kpi-extra p { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; }
 .st-kpi-extra span { color: var(--muted); }
 .st-kpi-extra strong { text-align: right; }
+.st-finance { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.st-finance-item { min-width: 0; padding: 18px 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.st-finance-value { margin-top: 6px; font-size: 26px; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
+.st-finance-note { margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.4; }
 
 /* ---- Biểu đồ ---- */
 .st-chart { overflow-x: auto; }
@@ -227,6 +231,7 @@
   .st-segment { display: grid; grid-template-columns: repeat(2, 1fr); }
   .st-segment-btn { padding: 9px 12px; font-size: 13px; white-space: nowrap; }
   .st-kpi { grid-template-columns: 1fr; }
+  .st-finance { grid-template-columns: 1fr; }
   .st-kpi-item,
   .st-kpi-side > div { border-right: 0 !important; border-bottom: 1px solid var(--line); }
   .st-kpi-side > div { border-bottom: 0; }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import Avatar from '../../(common)/Avatar';
 import { CiHeart } from 'react-icons/ci';
 import { IoCartOutline } from 'react-icons/io5';
 import { FiSearch } from 'react-icons/fi';
@@ -46,7 +46,7 @@ export default function ShopHeader() {
           <Link className="cart" href="/cart" aria-label="Giỏ hàng"><IoCartOutline size="24px" /><CartCount /></Link>
           {customer ? (
             <Link href="/account/overview" className="customer-avatar" aria-label={`Tài khoản của ${customer.fullName}`} title={customer.fullName}>
-              <Image src="/default-avatar.svg" alt="" width={38} height={38} />
+              <Avatar src={customer.avatar} alt="" size={38} />
             </Link>
           ) : (
             <>

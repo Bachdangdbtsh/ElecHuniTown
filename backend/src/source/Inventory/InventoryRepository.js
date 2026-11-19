@@ -289,36 +289,62 @@ export async function createIssue({ supplierId, createdById, content, type, item
 }
 
 export async function approveReceipt(id, handledById) {
-  return prisma.$transaction(async (tx) => {
-    const changed = await tx.stockReceipt.updateMany({
-      where: { id, status: 'PENDING_HANDLE' },
-      data: { status: 'APPROVED', handledById, handledAt: new Date(), rejectReason: null },
-    });
-    if (changed.count === 0) return null;
+  return prisma.$transaction((tx) => approveReceiptInTransaction(tx, id, handledById));
+}
 
-    const items = await tx.stockReceiptItem.findMany({
-      where: { receiptId: id },
-      orderBy: { productId: 'asc' },
-    });
-    for (const item of items) {
-      await tx.product.update({
-        where: { id: item.productId },
-        data: { stock: { increment: item.quantity } },
-      });
-    }
-
-    await tx.inventoryTransaction.createMany({
-      data: items.map((item) => ({
-        type: 'RECEIPT',
-        productId: item.productId,
-        quantity: item.quantity,
-        unitCost: item.unitCost,
-        receiptItemId: item.id,
-      })),
-    });
-
-    return tx.stockReceipt.findUnique({ where: { id }, include: receiptInclude });
+export async function approveReceiptInTransaction(tx, id, handledById) {
+  const changed = await tx.stockReceipt.updateMany({
+    where: { id, status: 'PENDING_HANDLE' },
+    data: { status: 'APPROVED', handledById, handledAt: new Date(), rejectReason: null },
   });
+  if (changed.count === 0) return null;
+
+  const items = await tx.stockReceiptItem.findMany({
+    where: { receiptId: id },
+    orderBy: { productId: 'asc' },
+  });
+  const totalCost = items.reduce((sum, item) => sum + BigInt(item.quantity) * BigInt(item.unitCost), 0n);
+  for (const item of items) {
+    await tx.product.update({
+      where: { id: item.productId },
+      data: { stock: { increment: item.quantity } },
+    });
+  }
+
+  await tx.inventoryTransaction.createMany({
+    data: items.map((item) => ({
+      type: 'RECEIPT',
+      productId: item.productId,
+      quantity: item.quantity,
+      unitCost: item.unitCost,
+      receiptItemId: item.id,
+    })),
+  });
+
+  const finance = await tx.finance.upsert({
+    where: { id: 1 },
+    create: { id: 1, cashBalance: -totalCost, totalExpense: totalCost },
+    update: {
+      cashBalance: { decrement: totalCost },
+      totalExpense: { increment: totalCost },
+    },
+  });
+  await tx.auditLog.create({
+    data: {
+      actorId: handledById,
+      action: 'UPDATE',
+      entityType: 'Finance',
+      entityId: finance.id,
+      details: {
+        receiptId: id,
+        amount: totalCost.toString(),
+        cashBalance: finance.cashBalance.toString(),
+        totalExpense: finance.totalExpense.toString(),
+      },
+    },
+  });
+
+  return tx.stockReceipt.findUnique({ where: { id }, include: receiptInclude });
 }
 
 export class InsufficientStockError extends Error {

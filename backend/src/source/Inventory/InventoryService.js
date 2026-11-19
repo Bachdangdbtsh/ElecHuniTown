@@ -27,13 +27,13 @@ async function validateSupplier(supplierId) {
   }
 }
 
-async function ensurePendingDocument(id, getDocument, documentName) {
+async function ensurePendingDocument(id, getDocument, documentName, statusCode = 409) {
   const document = await getDocument(id);
   if (!document) {
     throw notFound(`${documentName} không tồn tại`);
   }
   throw new AppError(
-    409,
+    statusCode,
     'INVALID_DOCUMENT_STATUS',
     'Chỉ có thể xử lý phiếu đang chờ duyệt',
   );
@@ -133,7 +133,7 @@ export async function createReceipt(createdById, payload) {
 export async function approveReceipt(id, handledById) {
   const receipt = await inventoryRepository.approveReceipt(id, handledById);
   if (!receipt) {
-    await ensurePendingDocument(id, inventoryRepository.getReceiptById, 'Phiếu nhập kho');
+    await ensurePendingDocument(id, inventoryRepository.getReceiptById, 'Phiếu nhập kho', 400);
   }
   return receipt;
 }

@@ -82,6 +82,12 @@ const ROLES = [
 ];
 
 async function main() {
+  await prisma.finance.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1, cashBalance: 0, totalExpense: 0 },
+  });
+
   const permMap = new Map();
 
   for (const g of PERMISSION_GROUPS) {

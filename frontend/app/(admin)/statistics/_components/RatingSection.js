@@ -25,7 +25,7 @@ function Distribution({ distribution, total }) {
   );
 }
 
-export default function RatingSection({ state }) {
+export default function RatingSection({ state, onOpenProduct }) {
   // Backend trả 501 khi chưa có bảng Comment: đây là "chưa có dữ liệu", không phải lỗi.
   const notReady = state.status === 'error' && state.error?.code === 'RATING_NOT_AVAILABLE';
   const view = notReady ? { ...state, status: 'success', data: { notReady: true } } : state;
@@ -54,7 +54,25 @@ export default function RatingSection({ state }) {
             <p className="st-kpi-label">Đánh giá theo sản phẩm</p>
             <ul className="st-prod-rating">
               {d.products.map((p) => (
-                <li key={p.id}>
+                <li
+                  key={p.id}
+                  className={onOpenProduct ? 'st-prod-rating-link' : undefined}
+                  role={onOpenProduct ? 'button' : undefined}
+                  tabIndex={onOpenProduct ? 0 : undefined}
+                  aria-haspopup={onOpenProduct ? 'dialog' : undefined}
+                  aria-label={onOpenProduct ? `Xem chi tiết đánh giá: ${p.name}` : undefined}
+                  onClick={onOpenProduct ? () => onOpenProduct(p) : undefined}
+                  onKeyDown={
+                    onOpenProduct
+                      ? (event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            onOpenProduct(p);
+                          }
+                        }
+                      : undefined
+                  }
+                >
                   <p className="st-rank-name">{p.name}</p>
                   <p className="st-prod-score">
                     <strong>{p.average.toFixed(1).replace('.', ',')}</strong>/5

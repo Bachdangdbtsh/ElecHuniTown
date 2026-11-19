@@ -1,18 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FiChevronLeft, FiChevronRight, FiTrendingDown, FiTrendingUp, FiX } from 'react-icons/fi';
+import { FiTrendingDown, FiTrendingUp, FiX } from 'react-icons/fi';
 import AsyncSection from './AsyncSection';
+import Pager from './Pager';
 import { formatCompactVnd, formatNumber } from '../_lib/format';
 import { formatDate } from '../_lib/dates';
 
 const PAGE_SIZE = 8;
-
-/** Các số trang cần hiện: đầu, cuối và quanh trang hiện tại (có dấu "…" giữa các khoảng). */
-function pageNumbers(current, total) {
-  const wanted = new Set([1, total, current - 1, current, current + 1]);
-  return [...wanted].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
-}
 
 /**
  * Bảng đầy đủ sản phẩm bán chạy / bán chậm (mở từ card ở trang Thống kê).
@@ -120,39 +115,7 @@ export default function RankingModal({ kind, state, range, onClose }) {
               Hiển thị {start + 1}–{Math.min(start + PAGE_SIZE, total)} trong {formatNumber(total)} sản phẩm
               <span className="st-per-page"> · {PAGE_SIZE} sản phẩm/trang</span>
             </p>
-            <nav className="st-pager" aria-label="Phân trang">
-              <button
-                type="button"
-                className="st-page-btn"
-                onClick={() => setPage(safePage - 1)}
-                disabled={safePage <= 1}
-                aria-label="Trang trước"
-              >
-                <FiChevronLeft />
-              </button>
-              {pageNumbers(safePage, totalPages).map((n, index, list) => (
-                <span key={n} className="st-page-slot">
-                  {index > 0 && n - list[index - 1] > 1 && <span className="st-page-gap">…</span>}
-                  <button
-                    type="button"
-                    className={n === safePage ? 'st-page-btn active' : 'st-page-btn'}
-                    onClick={() => setPage(n)}
-                    aria-current={n === safePage ? 'page' : undefined}
-                  >
-                    {n}
-                  </button>
-                </span>
-              ))}
-              <button
-                type="button"
-                className="st-page-btn"
-                onClick={() => setPage(safePage + 1)}
-                disabled={safePage >= totalPages}
-                aria-label="Trang sau"
-              >
-                <FiChevronRight />
-              </button>
-            </nav>
+            <Pager page={safePage} totalPages={totalPages} onChange={setPage} />
           </footer>
         )}
       </div>

@@ -491,3 +491,120 @@
   .st-modal-backdrop { padding: 12px; }
   .st-modal-head, .st-modal-body, .st-modal-foot { padding-left: 16px; padding-right: 16px; }
 }
+
+/* ---- Modal chi tiết đánh giá của một sản phẩm ---- */
+.st-review-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted, #64748b);
+}
+
+.st-review-filter select {
+  padding: 8px 12px;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 8px;
+  background: var(--paper, #ffffff);
+  font-size: 13px;
+  color: var(--ink, #1e293b);
+  cursor: pointer;
+}
+
+.st-review-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.st-review-item {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 14px;
+  padding: 18px 0;
+  border-top: 1px solid var(--line, #e2e8f0);
+}
+
+.st-review-item:first-child { border-top: 0; }
+
+.st-review-avatar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--mint-soft, #e8f8ee);
+  font-size: 13px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.st-review-main { min-width: 0; }
+
+.st-review-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.st-review-name { font-size: 14px; font-weight: 700; }
+
+.st-stars {
+  display: inline-flex;
+  gap: 2px;
+  margin-top: 2px;
+  font-size: 14px;
+  line-height: 1;
+  color: #cbd5e1;
+}
+
+.st-stars .on { color: #f5b301; }
+
+.st-review-date {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--muted, #64748b);
+  white-space: nowrap;
+}
+
+.st-review-content {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--ink, #1e293b);
+  overflow-wrap: anywhere;
+}
+
+.st-review-reply {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--mint-soft, #e8f8ee);
+}
+
+.st-review-reply-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted, #64748b);
+}
+
+.st-review-reply p + p { margin-top: 4px; font-size: 13px; }
+
+/* Dòng sản phẩm trong bảng Đánh giá theo sản phẩm bấm được. */
+.st-prod-rating li.st-prod-rating-link {
+  margin: 0 -8px;
+  padding-left: 8px;
+  padding-right: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.st-prod-rating li.st-prod-rating-link:hover { background: #f1fbf4; }
+
+.st-prod-rating li.st-prod-rating-link:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: -2px;
+}

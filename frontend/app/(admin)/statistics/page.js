@@ -9,6 +9,7 @@ import KpiPanel from './_components/KpiPanel';
 import RevenueChart from './_components/RevenueChart';
 import ProfitSection from './_components/ProfitSection';
 import RankingModal from './_components/RankingModal';
+import ReviewDetailModal from './_components/ReviewDetailModal';
 import ProductRanking from './_components/ProductRanking';
 import RatingSection from './_components/RatingSection';
 
@@ -23,6 +24,8 @@ export default function StatisticsPage() {
   const [groupBy, setGroupBy] = useState('category');
   // null = đóng modal; 'top' | 'slow' = đang mở bảng đầy đủ tương ứng.
   const [openRank, setOpenRank] = useState(null);
+  // Sản phẩm đang mở modal chi tiết đánh giá (null = đóng).
+  const [reviewProduct, setReviewProduct] = useState(null);
   const initial = useSyncExternalStore(subscribeNone, getClientRange, getServerRange);
   const range = picked ?? initial;
 
@@ -108,7 +111,7 @@ export default function StatisticsPage() {
           Thống kê đánh giá
         </h2>
         <p className="st-sub">Cảm nhận về sản phẩm từ đánh giá của khách hàng</p>
-        <RatingSection state={ratings} />
+        <RatingSection state={ratings} onOpenProduct={setReviewProduct} />
       </section>
 
       {openRank === 'top' && (
@@ -116,6 +119,9 @@ export default function StatisticsPage() {
       )}
       {openRank === 'slow' && (
         <RankingModal kind="slow" state={slowAll} range={range} onClose={() => setOpenRank(null)} />
+      )}
+      {reviewProduct && (
+        <ReviewDetailModal product={reviewProduct} onClose={() => setReviewProduct(null)} />
       )}
     </div>
   );

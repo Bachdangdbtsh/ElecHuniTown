@@ -15,6 +15,7 @@ import adminRoutes from './modules/admin/admin.route.js';
 import roleRoutes from './modules/role/role.route.js';
 import staffRoutes from './modules/staff/staff.route.js';
 import returnsRoutes from './modules/returns/returns.route.js';
+import commentRoutes from './modules/comment/comment.route.js';
 import inventoryRoutes from './source/Inventory/InventoryRouter.js';
 
 export const app = express();
@@ -57,6 +58,7 @@ app.use('/admin', adminRoutes);
 app.use('/roles', roleRoutes);
 app.use('/staff', staffRoutes);
 app.use('/returns', returnsRoutes);
+app.use('/comments', commentRoutes);
 app.use('/statistics', statisticRoutes);
 
 // Global error handler — luôn đặt cuối

@@ -4,7 +4,7 @@ import * as controller from './comment.controller.js';
 
 const router = Router();
 
-// UC_38: chỉ Staff và Shop Owner được xem toàn bộ đánh giá và phản hồi khách hàng.
+// Chỉ Staff và Shop Owner được xem toàn bộ đánh giá và phản hồi khách hàng.
 router.use(authenticate, requireRole('STAFF', 'SHOP_OWNER'));
 
 router.get('/', controller.list);

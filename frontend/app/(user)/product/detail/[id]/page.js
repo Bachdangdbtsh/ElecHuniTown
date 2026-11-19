@@ -11,7 +11,8 @@ export const metadata = {
 
 export default async function ProductDetail({ params }) {
   const { id } = await params;
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/product/detail/${id}`, {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const res = await fetch(`${apiUrl}/product/detail/${id}`, {
     method: "POST",
     cache: "no-store",
   });

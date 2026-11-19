@@ -491,7 +491,7 @@ model Comment {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  // UC_38: phản hồi của Staff/Shop Owner cho đánh giá của khách hàng.
+  // Phản hồi của Staff/Shop Owner cho đánh giá của khách hàng.
   reply       String?
   repliedAt   DateTime?
   repliedById Int?

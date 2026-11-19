@@ -1,7 +1,7 @@
 import { AppError } from '../../common/error/AppError.js';
 import * as repo from './comment.repository.js';
 
-/** UC_38: danh sách đánh giá cho Staff/Shop Owner, lọc theo sản phẩm, số sao, trạng thái phản hồi. */
+/** Danh sách đánh giá cho Staff/Shop Owner, lọc theo sản phẩm, số sao, trạng thái phản hồi. */
 export async function list(query) {
   const page = query.page ?? 1;
   const limit = query.limit ?? 10;
@@ -28,7 +28,7 @@ export async function list(query) {
   };
 }
 
-/** UC_38: gửi phản hồi; mỗi đánh giá có một phản hồi, gửi lại thì ghi đè nội dung cũ. */
+/** Gửi phản hồi; mỗi đánh giá có một phản hồi, gửi lại thì ghi đè nội dung cũ. */
 export async function reply(id, content, staffId) {
   const comment = await repo.findById(id);
   if (!comment) {
@@ -42,7 +42,7 @@ export async function reply(id, content, staffId) {
   });
 }
 
-/** UC_38: thu hồi phản hồi (đánh giá vẫn được giữ lại). */
+/** Thu hồi phản hồi (đánh giá vẫn được giữ lại). */
 export async function removeReply(id) {
   const comment = await repo.findById(id);
   if (!comment) {

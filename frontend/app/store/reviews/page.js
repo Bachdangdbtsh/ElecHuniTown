@@ -125,7 +125,7 @@ export default function StoreReviewsPage() {
       <header className="rv-head">
         <div>
           <h1>Quản lý Đánh giá</h1>
-          <p>Phản hồi ý kiến khách hàng về sản phẩm (UC_38).</p>
+          <p>Phản hồi ý kiến khách hàng về sản phẩm.</p>
         </div>
         <button type="button" className="rv-btn rv-btn-ghost" onClick={reload} disabled={loading}>
           <FiRefreshCw /> Làm mới

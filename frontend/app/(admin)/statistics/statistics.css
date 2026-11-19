@@ -266,18 +266,112 @@
 }
 
 /* ---- Card xếp hạng bấm được + modal bảng đầy đủ ---- */
-.st-rank-head {
+.st-rank-band {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  margin: -20px -20px 16px;
+  padding: 16px 20px;
+  border-radius: 11px 11px 0 0;
+  background: #8fe3a9;
 }
 
-.st-rank-more {
-  flex-shrink: 0;
-  font-size: 12px;
+.st-rank-band-text { min-width: 0; }
+.st-rank-band-title { font-size: 16px; font-weight: 700; color: #0f2e3d; }
+.st-rank-band-sub { margin-top: 2px; font-size: 13px; color: #14532d; }
+
+.st-rank-band-side {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.st-rank-count {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.65);
+  font-size: 11px;
   font-weight: 700;
-  color: var(--muted);
+  color: #14532d;
+  white-space: nowrap;
+}
+
+.st-rank-band-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #16324f;
+  color: #ffffff;
+  font-size: 16px;
+}
+
+/* ---- Panel xanh tóm tắt doanh thu cạnh biểu đồ ---- */
+.st-revenue-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 16px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.st-revenue-layout > * { min-width: 0; }
+
+.st-revenue-layout .st-revenue-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.st-revenue-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 20px;
+  border-radius: 12px;
+  background: #c9f2d8;
+}
+
+.st-revenue-side-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #14532d;
+}
+
+.st-revenue-side-value {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: #0f2e3d;
+}
+
+.st-revenue-side-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(20, 83, 45, 0.18);
+  font-size: 12px;
+  color: #14532d;
+}
+
+.st-revenue-side-row strong { font-size: 15px; color: #0f2e3d; }
+
+@media (max-width: 1200px) {
+  .st-revenue-layout { grid-template-columns: 1fr; }
+  .st-revenue-side { flex-direction: row; flex-wrap: wrap; align-items: flex-end; }
+  .st-revenue-side-label { flex-basis: 100%; }
+  .st-revenue-side-row { flex: 1; min-width: 160px; border-top: 0; padding-top: 0; }
+}
+
+@media (max-width: 640px) {
+  .st-rank-band { flex-wrap: wrap; }
 }
 
 .st-rank-card {

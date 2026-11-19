@@ -1,5 +1,6 @@
 'use client';
 
+import { FiTrendingDown, FiTrendingUp } from 'react-icons/fi';
 import AsyncSection from './AsyncSection';
 import { formatCompactVnd, formatNumber } from '../_lib/format';
 
@@ -8,7 +9,7 @@ import { formatCompactVnd, formatNumber } from '../_lib/format';
  * Thanh ngang thể hiện số đã bán so với sản phẩm cao nhất trong danh sách.
  * Bấm vào card để mở bảng đầy đủ (RankingModal).
  */
-export default function ProductRanking({ title, subtitle, state, kind, onOpen }) {
+export default function ProductRanking({ title, subtitle, state, kind, productCount, onOpen }) {
   function handleClick(event) {
     // Bỏ qua khi bấm vào nút bên trong (vd. "Thử lại" của khối lỗi).
     if (event.target.closest('button, a')) return;
@@ -33,14 +34,21 @@ export default function ProductRanking({ title, subtitle, state, kind, onOpen })
       onClick={handleClick}
       onKeyDown={handleKeyDown}
     >
-      <div className="st-rank-head">
-        <div>
-          <h3 id={`rank-${kind}`} className="st-h3">
+      <div className="st-rank-band">
+        <div className="st-rank-band-text">
+          <h3 id={`rank-${kind}`} className="st-rank-band-title">
             {title}
           </h3>
-          <p className="st-sub">{subtitle}</p>
+          <p className="st-rank-band-sub">{subtitle}</p>
         </div>
-        <span className="st-rank-more">Xem tất cả →</span>
+        <div className="st-rank-band-side">
+          {productCount != null && (
+            <span className="st-rank-count">{formatNumber(productCount)} sản phẩm đang bán</span>
+          )}
+          <span className="st-rank-band-icon" aria-hidden="true">
+            {kind === 'top' ? <FiTrendingUp /> : <FiTrendingDown />}
+          </span>
+        </div>
       </div>
       <AsyncSection
         state={state}

@@ -8,6 +8,7 @@ import PeriodPicker from './_components/PeriodPicker';
 import ExportButton from './_components/ExportButton';
 import KpiPanel from './_components/KpiPanel';
 import RevenueChart from './_components/RevenueChart';
+import RevenueSidePanel from './_components/RevenueSidePanel';
 import ProfitSection from './_components/ProfitSection';
 import RankingModal from './_components/RankingModal';
 import ReviewDetailModal from './_components/ReviewDetailModal';
@@ -39,6 +40,7 @@ export default function StatisticsPage() {
   const range = picked ?? initial;
 
   const prev = range ? previousRange(range) : null;
+  const month = range ? range.to.split('-')[1] : '';
 
   const dashboard = useApi('/statistics/dashboard', range);
   const revenue = useApi('/statistics/revenue', range && { ...range, groupBy: 'day' });
@@ -77,8 +79,11 @@ export default function StatisticsPage() {
           Doanh thu theo thời gian
         </h2>
         <p className="st-sub">Tổng doanh số theo ngày, so với kỳ liền trước cùng độ dài</p>
-        <div className="st-panel st-revenue-panel">
-          <RevenueChart revenueState={revenue} previousState={prevRevenue} bestDate={dashboard.data?.bestDay?.date} />
+        <div className="st-revenue-layout">
+          <div className="st-panel st-revenue-panel">
+            <RevenueChart revenueState={revenue} previousState={prevRevenue} bestDate={dashboard.data?.bestDay?.date} />
+          </div>
+          <RevenueSidePanel state={dashboard} month={month} />
         </div>
       </section>
 
@@ -106,6 +111,7 @@ export default function StatisticsPage() {
             subtitle="Số lượng bán cao nhất trong kỳ"
             state={top}
             kind="top"
+            productCount={dashboard.data?.activeProducts}
             onOpen={() => setOpenRank('top')}
           />
           <ProductRanking
@@ -113,6 +119,7 @@ export default function StatisticsPage() {
             subtitle="Tỷ lệ bán thấp nhất trong kỳ"
             state={slow}
             kind="slow"
+            productCount={dashboard.data?.activeProducts}
             onOpen={() => setOpenRank('slow')}
           />
         </div>

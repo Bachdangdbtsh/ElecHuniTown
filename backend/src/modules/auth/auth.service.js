@@ -27,6 +27,26 @@ function sanitizeUser(user) {
   };
 }
 
+export async function updateAvatar(userId, avatar) {
+  if (typeof avatar !== 'string') {
+    throw new AppError(400, 'INVALID_AVATAR', 'Vui lòng chọn ảnh đại diện');
+  }
+  const match = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(avatar);
+  if (!match || match[2].length > 280000) {
+    throw new AppError(400, 'INVALID_AVATAR', 'Chỉ chấp nhận ảnh PNG, JPEG hoặc WebP dưới 200 KB');
+  }
+  const bytes = Buffer.from(match[2], 'base64');
+  const validSignature = match[1] === 'png'
+    ? bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+    : match[1] === 'jpeg'
+      ? bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
+      : bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP';
+  if (!bytes.length || bytes.length > 200000 || !validSignature || bytes.toString('base64') !== match[2]) {
+    throw new AppError(400, 'INVALID_AVATAR', 'Ảnh đại diện không hợp lệ hoặc vượt quá 200 KB');
+  }
+  return repo.updateUserAvatar(userId, avatar);
+}
+
 export async function registerCustomer(payload) {
   const existingEmail = await repo.findUserByEmail(payload.email);
   if (existingEmail) {

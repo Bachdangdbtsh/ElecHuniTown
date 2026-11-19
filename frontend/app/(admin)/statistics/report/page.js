@@ -17,7 +17,12 @@ const PAPER_MARGINS = {
 };
 
 const ZOOM_OPTIONS = [75, 100, 125];
-const COPIES = [1, 2, 3, 4, 5];
+const PRINT_SCALES = [
+  { value: 'fit', label: 'Vừa trang giấy' },
+  { value: '90', label: '90%' },
+  { value: '80', label: '80%' },
+  { value: '75', label: '75%' },
+];
 
 // Ngày lập chỉ tính trên trình duyệt để server/client khớp nhau khi hydrate.
 let printedAtLabel;
@@ -285,7 +290,6 @@ function ReportPreview() {
   const [orientation, setOrientation] = useState('portrait');
   const [pageMargin, setPageMargin] = useState('default');
   const [printPages, setPrintPages] = useState('all');
-  const [copies, setCopies] = useState(1);
   const [scale, setScale] = useState('fit');
   const [zoom, setZoom] = useState(100);
   const [busy, setBusy] = useState(false);
@@ -294,6 +298,8 @@ function ReportPreview() {
 
   const monthLabel = monthLabelOf(range);
   const [year, month] = range.to.split('-');
+  // Tỷ lệ áp vào bản in thật: thu nhỏ nội dung từng trang A4 khi in.
+  const printZoom = scale === 'fit' ? 1 : Number(scale) / 100;
   const fileName = `Bao_cao_tai_chinh_${month}_${year}`;
   const backQuery = new URLSearchParams(range).toString();
 
@@ -319,7 +325,10 @@ function ReportPreview() {
 
   return (
     <div className={`rp-root rp-${orientation}`}>
-      <style>{`@media print { @page { size: A4 ${orientation}; margin: ${PAPER_MARGINS[pageMargin]}; } }`}</style>
+      <style>{`@media print {
+        @page { size: A4 ${orientation}; margin: ${PAPER_MARGINS[pageMargin]}; }
+        .rp-page { zoom: ${printZoom}; }
+      }`}</style>
 
       <header className="rp-head">
         <div className="rp-head-left">
@@ -424,14 +433,10 @@ function ReportPreview() {
             </div>
           </div>
 
-          <label className="rp-field">
+          <div className="rp-field">
             <span>Số bản in</span>
-            <select value={copies} onChange={(event) => setCopies(Number(event.target.value))}>
-              {COPIES.map((value) => (
-                <option key={value} value={value}>{value}</option>
-              ))}
-            </select>
-          </label>
+            <p className="rp-field-note">Do hộp thoại in của trình duyệt quyết định, không đặt trước tại đây được.</p>
+          </div>
 
           <label className="rp-field">
             <span>Lề trang</span>
@@ -445,9 +450,11 @@ function ReportPreview() {
           <label className="rp-field">
             <span>Tỷ lệ</span>
             <select value={scale} onChange={(event) => setScale(event.target.value)}>
-              <option value="fit">Vừa trang giấy</option>
-              <option value="100">100%</option>
+              {PRINT_SCALES.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
+            <span className="rp-field-note">Áp dụng cho bản in PDF/giấy; khung xem trước dùng mục Thu phóng ở thanh công cụ.</span>
           </label>
 
           <div className="rp-settings-note">

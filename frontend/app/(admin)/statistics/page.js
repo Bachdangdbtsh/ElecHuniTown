@@ -8,6 +8,7 @@ import ExportButton from './_components/ExportButton';
 import KpiPanel from './_components/KpiPanel';
 import RevenueChart from './_components/RevenueChart';
 import ProfitSection from './_components/ProfitSection';
+import RankingModal from './_components/RankingModal';
 import ProductRanking from './_components/ProductRanking';
 import RatingSection from './_components/RatingSection';
 
@@ -20,6 +21,8 @@ const getServerRange = () => null;
 export default function StatisticsPage() {
   const [picked, setRange] = useState(null);
   const [groupBy, setGroupBy] = useState('category');
+  // null = đóng modal; 'top' | 'slow' = đang mở bảng đầy đủ tương ứng.
+  const [openRank, setOpenRank] = useState(null);
   const initial = useSyncExternalStore(subscribeNone, getClientRange, getServerRange);
   const range = picked ?? initial;
 
@@ -33,6 +36,9 @@ export default function StatisticsPage() {
   const ratings = useApi('/statistics/ratings', range && { ...range, limit: 5 });
   const profit = useApi('/statistics/profit', range);
   const breakdown = useApi('/statistics/breakdown', range && { ...range, groupBy, limit: 8 });
+  // Bảng đầy đủ chỉ tải khi mở modal (limit tối đa backend cho phép).
+  const topAll = useApi('/statistics/top-products', openRank === 'top' && range ? { ...range, limit: 500 } : null);
+  const slowAll = useApi('/statistics/slow-products', openRank === 'slow' && range ? { ...range, limit: 500 } : null);
 
   return (
     <div className="st-page">
@@ -80,8 +86,20 @@ export default function StatisticsPage() {
         </h2>
         <p className="st-sub">So sánh tốc độ bán và xác định cơ hội hàng tồn kho</p>
         <div className="st-two">
-          <ProductRanking title="Sản phẩm bán chạy nhất" subtitle="Số lượng bán cao nhất trong kỳ" state={top} kind="top" />
-          <ProductRanking title="Sản phẩm bán chậm" subtitle="Tỷ lệ bán thấp nhất trong kỳ" state={slow} kind="slow" />
+          <ProductRanking
+            title="Sản phẩm bán chạy nhất"
+            subtitle="Số lượng bán cao nhất trong kỳ"
+            state={top}
+            kind="top"
+            onOpen={() => setOpenRank('top')}
+          />
+          <ProductRanking
+            title="Sản phẩm bán chậm"
+            subtitle="Tỷ lệ bán thấp nhất trong kỳ"
+            state={slow}
+            kind="slow"
+            onOpen={() => setOpenRank('slow')}
+          />
         </div>
       </section>
 
@@ -92,6 +110,13 @@ export default function StatisticsPage() {
         <p className="st-sub">Cảm nhận về sản phẩm từ đánh giá của khách hàng</p>
         <RatingSection state={ratings} />
       </section>
+
+      {openRank === 'top' && (
+        <RankingModal kind="top" state={topAll} range={range} onClose={() => setOpenRank(null)} />
+      )}
+      {openRank === 'slow' && (
+        <RankingModal kind="slow" state={slowAll} range={range} onClose={() => setOpenRank(null)} />
+      )}
     </div>
   );
 }

@@ -35,7 +35,7 @@ export const rankQuery = z
       .number({ error: 'limit phải là số' })
       .int('limit phải là số nguyên')
       .min(1, 'limit tối thiểu là 1')
-      .max(50, 'limit tối đa là 50')
+      .max(500, 'limit tối đa là 500')
       .default(5),
   })
   .refine((q) => !q.from || !q.to || q.from <= q.to, {

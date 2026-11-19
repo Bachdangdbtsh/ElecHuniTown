@@ -10,8 +10,8 @@ Khoảng cách tối đa giữa `from` và `to` là **366 ngày** (`MAX_RANGE_DA
 | `/statistics/revenue` | 49 | `from`, `to`, `groupBy=day\|month` | `series: [{ date, revenue, orders }]`, đã điền 0 cho mốc không có đơn |
 | `/statistics/profit` | 50 | `from`, `to` | `revenue` (tổng tiền đơn đã giao), `cogs` (giá vốn), `refunds` (đã hoàn), `otherCosts` (hàng hỏng đã duyệt), `totalCost`, `profit`, `marginPct`, `changePct`/`previous` so với kỳ trước, `itemsMissingCost` |
 | `/statistics/breakdown` | 51 | `from`, `to`, `groupBy=category\|product\|staff`, `limit` (1-50, mặc định 8) | `items: [{ id, label, sublabel, orders?, sold?, revenue, cogs, profit, marginPct }]` |
-| `/statistics/top-products` | 54 | `from`, `to`, `limit` (1-50, mặc định 5) | `items: [{ id, name, category, sold, revenue }]` |
-| `/statistics/slow-products` | 54 | `from`, `to`, `limit` | `items: [{ id, name, category, sold, stock }]` (có cả sản phẩm bán 0) |
+| `/statistics/top-products` | 54 | `from`, `to`, `limit` (1-500, mặc định 5) | `items: [{ id, name, category, sold, revenue }]` |
+| `/statistics/slow-products` | 54 | `from`, `to`, `limit` (1-500, mặc định 5) | `items: [{ id, name, category, sold, stock }]` (có cả sản phẩm bán 0) |
 | `/statistics/ratings` | 55 | `from`, `to`, `limit` | `overall { average, total, newInRange, distribution }`, `products[]`. Trả 501 nếu chưa có bảng `Comment` |
 | `/statistics/export` | 52 | `from`, `to` | File `.xlsx` (8 sheet: Tổng quan, Doanh thu theo ngày, Bán chạy, Bán chậm, Lợi nhuận, Theo danh mục, Theo nhân viên, Đánh giá) |
 

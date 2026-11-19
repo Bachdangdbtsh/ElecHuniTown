@@ -608,3 +608,116 @@
   outline: 2px solid var(--mint);
   outline-offset: -2px;
 }
+
+/* ---- Sidebar xanh + item active nền tối (chỉ trong khu Thống kê, theo Figma) ---- */
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-side {
+  background: #8fe3a9;
+  border-right-color: #78d79a;
+}
+
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-side-brand {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-side-brand-title { color: #0f2e3d; }
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-side-brand-sub { color: #14532d; }
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-side-label { color: #14532d; }
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav a { color: #0f2e3d; }
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav a:hover { background: rgba(255, 255, 255, 0.5); }
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-ico {
+  background: rgba(255, 255, 255, 0.55);
+  color: #047857;
+}
+
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav a.active {
+  background: #16324f;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav a.active::before { display: none; }
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav a.active .eht-nav-ico {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-inventory.active {
+  background: #16324f;
+  box-shadow: none;
+}
+
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-inventory.active a { color: #ffffff; }
+
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-inventory.active .eht-nav-ico {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-inventory.active .eht-nav-expand { color: #ffffff; }
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-expand { color: #0f2e3d; }
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-expand:hover { background: rgba(255, 255, 255, 0.5); }
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-disabled { color: #2f6b4b; }
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-disabled:hover { background: rgba(255, 255, 255, 0.5); color: #0f2e3d; }
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-submenu a,
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-submenu button { color: #0f2e3d; }
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-submenu a:hover,
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-submenu button:hover { background: rgba(255, 255, 255, 0.5); }
+:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-side-logout {
+  background: #16324f;
+  color: #ffffff;
+}
+
+/* ---- KPI có icon, thẻ đầu tô xanh ---- */
+.st-kpi-head { display: flex; align-items: center; gap: 10px; }
+.st-kpi-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--mint-soft, #e8f8ee);
+  color: #047857;
+  font-size: 17px;
+}
+.st-kpi-icon-sm {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  margin-right: 6px;
+  border-radius: 7px;
+  font-size: 13px;
+  vertical-align: middle;
+}
+.st-kpi-side dt { display: flex; align-items: center; }
+.st-kpi-item-primary {
+  border-radius: 11px 0 0 11px;
+  background: #8fe3a9;
+}
+.st-kpi-item-primary .st-kpi-label,
+.st-kpi-item-primary .st-delta,
+.st-kpi-item-primary .st-delta-abs { color: #14532d; }
+.st-kpi-item-primary .st-kpi-icon { background: #16324f; color: #ffffff; }
+
+/* ---- Thanh phân bố 5★ → 1★ của từng sản phẩm ---- */
+.st-prod-rating-name { min-width: 0; }
+.st-prod-dist {
+  display: flex;
+  width: 100%;
+  max-width: 240px;
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+.st-prod-dist-seg { display: block; height: 100%; }
+.st-prod-dist-seg.s5 { background: #16a34a; }
+.st-prod-dist-seg.s4 { background: #4ade80; }
+.st-prod-dist-seg.s3 { background: #facc15; }
+.st-prod-dist-seg.s2 { background: #fb923c; }
+.st-prod-dist-seg.s1 { background: #f87171; }
+
+@media (max-width: 980px) {
+  .st-kpi-item-primary { border-radius: 11px 11px 0 0; }
+}

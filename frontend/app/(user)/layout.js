@@ -19,6 +19,7 @@ import CartCount from "./component/CartCount";
 import LogoutButton from "./component/LogoutButton";
 import Search from "./search";
 import BrandLogo from "@/components/BrandLogo";
+import BellIcon from "../(common)/BellIcon";
 
 export const metadata = {
   title: "Create Next App",
@@ -47,6 +48,7 @@ export default async function RootLayout({
           </Link>
           <Search />
           <div className="small-icon">
+            <BellIcon user={account} />
             <CiHeart size="24px" />
             <Link className="cart" href="/cart" aria-label="Giỏ hàng"><IoCartOutline size="24px" /><CartCount /></Link>
             {

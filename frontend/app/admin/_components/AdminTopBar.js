@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/api';
 import Avatar from '@/app/(common)/Avatar';
+import BellIcon from '@/app/(common)/BellIcon';
 
 function initials(name) {
   return (name || 'AD')
@@ -16,7 +17,7 @@ function initials(name) {
     .toUpperCase();
 }
 
-export default function AdminTopBar({ user, notifications = 0 }) {
+export default function AdminTopBar({ user }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [today] = useState(() => new Date().toLocaleDateString('vi-VN', {
@@ -51,10 +52,7 @@ export default function AdminTopBar({ user, notifications = 0 }) {
         </p>
       </div>
       <div className="eht-top-right">
-        <button type="button" className="eht-icon-btn" title="Thông báo">
-          🔔
-          {notifications > 0 && <span className="eht-icon-badge">{notifications}</span>}
-        </button>
+        <BellIcon user={user} />
         <button type="button" className="eht-icon-btn" title="Cài đặt">
           ⚙
         </button>

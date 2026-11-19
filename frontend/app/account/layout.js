@@ -57,6 +57,9 @@ export default function AccountLayout({ children }) {
             <Link href="/admin/dashboard" className="eht-btn eht-btn-primary eht-btn-sm" style={{ marginTop: 8, display: 'inline-flex' }}>
               Vào bảng quản trị →
             </Link>
+            <Link href="/login?redirect=%2Faccount%2Fprofile" className="eht-btn eht-btn-sm" style={{ marginTop: 8, display: 'inline-flex' }}>
+              Đăng nhập tài khoản khách hàng
+            </Link>
           </div>
         )}
         {['SHOP_OWNER', 'STAFF'].includes(roleCode) && (

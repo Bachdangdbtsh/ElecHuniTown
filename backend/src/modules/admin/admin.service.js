@@ -2,6 +2,8 @@ import bcrypt from 'bcrypt';
 import { invalidateUserSessions } from '../../common/sessionInvalidation.js';
 import { AppError } from '../../common/error/AppError.js';
 import * as repo from './admin.repository.js';
+import { notify } from '../../utils/notify.js';
+import { prisma } from '../../lib/prisma.js';
 
 export async function createInternalUser(payload) {
   const existingEmail = await repo.findUserByEmail(payload.email);
@@ -175,6 +177,10 @@ export async function reviewChangeRequest(requestId, adminId, status) {
     throw new AppError(400, 'REQUEST_ALREADY_PROCESSED', 'Yêu cầu này đã được xử lý trước đó');
   }
 
+  if (request.requestedById === adminId) {
+    throw new AppError(403, 'CANNOT_REVIEW_OWN_REQUEST', 'Không thể duyệt yêu cầu thay đổi hồ sơ của chính mình');
+  }
+
   if (status === 'APPROVED' && request.changes) {
     const changes = request.changes;
     if (changes.email) {
@@ -191,13 +197,26 @@ export async function reviewChangeRequest(requestId, adminId, status) {
     }
   }
 
-  return repo.resolveChangeRequest({
+  await repo.resolveChangeRequest({
     requestId,
     reviewedById: adminId,
     status,
     changes: request.changes,
     requestedUserId: request.requestedById,
   });
+  // Read the requester after the transaction so the API returns their current profile.
+  const updatedUser = await prisma.user.findUnique({
+    where: { id: request.requestedById },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      phone: true,
+      role: { select: { code: true } },
+    },
+  });
+  await notify({ userId: request.requestedById, role: updatedUser.role.code, type: 'PROFILE_CHANGE_DECISION', message: `Yêu cầu thay đổi hồ sơ #${requestId} đã ${status === 'APPROVED' ? 'được duyệt' : 'bị từ chối'}.`, url: '/account/profile', payload: { requestId, status } });
+  return updatedUser;
 }
 
 export async function getAccessAnalytics(query) {

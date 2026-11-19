@@ -6,6 +6,7 @@ import { prisma } from '../lib/prisma.js';
 import { recordSale } from '../modules/finance/finance.service.js';
 import { env } from '../config/env.js';
 import jwt from 'jsonwebtoken';
+import { notify } from '../utils/notify.js';
 
 const getMyCart = async (userId) => {
   try {
@@ -611,6 +612,10 @@ router.post("/order/create", async (req, res) => {
           }
         }
       });
+      const staff = await tx.user.findMany({ where: { role: { code: { in: ['STAFF', 'SHOP_OWNER'] } }, isActive: true }, select: { id: true, role: { select: { code: true } } } });
+      for (const recipient of staff) {
+        await notify({ userId: recipient.id, role: recipient.role.code, type: 'NEW_ORDER', message: `Có đơn hàng mới #${order.id}.`, url: '/store/orders', payload: { orderId: order.id } }, tx);
+      }
       await tx.auditLog.create({
         data: { actorId: customerId, action: 'CREATE', entityType: 'Order', entityId: order.id, details: { status: 'PENDING' } },
       });

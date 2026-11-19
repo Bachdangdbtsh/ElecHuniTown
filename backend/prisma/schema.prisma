@@ -66,6 +66,7 @@ model User {
   Comment               Comment[]
   customer              Customer?
   loginHistory          LoginHistory[]
+  notifications         Notification[]
   confirmedOrders       Order[]                @relation("OrderConfirmedBy")
   orders                Order[]                @relation("OrderCustomer")
   passwordResetTokens   PasswordResetToken[]
@@ -86,6 +87,21 @@ model User {
 model Customer {
   userId Int  @id
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  role      String
+  type      String
+  payload   Json?
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  url       String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
 }
 
 model Staff {

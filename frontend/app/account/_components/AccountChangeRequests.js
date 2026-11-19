@@ -52,6 +52,10 @@ export default function AccountChangeRequests({ currentUser }) {
     }
     setSaving(true);
     try {
+      const sessionUser = await apiGet('/auth/me');
+      if (sessionUser.id !== currentUser?.id || sessionUser.role !== 'CUSTOMER') {
+        throw new Error('Phiên đăng nhập đã chuyển sang tài khoản khác. Hãy đăng nhập lại bằng tài khoản khách hàng.');
+      }
       await apiPost('/account-change-requests', {
         reason: reason.trim(),
         changes,
@@ -70,6 +74,8 @@ export default function AccountChangeRequests({ currentUser }) {
   }
 
   const pending = requests.some((request) => request.status === 'PENDING');
+
+  if (currentUser && currentUser.role !== 'CUSTOMER') return null;
 
   return (
     <section className="eht-card">

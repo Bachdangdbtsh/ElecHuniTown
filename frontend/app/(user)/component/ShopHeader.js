@@ -9,6 +9,7 @@ import { IoCartOutline } from 'react-icons/io5';
 import { FiSearch } from 'react-icons/fi';
 import CartCount from './CartCount';
 import BrandLogo from '@/components/BrandLogo';
+import BellIcon from '../../(common)/BellIcon';
 
 export default function ShopHeader() {
   const router = useRouter();
@@ -42,6 +43,7 @@ export default function ShopHeader() {
           <button type="submit" aria-label="Tìm kiếm"><FiSearch size={20} /></button>
         </form>
         <div className="small-icon">
+          <BellIcon user={customer} />
           <CiHeart size="24px" />
           <Link className="cart" href="/cart" aria-label="Giỏ hàng"><IoCartOutline size="24px" /><CartCount /></Link>
           {customer ? (

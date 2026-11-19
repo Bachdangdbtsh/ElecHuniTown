@@ -7,7 +7,6 @@ import BrandLogo from '@/components/BrandLogo';
 import Avatar from '@/app/(common)/Avatar';
 import {
   FiBarChart2,
-  FiBell,
   FiBox,
   FiChevronDown,
   FiClipboard,
@@ -18,6 +17,7 @@ import {
   FiTag,
   FiUsers,
 } from 'react-icons/fi';
+import BellIcon from '@/app/(common)/BellIcon';
 
 const navigation = [
   { label: 'Quản lý đơn hàng', icon: FiClipboard, disabled: true },
@@ -172,10 +172,7 @@ export default function InventoryShell({ user, children }) {
             <small><i /> Hệ thống vận hành ổn định</small>
           </div>
           <div className="inv-topbar-actions">
-            <button type="button" className="inv-icon-button" aria-label="Thông báo">
-              <FiBell aria-hidden="true" />
-              <span className="inv-notification-dot" />
-            </button>
+            <BellIcon user={user} />
             <button type="button" className="inv-icon-button" aria-label="Cài đặt">
               <FiSettings aria-hidden="true" />
             </button>

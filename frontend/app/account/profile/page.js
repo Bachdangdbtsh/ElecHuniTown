@@ -24,13 +24,16 @@ export default function AccountProfilePage() {
   const [passErr, setPassErr] = useState('');
 
   useEffect(() => {
-    apiFetch('/auth/me')
+    const refreshUser = () => apiFetch('/auth/me')
       .then((d) => {
         setUser(d);
         setFullName(d.fullName || '');
         setPhone(d.phone || '');
       })
       .catch(() => {});
+    refreshUser();
+    window.addEventListener('focus', refreshUser);
+    return () => window.removeEventListener('focus', refreshUser);
   }, []);
 
   async function handleUpdateProfile(e) {
@@ -160,7 +163,7 @@ export default function AccountProfilePage() {
           }} />
         </section>
 
-        <AccountChangeRequests currentUser={user} />
+        {user?.role === 'CUSTOMER' && <AccountChangeRequests key={user.id} currentUser={user} />}
 
         {/* Đổi mật khẩu */}
         <section className="eht-card">

@@ -1,4 +1,5 @@
 import { prisma } from '../../lib/prisma.js';
+import { notify } from '../../utils/notify.js';
 
 const userBrief = {
   select: { id: true, fullName: true },
@@ -256,6 +257,8 @@ export async function createReceipt({ supplierId, createdById, content, items })
       },
       select: { id: true },
     });
+    const owners = await tx.user.findMany({ where: { role: { code: 'SHOP_OWNER' }, isActive: true }, select: { id: true } });
+    for (const owner of owners) await notify({ userId: owner.id, role: 'SHOP_OWNER', type: 'STOCK_RECEIPT_REQUEST', message: `Có phiếu nhập kho mới #${receipt.id}.`, url: '/inventory?view=pending', payload: { receiptId: receipt.id } }, tx);
 
     return tx.stockReceipt.update({
       where: { id: receipt.id },
@@ -279,6 +282,8 @@ export async function createIssue({ supplierId, createdById, content, type, item
       },
       select: { id: true },
     });
+    const owners = await tx.user.findMany({ where: { role: { code: 'SHOP_OWNER' }, isActive: true }, select: { id: true } });
+    for (const owner of owners) await notify({ userId: owner.id, role: 'SHOP_OWNER', type: 'STOCK_ISSUE_REQUEST', message: `Có phiếu xuất kho mới #${issue.id}.`, url: '/inventory?view=pending', payload: { issueId: issue.id } }, tx);
 
     return tx.stockIssue.update({
       where: { id: issue.id },

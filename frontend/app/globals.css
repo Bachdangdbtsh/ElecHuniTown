@@ -1,6 +1,59 @@
 :root {
+  --font-geist-sans: Arial, Helvetica, sans-serif;
+  --font-geist-mono: Consolas, monospace;
+  --font-jakarta: Arial, Helvetica, sans-serif;
   --background: #ffffff;
   --foreground: #171717;
+}
+
+/* [!NOTE] Dùng class .avatar cho ảnh đại diện người dùng trong toàn ứng dụng. */
+.avatar {
+  display: block;
+  width: var(--avatar-size, 48px);
+  height: var(--avatar-size, 48px);
+  flex: 0 0 var(--avatar-size, 48px);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  object-fit: cover;
+  overflow: hidden;
+}
+
+.avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #047857;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.global-back-button {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px;
+  border: 1px solid #cbded3;
+  border-radius: 999px;
+  color: #123c2b;
+  background: #fff;
+  box-shadow: 0 4px 16px #102c201f;
+  font: 600 13px Arial, Helvetica, sans-serif;
+  cursor: pointer;
+}
+
+.global-back-button:hover {
+  background: #f2f9f5;
+}
+
+.global-back-button:focus-visible {
+  outline: 2px solid #238b57;
+  outline-offset: 2px;
 }
 
 @media (prefers-color-scheme: dark) {

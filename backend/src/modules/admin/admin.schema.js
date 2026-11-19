@@ -23,7 +23,7 @@ export const createStaffUserSchema = z.object({
 export const userQuerySchema = z.object({
   role: z.string().optional(),
   status: z.enum(['active', 'locked', 'all']).optional().default('all'),
-  search: z.string().trim().optional(),
+  search: z.string().trim().refine(val => val !== 'undefined', { message: 'Từ khóa không hợp lệ' }).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
 });
@@ -37,8 +37,6 @@ export const reviewChangeRequestSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED'], {
     errorMap: () => ({ message: 'Trạng thái xử lý chỉ có thể là APPROVED hoặc REJECTED' }),
   }),
-  // Ghi chú admin (tuỳ chọn). Chưa có cột DB — chấp nhận để FE gửi, không persist.
-  note: z.string().trim().max(500).optional(),
 });
 
 export const accessAnalyticsQuerySchema = z.object({

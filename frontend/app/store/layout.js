@@ -4,17 +4,22 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { apiFetch, apiPost } from '@/lib/api';
+import BrandLogo from '@/components/BrandLogo';
+import Avatar from '@/app/(common)/Avatar';
+import { FiBell, FiBox, FiChevronDown, FiClipboard, FiGrid, FiPackage, FiRefreshCw, FiSettings, FiShoppingBag, FiTrendingUp, FiUsers } from 'react-icons/fi';
 import '../eht-ui.css';
+import '../staff/staff.css';
+import './store.css';
 
 const OWNER_MENU = [
-  { label: 'Tiếp nhận & Xử lý đơn hàng', href: '/store/orders', icon: '🛒' },
-  { label: 'Đổi trả, Hoàn tiền', href: '/store/returns', icon: '↺' },
-  { label: 'Quản lý Danh mục Sản phẩm', href: '/store/categories', icon: '▦' },
-  { label: 'Quản lý Kho hàng', href: '/store/inventory', icon: '⌂' },
-  { label: 'Thống kê Tài chính', href: '/store/finance', icon: '▥' },
+  { label: 'Xử lý & Quản lý Đơn hàng', href: '/store/orders', icon: FiShoppingBag },
+  { label: 'Đổi trả - Hoàn tiền', href: '/store/returns', icon: FiRefreshCw, ownerOnly: true },
+  { label: 'Quản lý Danh mục Sản phẩm', href: '/store/categories', icon: FiGrid },
+  { label: 'Quản lý Kho hàng', href: '/inventory', icon: FiBox },
+  { label: 'Thống kê Tài chính', href: '/statistics', icon: FiTrendingUp, ownerOnly: true },
 ];
 
-const STAFF_MENU = OWNER_MENU.filter((m) => m.href !== '/store/finance');
+const OWNER_ONLY_NOTICE = 'Chỉ có Shop Owner mới có quyền truy cập.';
 
 function initials(name) {
   return (name || 'SO')
@@ -30,29 +35,34 @@ export default function StoreLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState(null);
+  const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
-  const [today, setToday] = useState('');
-
-  useEffect(() => {
-    setToday(new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long' }));
-  }, []);
+  const [accessNotice, setAccessNotice] = useState('');
+  const [inventoryOpen, setInventoryOpen] = useState(() => pathname.startsWith('/inventory'));
+  const [today] = useState(() => new Date().toLocaleDateString('vi-VN', {
+    weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Ho_Chi_Minh',
+  }));
 
   useEffect(() => {
     apiFetch('/auth/me')
       .then((u) => {
         setUser(u);
         const role = u.role || '';
-        if (!['ADMIN', 'SHOP_OWNER', 'STAFF', 'OWNER'].includes(role)) {
+        if (!['SHOP_OWNER', 'STAFF'].includes(role)) {
           router.replace('/account/overview');
+          return;
         }
+        setReady(true);
       })
       .catch(() => router.replace('/login?redirect=/store/orders'));
   }, [router]);
 
-  const isOwner = ['ADMIN', 'SHOP_OWNER', 'OWNER'].includes(user?.role);
-  const menu = isOwner ? OWNER_MENU : STAFF_MENU;
+  const isOwner = user?.role === 'SHOP_OWNER';
+  const menu = ready ? OWNER_MENU : [];
   const roleLabel = isOwner ? 'Shop Owner' : 'Nhân viên';
-  
+  const restrictedPath = !isOwner && (pathname.startsWith('/store/returns') || pathname.startsWith('/statistics'));
+  const allowed = !restrictedPath;
+
   async function logout() {
     try {
       await apiPost('/auth/logout');
@@ -64,8 +74,8 @@ export default function StoreLayout({ children }) {
   return (
     <div className="eht-shell">
       <aside className="eht-side">
-        <Link href="/" className="eht-side-brand">
-          <span className="eht-side-brand-icon">EH</span>
+        <Link href="/store/orders" className="eht-side-brand">
+          <BrandLogo className="eht-side-brand-icon" />
           <span>
             <p className="eht-side-brand-title">ElecHuniTown</p>
             <p className="eht-side-brand-sub">Quản lý cửa hàng</p>
@@ -76,12 +86,38 @@ export default function StoreLayout({ children }) {
           <ul className="eht-nav">
             {menu.map((item) => {
               const active = pathname === item.href || pathname.startsWith(item.href + '/');
+              const disabled = item.ownerOnly && !isOwner;
+              if (item.href === '/inventory') return (
+                <li key={item.href}>
+                  <div className={`eht-nav-inventory ${active ? 'active' : ''}`}>
+                    <Link href="/inventory" onClick={() => setInventoryOpen(true)}>
+                      <span className="eht-nav-ico"><FiBox /></span>
+                      {item.label}
+                    </Link>
+                    <button type="button" className="eht-nav-expand" aria-label={inventoryOpen ? 'Thu gọn mục kho hàng' : 'Mở mục kho hàng'} aria-expanded={inventoryOpen} aria-controls="store-inventory-submenu" onClick={() => setInventoryOpen((value) => !value)}><FiChevronDown /></button>
+                  </div>
+                  {inventoryOpen && <ul className="eht-nav-submenu" id="store-inventory-submenu">
+                    <li><Link href="/inventory?view=inventory"><FiPackage /> Quản lý hàng tồn kho</Link></li>
+                    <li>{isOwner ? <Link href="/inventory?view=pending"><FiClipboard /> Duyệt phiếu nhập/xuất kho</Link> : <button type="button" onClick={() => setAccessNotice('inventory-approval')}><FiClipboard /> Duyệt phiếu nhập/xuất kho</button>}</li>
+                    <li><Link href="/inventory/suppliers"><FiUsers /> Quản lý nhà cung cấp</Link></li>
+                  </ul>}
+                  {!isOwner && accessNotice === 'inventory-approval' && <small className="eht-nav-notice" role="status">{OWNER_ONLY_NOTICE}</small>}
+                </li>
+              );
               return (
                 <li key={item.href}>
-                  <Link href={item.href} className={active ? 'active' : undefined}>
-                    <span className="eht-nav-ico">{item.icon}</span>
+                  {disabled ? <button
+                    type="button"
+                    className="eht-nav-disabled"
+                    onClick={() => setAccessNotice(item.href)}
+                  >
+                    <span className="eht-nav-ico"><item.icon /></span>
                     {item.label}
-                  </Link>
+                  </button> : <Link href={item.href} className={active ? 'active' : undefined}>
+                    <span className="eht-nav-ico"><item.icon /></span>
+                    {item.label}
+                  </Link>}
+                  {disabled && accessNotice === item.href && <small className="eht-nav-notice" role="status">{OWNER_ONLY_NOTICE}</small>}
                 </li>
               );
             })}
@@ -100,13 +136,11 @@ export default function StoreLayout({ children }) {
             </p>
           </div>
           <div className="eht-top-right">
-            <button type="button" className="eht-icon-btn">
-              🔔<span className="eht-icon-badge">4</span>
-            </button>
-            <button type="button" className="eht-icon-btn">⚙</button>
+            <span className="eht-icon-btn" aria-label="Thông báo"><FiBell /></span>
+            <span className="eht-icon-btn" aria-label="Cài đặt"><FiSettings /></span>
             <div style={{ position: 'relative' }}>
               <button type="button" className="eht-user-chip" onClick={() => setOpen((v) => !v)}>
-                <span className="eht-avatar">{initials(user?.fullName)}</span>
+                <Avatar src={user?.avatar} alt="" size={40} fallback={initials(user?.fullName)} className="eht-avatar" />
                 <span>
                   <p className="eht-user-label">Tài khoản {roleLabel}</p>
                   <p className="eht-user-name">Chào mừng, {roleLabel}!</p>
@@ -123,7 +157,7 @@ export default function StoreLayout({ children }) {
             </div>
           </div>
         </header>
-        <div className="eht-content">{children}</div>
+        <div className="eht-content">{ready && allowed ? children : ready ? <div className="store-access-notice" role="status">{OWNER_ONLY_NOTICE}</div> : <p>Đang kiểm tra quyền truy cập…</p>}</div>
       </div>
     </div>
   );

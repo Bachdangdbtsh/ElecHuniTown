@@ -85,6 +85,14 @@ export async function updateLastLogin(userId) {
   });
 }
 
+export async function updateUserAvatar(userId, avatar) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { avatar },
+    select: { avatar: true },
+  });
+}
+
 export async function createLoginHistory({ userId, email, ip, userAgent, success }) {
   return prisma.loginHistory.create({
     data: {

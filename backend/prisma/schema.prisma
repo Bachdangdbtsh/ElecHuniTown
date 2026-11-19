@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/elechunitown-checkout-client"
 }
 
 datasource db {
@@ -73,13 +74,12 @@ model User {
   ordersRefunded        ReturnRequest[]        @relation("OrderRefundedBy")
   shopOwner             ShopOwner?
   staff                 Staff?
-  cart                  Cart?  
+  cart                  Cart?
   issuesCreated         StockIssue[]           @relation("IssueCreatedBy")
   issuesHandled         StockIssue[]           @relation("IssueHandledBy")
   receiptsCreated       StockReceipt[]         @relation("ReceiptCreatedBy")
   receiptsHandled       StockReceipt[]         @relation("ReceiptHandledBy")
   role                  Role                   @relation(fields: [roleId], references: [id])
-
   @@index([roleId])
 }
 
@@ -137,14 +137,14 @@ model AdminManageRole {
 
 model RecipientInfo {
   id                   Int     @id @default(autoincrement())
-  customerId           Int
+  customerId           Int?
   recipientName        String?
   recipientPhoneNumber String
   address              String
   recipientType        String?
   isDefault            Boolean @default(false)
   orders               Order[]
-  customer             User    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer             User?   @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([customerId])
 }
@@ -188,8 +188,28 @@ model Product {
   returnRequestItems    ReturnRequestItem[]
   staffManageLogs       StaffManageProduct[]
   stockIssueItems       StockIssueItem[]
-  cartItems             CartItem[]  
+  cartItems             CartItem[]
   stockReceiptItems     StockReceiptItem[]
+}
+
+model Cart {
+  id         Int        @id @default(autoincrement())
+  customerId Int        @unique
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  customer   User       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items      CartItem[]
+}
+
+model CartItem {
+  id        Int     @id @default(autoincrement())
+  cartId    Int
+  productId Int
+  quantity  Int     @default(1)
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId])
 }
 
 model ProductPictures {
@@ -210,24 +230,26 @@ model Product_Tags {
 
 model Order {
   id                  Int                     @id @default(autoincrement())
-  customerId          Int
+  customerId          Int?
   recipientId         Int
   confirmedById       Int?
   orderDate           DateTime                @default(now())
   status              OrderStatus
+  paymentMethod       String?
+  paymentMethodStatus Boolean                 @default(false)
+  transactionID       String?
+  paymentCreatedAt    String?
+  note                String?
   shippingFee         Int
   discount            Int
   subtotal            Int
   totalCost           Int
-  note                String?
-  paymentMethod       String?
-  paymentMethodStatus Boolean                 @default(false)
-  transactionID       String?
   confirmedBy         User?                   @relation("OrderConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
-  customer            User                    @relation("OrderCustomer", fields: [customerId], references: [id])
+  customer            User?                   @relation("OrderCustomer", fields: [customerId], references: [id])
   recipient           RecipientInfo           @relation(fields: [recipientId], references: [id])
   items               Order_contain_product[]
   returnRequests      ReturnRequest[]
+  financeMovements    FinanceMovement[]
 }
 
 model Order_contain_product {
@@ -250,6 +272,7 @@ model Supplier {
   address           String?
   contactPerson     String?
   bankNumber        String?
+  bankName          String?
   isActive          Boolean        @default(true)
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
@@ -289,6 +312,25 @@ model StockReceiptItem {
 
   @@unique([receiptId, productId])
   @@index([productId])
+}
+
+model Finance {
+  id           Int      @id @default(1)
+  cashBalance  BigInt   @default(0)
+  totalExpense BigInt   @default(0)
+  updatedAt    DateTime @updatedAt
+}
+
+model FinanceMovement {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  kind      String
+  amount    BigInt
+  createdAt DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id])
+
+  @@unique([orderId, kind])
+  @@index([createdAt])
 }
 
 model StockIssue {
@@ -347,7 +389,7 @@ model InventoryTransaction {
 
 model ReturnRequest {
   id                 Int                    @id @default(autoincrement())
-  orderId            Int
+  orderId            Int                    @unique
   status             ReturnStatus           @default(PENDING)
   reason             String
   rejectReason       String
@@ -475,27 +517,6 @@ model StaffManageCategory {
 
   @@index([staffId])
   @@index([categoryId])
-}
-
-model Cart {
-  id         Int        @id @default(autoincrement())
-  customerId Int        @unique
-  customer   User       @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  items      CartItem[]
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-}
-
-model CartItem {
-  id        Int      @id @default(autoincrement())
-  cartId    Int
-  productId Int
-  quantity  Int      @default(1)
-  
-  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
-  @@unique([cartId, productId])
 }
 
 enum AuditAction {

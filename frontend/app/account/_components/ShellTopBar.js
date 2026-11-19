@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Avatar from '@/app/(common)/Avatar';
 import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/api';
 
@@ -15,10 +16,36 @@ function initials(name) {
     .toUpperCase();
 }
 
+function getRoleCode(user) {
+  const role = typeof user?.role === 'string' ? user.role : user?.role?.code;
+  if (role) return role;
+  return {
+    'Nhân viên': 'STAFF',
+    'Chủ cửa hàng': 'SHOP_OWNER',
+    'Chủ ứng dụng': 'SHOP_OWNER',
+    'Quản trị viên': 'ADMIN',
+    'Khách hàng': 'CUSTOMER',
+  }[user?.roleName] || '';
+}
+
 export default function ShellTopBar({ title, subtitle, user, action }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const roleCode = getRoleCode(user);
+  const workspaceLink = {
+    STAFF: { href: '/store/orders', label: '🏪 Quản lý cửa hàng' },
+    SHOP_OWNER: { href: '/store/orders', label: '🏪 Quản lý cửa hàng' },
+    ADMIN: { href: '/admin/dashboard', label: '🛡️ Bảng điều khiển quản trị' },
+    CUSTOMER: { href: '/', label: '🛒 Tiếp tục mua sắm' },
+  }[roleCode] || { href: '/', label: '🛒 Tiếp tục mua sắm' };
+  const roleLabels = {
+    STAFF: 'Nhân viên',
+    SHOP_OWNER: 'Chủ cửa hàng',
+    ADMIN: 'Quản trị viên',
+    CUSTOMER: 'Khách hàng',
+  };
+  const userLabel = roleLabels[roleCode] || user?.roleName;
 
   useEffect(() => {
     const close = (e) => {
@@ -45,9 +72,9 @@ export default function ShellTopBar({ title, subtitle, user, action }) {
       </div>
       <div className="eht-top-right">
         {action}
-        <Link href="/" className="eht-btn eht-btn-sm" title="Tiếp tục mua sắm">
-          🛒 Tiếp tục mua sắm
-        </Link>
+        {user && <Link href={workspaceLink.href} className="eht-btn eht-btn-sm" title={workspaceLink.label}>
+          {workspaceLink.label}
+        </Link>}
         <button type="button" className="eht-icon-btn" title="Thông báo" aria-label="Thông báo">
           🔔
         </button>
@@ -56,9 +83,9 @@ export default function ShellTopBar({ title, subtitle, user, action }) {
         </Link>
         <div ref={ref} style={{ position: 'relative' }}>
           <button type="button" className="eht-user-chip" onClick={() => setOpen((v) => !v)}>
-            <span className="eht-avatar">{initials(user?.fullName)}</span>
+            <Avatar src={user?.avatar} alt="" size={40} fallback={initials(user?.fullName)} className="eht-avatar" />
             <span>
-              <p className="eht-user-label">Tài khoản khách hàng</p>
+              <p className="eht-user-label">{userLabel ? `Tài khoản ${userLabel}` : 'Tài khoản'}</p>
               <p className="eht-user-name">Xin chào, {user?.fullName?.split(' ').slice(-1)[0] || '…'}!</p>
             </span>
             <span style={{ opacity: 0.5 }}>▾</span>

@@ -25,42 +25,50 @@ export default function KpiPanel({ state }) {
   return (
     <AsyncSection state={state} minHeight={150}>
       {(d) => (
-        <div className="st-kpi">
-          <div className="st-kpi-main">
-            <div className="st-kpi-item">
-              <p className="st-kpi-label">Tổng doanh thu</p>
-              <p className="st-kpi-value" title={formatVnd(d.revenue.value)}>
-                {formatCompactVnd(d.revenue.value)} <span className="st-kpi-unit">₫</span>
-              </p>
-              <Delta pct={d.revenue.changePct} />
+        <div>
+          <div className="st-kpi">
+            <div className="st-kpi-main">
+              <div className="st-kpi-item">
+                <p className="st-kpi-label">Tổng doanh thu</p>
+                <p className="st-kpi-value" title={formatVnd(d.revenue.value)}>
+                  {formatCompactVnd(d.revenue.value)} <span className="st-kpi-unit">₫</span>
+                </p>
+                <Delta pct={d.revenue.changePct} />
+              </div>
+              <div className="st-kpi-item">
+                <p className="st-kpi-label">Tổng số đơn hàng</p>
+                <p className="st-kpi-value">{formatNumber(d.orders.value)}</p>
+                <Delta pct={d.orders.changePct} abs={d.orders.changeAbs} unit="đơn" />
+              </div>
+              <div className="st-kpi-item">
+                <p className="st-kpi-label">Khách hàng mới</p>
+                <p className="st-kpi-value">{formatNumber(d.newCustomers.value)}</p>
+                <Delta pct={d.newCustomers.changePct} abs={d.newCustomers.changeAbs} unit="khách" />
+              </div>
             </div>
-            <div className="st-kpi-item">
-              <p className="st-kpi-label">Tổng số đơn hàng</p>
-              <p className="st-kpi-value">{formatNumber(d.orders.value)}</p>
-              <Delta pct={d.orders.changePct} abs={d.orders.changeAbs} unit="đơn" />
+            <dl className="st-kpi-side">
+              <div>
+                <dt>Giá trị đơn trung bình</dt>
+                <dd className="st-kpi-value">{formatCompactVnd(d.averageOrderValue)} <span className="st-kpi-unit">₫</span></dd>
+                <div className="st-kpi-extra">
+                  <p><span>Ngày bán tốt nhất</span><strong>{d.bestDay ? `${formatDate(d.bestDay.date)} · ${formatCompactVnd(d.bestDay.revenue)} ₫` : '—'}</strong></p>
+                  <p><span>Sản phẩm đang bán</span><strong>{formatNumber(d.activeProducts)}</strong></p>
+                </div>
+              </div>
+            </dl>
+          </div>
+          <div className="st-finance">
+            <div className="st-finance-item">
+              <p className="st-kpi-label">Số dư tiền hiện tại</p>
+              <p className="st-finance-value">{formatVnd(d.cashBalance)}</p>
+              <p className="st-finance-note">Doanh thu đã thu − chi nhập hàng − hoàn tiền VNPay</p>
             </div>
-            <div className="st-kpi-item">
-              <p className="st-kpi-label">Khách hàng mới</p>
-              <p className="st-kpi-value">{formatNumber(d.newCustomers.value)}</p>
-              <Delta pct={d.newCustomers.changePct} abs={d.newCustomers.changeAbs} unit="khách" />
+            <div className="st-finance-item">
+              <p className="st-kpi-label">Tổng chi nhập hàng</p>
+              <p className="st-finance-value">{formatVnd(d.totalExpense)}</p>
+              <p className="st-finance-note">Lũy kế từ khi bật tính năng</p>
             </div>
           </div>
-          <dl className="st-kpi-side">
-            <div>
-              <dt>Giá trị đơn trung bình</dt>
-              <dd>{formatVnd(d.averageOrderValue)}</dd>
-            </div>
-            <div>
-              <dt>Ngày bán tốt nhất</dt>
-              <dd>
-                {d.bestDay ? `${formatDate(d.bestDay.date)} · ${formatCompactVnd(d.bestDay.revenue)} ₫` : '—'}
-              </dd>
-            </div>
-            <div>
-              <dt>Sản phẩm đang bán</dt>
-              <dd>{formatNumber(d.activeProducts)}</dd>
-            </div>
-          </dl>
         </div>
       )}
     </AsyncSection>

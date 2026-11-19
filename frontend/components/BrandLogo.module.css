@@ -1,0 +1,74 @@
+.logo {
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.logo img {
+  position: absolute !important;
+  display: block;
+  max-width: none !important;
+  object-fit: fill !important;
+}
+
+/* Crop the source image's transparent margins so each variant frames the same mark. */
+.mark {
+  width: 42px;
+  height: 42px;
+}
+
+.mark img {
+  top: -49px !important;
+  left: -33px !important;
+  width: 140px !important;
+  height: 140px !important;
+}
+
+.smallMark {
+  width: 36px;
+  height: 36px;
+}
+
+.smallMark img {
+  top: -42px !important;
+  left: -28px !important;
+  width: 120px !important;
+  height: 120px !important;
+}
+
+.authMark {
+  width: 56px;
+  height: 56px;
+}
+
+.authMark img {
+  top: -65px !important;
+  left: -44px !important;
+  width: 187px !important;
+  height: 187px !important;
+}
+
+.wordmark {
+  width: 180px;
+  height: 86px;
+}
+
+.wordmark img {
+  top: -115px !important;
+  left: -78px !important;
+  width: 332px !important;
+  height: 332px !important;
+}
+
+.wordmarkCompact {
+  width: 151px;
+  height: 72px;
+}
+
+.wordmarkCompact img {
+  top: -96px !important;
+  left: -65px !important;
+  width: 277px !important;
+  height: 277px !important;
+}

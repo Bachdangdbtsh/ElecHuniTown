@@ -4,6 +4,6 @@ export const ADMIN_NAV = [
   { label: 'Quản lý đơn hàng', href: null },
   { label: 'Đổi trả - Hoàn tiền', href: null },
   { label: 'Quản lý danh mục sản phẩm', href: null },
-  { label: 'Quản lý kho hàng', href: null },
+  { label: 'Quản lý kho hàng', href: '/inventory' },
   { label: 'Thống kê tài chính', href: '/statistics' },
 ];

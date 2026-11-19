@@ -18,9 +18,9 @@ export default function AdminUsersPage() {
   const query = {
     role,
     status,
-    search: search.trim() || undefined,
     page,
     limit: 10,
+    ...(search.trim() ? { search: search.trim() } : {}),
   };
 
   const usersState = useApi('/admin/users', query);
@@ -113,6 +113,7 @@ export default function AdminUsersPage() {
         emptyText="Không tìm thấy người dùng phù hợp."
       >
         {(d) => (
+          <>
           <div className="adm-table-wrap">
             <table className="adm-table">
               <thead>
@@ -156,6 +157,31 @@ export default function AdminUsersPage() {
               </tbody>
             </table>
           </div>
+          {d.pagination?.totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginTop: 16, padding: '0 4px' }}>
+              <span style={{ fontSize: 13, color: 'var(--muted)' }}>
+                Hiển thị <b>{(d.pagination.page - 1) * d.pagination.limit + 1} - {Math.min(d.pagination.page * d.pagination.limit, d.pagination.total)}</b> trên tổng số <b>{d.pagination.total}</b> người dùng (Trang {d.pagination.page} / {d.pagination.totalPages})
+              </span>
+              <nav aria-label="Phân trang người dùng" style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                <button type="button" className="adm-btn" disabled={usersState.status === 'loading' || page === 1} onClick={() => setPage((p) => p - 1)}>« Trước</button>
+                {Array.from({ length: d.pagination.totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    className={`adm-btn${p === d.pagination.page ? ' adm-btn-primary' : ''}`}
+                    aria-label={`Trang ${p}`}
+                    aria-current={p === d.pagination.page ? 'page' : undefined}
+                    disabled={usersState.status === 'loading'}
+                    onClick={() => setPage(p)}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button type="button" className="adm-btn" disabled={usersState.status === 'loading' || page === d.pagination.totalPages} onClick={() => setPage((p) => p + 1)}>Sau »</button>
+              </nav>
+            </div>
+          )}
+          </>
         )}
       </AsyncSection>
 

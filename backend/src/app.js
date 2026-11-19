@@ -4,13 +4,18 @@ import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
 import { prisma } from './lib/prisma.js';
 import { errorHandler } from './common/error/ErrorHandler.js';
+
 import router from './router/index.router.js';
+import { guardCheckout, guardPaymentReturn } from './common/middleware/checkout.js';
 import statisticRoutes from './modules/statistic/statistic.routes.js';
 import authRoutes from './modules/auth/auth.route.js';
 import recipientRoutes from './modules/recipient/recipient.route.js';
 import changeRequestRoutes from './modules/account-change-request/change-request.route.js';
 import adminRoutes from './modules/admin/admin.route.js';
 import roleRoutes from './modules/role/role.route.js';
+import staffRoutes from './modules/staff/staff.route.js';
+import returnsRoutes from './modules/returns/returns.route.js';
+import inventoryRoutes from './source/Inventory/InventoryRouter.js';
 
 export const app = express();
 
@@ -23,8 +28,6 @@ app.use(
 );
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
-
-// Security headers tối thiểu (không thêm dependency helmet)
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
@@ -40,9 +43,11 @@ app.get('/health', async (req, res, next) => {
     next(err);
   }
 });
-
+app.use('/order', guardCheckout);
+app.use('/vnpay-return', guardPaymentReturn);
 // Shopping / catalog / cart / order (module của thành viên khác)
 app.use('/', router);
+app.use('/', inventoryRoutes);
 
 // Account / Auth / Phân quyền
 app.use('/auth', authRoutes);
@@ -50,6 +55,8 @@ app.use('/recipients', recipientRoutes);
 app.use('/account-change-requests', changeRequestRoutes);
 app.use('/admin', adminRoutes);
 app.use('/roles', roleRoutes);
+app.use('/staff', staffRoutes);
+app.use('/returns', returnsRoutes);
 app.use('/statistics', statisticRoutes);
 
 // Global error handler — luôn đặt cuối

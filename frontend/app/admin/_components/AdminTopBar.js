@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/api';
+import Avatar from '@/app/(common)/Avatar';
 
 function initials(name) {
   return (name || 'AD')
@@ -18,18 +19,10 @@ function initials(name) {
 export default function AdminTopBar({ user, notifications = 0 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [today, setToday] = useState('');
+  const [today] = useState(() => new Date().toLocaleDateString('vi-VN', {
+    weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Ho_Chi_Minh',
+  }));
   const ref = useRef(null);
-
-  useEffect(() => {
-    setToday(
-      new Date().toLocaleDateString('vi-VN', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-      }),
-    );
-  }, []);
 
   useEffect(() => {
     const close = (e) => {
@@ -67,7 +60,7 @@ export default function AdminTopBar({ user, notifications = 0 }) {
         </button>
         <div ref={ref} style={{ position: 'relative' }}>
           <button type="button" className="eht-user-chip" onClick={() => setOpen((v) => !v)}>
-            <span className="eht-avatar">{initials(user?.fullName)}</span>
+            <Avatar src={user?.avatar} alt="" size={40} fallback={initials(user?.fullName)} className="eht-avatar" />
             <span>
               <p className="eht-user-label">Tài khoản quản lý</p>
               <p className="eht-user-name">Chào mừng, Quản trị viên!</p>

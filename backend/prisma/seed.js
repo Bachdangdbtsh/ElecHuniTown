@@ -37,7 +37,9 @@ const PERMISSION_GROUPS = [
       { code: 'INVENTORY_VIEW', name: 'Xem tồn kho và biến động kho' },
       { code: 'STOCK_RECEIPT_CREATE', name: 'Tạo phiếu nhập kho' },
       { code: 'STOCK_RECEIPT_APPROVE', name: 'Phê duyệt phiếu nhập kho' },
+      { code: 'STOCK_ISSUE_CREATE', name: 'Tạo phiếu xuất kho' },
       { code: 'STOCK_ISSUE_MANAGE', name: 'Lập và quản lý phiếu xuất kho' },
+      { code: 'STOCK_ISSUE_APPROVE', name: 'Phê duyệt phiếu xuất kho' },
       { code: 'SUPPLIER_MANAGE', name: 'Quản lý thông tin nhà cung cấp' },
       { code: 'RETURN_MANAGE', name: 'Xem và xét duyệt đổi trả hoàn tiền' },
     ],
@@ -80,6 +82,12 @@ const ROLES = [
 ];
 
 async function main() {
+  await prisma.finance.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1, cashBalance: 0, totalExpense: 0 },
+  });
+
   const permMap = new Map();
 
   for (const g of PERMISSION_GROUPS) {
@@ -134,8 +142,9 @@ async function main() {
     'PRODUCT_MANAGE',
     'INVENTORY_VIEW',
     'STOCK_RECEIPT_CREATE',
+    'STOCK_ISSUE_CREATE',
     'STOCK_ISSUE_MANAGE',
-    'STATISTIC_VIEW',
+    'SUPPLIER_MANAGE',
   ];
   const staffRoleId = roleMap.get('STAFF');
   for (const code of staffPermCodes) {
@@ -162,7 +171,10 @@ async function main() {
     'CATEGORY_MANAGE',
     'PRODUCT_MANAGE',
     'INVENTORY_VIEW',
+    'STOCK_RECEIPT_CREATE',
     'STOCK_RECEIPT_APPROVE',
+    'STOCK_ISSUE_CREATE',
+    'STOCK_ISSUE_APPROVE',
     'STOCK_ISSUE_MANAGE',
     'SUPPLIER_MANAGE',
     'RETURN_MANAGE',

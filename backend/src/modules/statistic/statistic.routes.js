@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { authenticate, requirePermission } from '../../common/middleware/auth.js';
+import { authenticate, requirePermission, requireRole } from '../../common/middleware/auth.js';
 import { PERMISSIONS } from './statistic.constants.js';
 import * as c from './statistic.controller.js';
 
 const router = Router();
 
 // Yêu cầu đăng nhập + mã quyền (STATISTIC_VIEW / STATISTIC_EXPORT).
-router.use(authenticate);
+router.use(authenticate, requireRole('SHOP_OWNER'));
 
 router.get('/dashboard', requirePermission(PERMISSIONS.VIEW), c.dashboard); // UC_53
 router.get('/revenue', requirePermission(PERMISSIONS.VIEW), c.revenue); // UC_49

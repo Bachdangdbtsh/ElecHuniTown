@@ -458,3 +458,15 @@
   padding: 0;
   background: transparent;
 }
+
+/* Khổ giấy chỉ để đọc (hộp thoại in quyết định), canh cùng hàng với select Hướng giấy. */
+.rp-field-row .rp-field-note {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px dashed var(--line, #e2e8f0);
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 12px;
+  color: #475569;
+}

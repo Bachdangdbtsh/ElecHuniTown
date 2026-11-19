@@ -404,12 +404,10 @@ function ReportPreview() {
         <aside className="rp-settings" aria-labelledby="rp-settings-title">
           <h2 id="rp-settings-title" className="rp-settings-title">Thiết lập in</h2>
 
-          <label className="rp-field">
+          <div className="rp-field">
             <span>Máy in</span>
-            <select defaultValue="default">
-              <option value="default">Máy in mặc định</option>
-            </select>
-          </label>
+            <p className="rp-field-note">Do hộp thoại in của trình duyệt quyết định.</p>
+          </div>
 
           <label className="rp-field">
             <span>Trang cần in</span>
@@ -423,14 +421,13 @@ function ReportPreview() {
           <div className="rp-field">
             <span>Khổ giấy</span>
             <div className="rp-field-row">
-              <select defaultValue="a4" aria-label="Khổ giấy">
-                <option value="a4">A4</option>
-              </select>
+              <p className="rp-field-note">A4</p>
               <select value={orientation} onChange={(event) => setOrientation(event.target.value)} aria-label="Hướng giấy">
                 <option value="portrait">Dọc</option>
                 <option value="landscape">Ngang</option>
               </select>
             </div>
+            <span className="rp-field-note">Khổ giấy do hộp thoại in quyết định; hướng giấy áp dụng cho bản in.</span>
           </div>
 
           <div className="rp-field">

@@ -86,3 +86,8 @@ export async function getMe(req, res) {
   const data = await service.getCurrentUser(req.user.id);
   ok(res, data);
 }
+
+export async function updateAvatar(req, res) {
+  const data = await service.updateAvatar(req.user.id, req.body?.avatar);
+  ok(res, data);
+}

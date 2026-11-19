@@ -45,6 +45,7 @@ router.post('/forgot-password', resetLimiter, c.forgotPassword);
 router.post('/reset-password', resetLimiter, c.resetPassword);
 
 router.get('/me', authenticate, c.getMe);
+router.patch('/avatar', authenticate, c.updateAvatar);
 router.post('/change-password', authenticate, c.changePassword);
 
 export default router;

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { apiFetch, apiPost } from '@/lib/api';
 import ShellTopBar from '../_components/ShellTopBar';
 import AccountChangeRequests from '../_components/AccountChangeRequests';
+import Avatar from './avatar';
+import './avatar.css';
 
 export default function AccountProfilePage() {
   const router = useRouter();
@@ -143,6 +145,19 @@ export default function AccountProfilePage() {
               </div>
             </form>
           )}
+        </section>
+
+        <section className="eht-card">
+          <div className="eht-card-head">
+            <div>
+              <h2 className="eht-card-title">Ảnh đại diện</h2>
+              <p className="eht-card-desc">Chọn ảnh để hiển thị trên tài khoản của bạn</p>
+            </div>
+          </div>
+          <Avatar avatar={user?.avatar} onUpdated={(avatar) => {
+            setUser((current) => current ? { ...current, avatar } : current);
+            router.refresh();
+          }} />
         </section>
 
         <AccountChangeRequests currentUser={user} />

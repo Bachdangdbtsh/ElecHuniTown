@@ -1,4 +1,5 @@
 import { prisma } from '../../lib/prisma.js';
+import { recordSale } from '../finance/finance.service.js';
 
 const productInclude = {
   category: true,
@@ -261,11 +262,17 @@ export function findOrderById(id) {
 
 export function updateOrderStatus(id, status, expectedStatus, actorId) {
   return prisma.$transaction(async (tx) => {
+    const order = status === 'DELIVERED'
+      ? await tx.order.findUnique({ where: { id }, select: { id: true, totalCost: true, paymentMethod: true } })
+      : null;
     const updated = await tx.order.updateMany({
       where: { id, status: expectedStatus },
       data: { status, ...(status === 'CONFIRMED' ? { confirmedById: actorId } : {}) },
     });
     if (!updated.count) return false;
+    if (status === 'DELIVERED' && order?.paymentMethod === 'money') {
+      await recordSale(tx, order, actorId);
+    }
     await tx.auditLog.create({
       data: { actorId, action: status === 'CONFIRMED' ? 'APPROVE' : 'UPDATE', entityType: 'Order', entityId: id, details: { from: expectedStatus, to: status } },
     });

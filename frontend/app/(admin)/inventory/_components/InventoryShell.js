@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import BrandLogo from '@/components/BrandLogo';
+import Avatar from '@/app/(common)/Avatar';
 import {
   FiBarChart2,
   FiBell,
@@ -155,7 +156,7 @@ export default function InventoryShell({ user, children }) {
 
         <div className="inv-sidebar-bottom">
           <div className="inv-sidebar-user">
-            <span className="inv-avatar">{user.fullName?.slice(0, 1)?.toUpperCase() || 'U'}</span>
+            <Avatar src={user.avatar} alt="" size={32} fallback={user.fullName?.slice(0, 1)?.toUpperCase() || 'U'} className="inv-avatar" />
             <span className="inv-user-copy">
               <strong>{user.fullName}</strong>
               <small>{user.roleName || (user.role === 'STAFF' ? 'Nhân viên' : 'Chủ cửa hàng')}</small>
@@ -179,7 +180,7 @@ export default function InventoryShell({ user, children }) {
               <FiSettings aria-hidden="true" />
             </button>
             <span className="inv-topbar-divider" />
-            <span className="inv-avatar inv-avatar-top">{user.role === 'STAFF' ? 'STF' : 'QT'}</span>
+            <Avatar src={user.avatar} alt="" size={31} fallback={user.role === 'STAFF' ? 'STF' : 'QT'} className="inv-avatar inv-avatar-top" />
             <span className="inv-greeting">
               <small>TÀI KHOẢN {user.role === 'STAFF' ? 'STAFF' : 'SHOP OWNER'}</small>
               <strong>Chào mừng, {user.role === 'STAFF' ? 'Staff' : 'Shop Owner'}</strong>

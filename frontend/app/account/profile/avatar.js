@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
+import UserAvatar from '@/app/(common)/Avatar';
 import { apiFetch } from '@/lib/api';
 
 const MAX_AVATAR_BYTES = 200000;
@@ -50,13 +50,11 @@ export default function Avatar({ avatar, onUpdated }) {
 
   return (
     <div className="account-avatar-editor">
-      <Image
+      <UserAvatar
         className="account-avatar-preview"
         src={selected || avatar || '/default-avatar.svg'}
         alt="Ảnh đại diện hiện tại"
-        width={88}
-        height={88}
-        unoptimized
+        size={88}
       />
       <div className="account-avatar-controls">
         <label className="account-avatar-drop" onDragOver={(event) => event.preventDefault()} onDrop={(event) => {

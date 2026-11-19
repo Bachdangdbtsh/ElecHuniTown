@@ -6,6 +6,29 @@
   --foreground: #171717;
 }
 
+/* [!NOTE] Dùng class .avatar cho ảnh đại diện người dùng trong toàn ứng dụng. */
+.avatar {
+  display: block;
+  width: var(--avatar-size, 48px);
+  height: var(--avatar-size, 48px);
+  flex: 0 0 var(--avatar-size, 48px);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  object-fit: cover;
+  overflow: hidden;
+}
+
+.avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #047857;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .global-back-button {
   position: fixed;
   right: 20px;

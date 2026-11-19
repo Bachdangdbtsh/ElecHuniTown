@@ -249,6 +249,7 @@ model Order {
   recipient           RecipientInfo           @relation(fields: [recipientId], references: [id])
   items               Order_contain_product[]
   returnRequests      ReturnRequest[]
+  financeMovements    FinanceMovement[]
 }
 
 model Order_contain_product {
@@ -311,6 +312,25 @@ model StockReceiptItem {
 
   @@unique([receiptId, productId])
   @@index([productId])
+}
+
+model Finance {
+  id           Int      @id @default(1)
+  cashBalance  BigInt   @default(0)
+  totalExpense BigInt   @default(0)
+  updatedAt    DateTime @updatedAt
+}
+
+model FinanceMovement {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  kind      String
+  amount    BigInt
+  createdAt DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id])
+
+  @@unique([orderId, kind])
+  @@index([createdAt])
 }
 
 model StockIssue {

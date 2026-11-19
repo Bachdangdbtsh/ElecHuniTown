@@ -80,7 +80,7 @@ button {
   margin:0 10px;
 }
 .header .small-icon .infor-user .avatar{
-  font-size: 30px;
+  flex-shrink: 0;
 }
 .header .cart div {
   border-radius: 50%;

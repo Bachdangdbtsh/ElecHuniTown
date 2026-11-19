@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import Avatar from '@/app/(common)/Avatar';
 import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/api';
 
@@ -83,9 +83,7 @@ export default function ShellTopBar({ title, subtitle, user, action }) {
         </Link>
         <div ref={ref} style={{ position: 'relative' }}>
           <button type="button" className="eht-user-chip" onClick={() => setOpen((v) => !v)}>
-            <span className="eht-avatar">
-              {user?.avatar ? <Image src={user.avatar} alt="" width={40} height={40} unoptimized style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : initials(user?.fullName)}
-            </span>
+            <Avatar src={user?.avatar} alt="" size={40} fallback={initials(user?.fullName)} className="eht-avatar" />
             <span>
               <p className="eht-user-label">{userLabel ? `Tài khoản ${userLabel}` : 'Tài khoản'}</p>
               <p className="eht-user-name">Xin chào, {user?.fullName?.split(' ').slice(-1)[0] || '…'}!</p>

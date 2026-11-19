@@ -3,6 +3,7 @@ import { Router } from "express";
 import slugify from "slugify";
 const router = Router();
 import { prisma } from '../lib/prisma.js';
+import { recordSale } from '../modules/finance/finance.service.js';
 import { env } from '../config/env.js';
 import jwt from 'jsonwebtoken';
 
@@ -733,6 +734,9 @@ router.post('/order/pay/:id', async (req, res) => {
     if (!order) {
       return res.status(404).json({ code: 'error', message: 'Không tìm thấy đơn hàng' });
     }
+    if (order.paymentMethod !== 'bank' || order.paymentMethodStatus || order.status === 'CANCELLED') {
+      return res.status(409).json({ code: 'error', message: 'Đơn hàng không còn hợp lệ để thanh toán VNPay' });
+    }
     if (!env.vnpayTmnCode || !env.vnpaySecureSecret) {
       return res.status(503).json({ code: 'error', message: 'Cổng thanh toán chưa được cấu hình' });
     }
@@ -786,13 +790,28 @@ router.get('/vnpay-return', async (req, res) => {
 
     const orderId = verifyResult.vnp_TxnRef;
     const transactionID = verifyResult.vnp_TransactionNo;
-    await prisma.order.update({
-      where: { id: Number(orderId) },
-      data: {
-        paymentMethodStatus: true,
-        transactionID: transactionID,
-        paymentCreatedAt: String(verifyResult.vnp_PayDate || ''),
+    await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({ where: { id: Number(orderId) } });
+      if (!order || order.paymentMethod !== 'bank' || order.status === 'CANCELLED') {
+        throw new Error('Đơn hàng không hợp lệ để ghi nhận thanh toán VNPay');
       }
+      if (Number(verifyResult.vnp_Amount) !== order.totalCost || !transactionID) {
+        throw new Error('Số tiền hoặc mã giao dịch VNPay không khớp đơn hàng');
+      }
+      if (order.paymentMethodStatus && String(order.transactionID) !== String(transactionID)) {
+        throw new Error('Đơn hàng đã được thanh toán bằng giao dịch VNPay khác');
+      }
+      if (!order.paymentMethodStatus) {
+        await tx.order.update({
+          where: { id: order.id },
+          data: {
+            paymentMethodStatus: true,
+            transactionID,
+            paymentCreatedAt: String(verifyResult.vnp_PayDate || ''),
+          },
+        });
+      }
+      await recordSale(tx, order, order.customerId);
     });
     return res.redirect(`${env.clientOrigin.replace(/\/+$/, '')}/order/payment/${orderId}?payment=success`);
 

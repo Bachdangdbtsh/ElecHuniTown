@@ -1,5 +1,6 @@
 'use client';
 
+import { FiBarChart2, FiDollarSign, FiShoppingBag, FiUsers } from 'react-icons/fi';
 import AsyncSection from './AsyncSection';
 import { formatCompactVnd, formatNumber, formatPct, formatVnd } from '../_lib/format';
 import { formatDate } from '../_lib/dates';
@@ -28,27 +29,39 @@ export default function KpiPanel({ state }) {
         <div>
           <div className="st-kpi">
             <div className="st-kpi-main">
-              <div className="st-kpi-item">
-                <p className="st-kpi-label">Tổng doanh thu</p>
+              <div className="st-kpi-item st-kpi-item-primary">
+                <div className="st-kpi-head">
+                  <span className="st-kpi-icon" aria-hidden="true"><FiDollarSign /></span>
+                  <p className="st-kpi-label">Tổng doanh thu</p>
+                </div>
                 <p className="st-kpi-value" title={formatVnd(d.revenue.value)}>
                   {formatCompactVnd(d.revenue.value)} <span className="st-kpi-unit">₫</span>
                 </p>
                 <Delta pct={d.revenue.changePct} />
               </div>
               <div className="st-kpi-item">
-                <p className="st-kpi-label">Tổng số đơn hàng</p>
+                <div className="st-kpi-head">
+                  <span className="st-kpi-icon" aria-hidden="true"><FiShoppingBag /></span>
+                  <p className="st-kpi-label">Tổng số đơn hàng</p>
+                </div>
                 <p className="st-kpi-value">{formatNumber(d.orders.value)}</p>
                 <Delta pct={d.orders.changePct} abs={d.orders.changeAbs} unit="đơn" />
               </div>
               <div className="st-kpi-item">
-                <p className="st-kpi-label">Khách hàng mới</p>
+                <div className="st-kpi-head">
+                  <span className="st-kpi-icon" aria-hidden="true"><FiUsers /></span>
+                  <p className="st-kpi-label">Khách hàng mới</p>
+                </div>
                 <p className="st-kpi-value">{formatNumber(d.newCustomers.value)}</p>
                 <Delta pct={d.newCustomers.changePct} abs={d.newCustomers.changeAbs} unit="khách" />
               </div>
             </div>
             <dl className="st-kpi-side">
               <div>
-                <dt>Giá trị đơn trung bình</dt>
+                <dt>
+                  <span className="st-kpi-icon st-kpi-icon-sm" aria-hidden="true"><FiBarChart2 /></span>
+                  Giá trị đơn trung bình
+                </dt>
                 <dd className="st-kpi-value">{formatCompactVnd(d.averageOrderValue)} <span className="st-kpi-unit">₫</span></dd>
                 <div className="st-kpi-extra">
                   <p><span>Ngày bán tốt nhất</span><strong>{d.bestDay ? `${formatDate(d.bestDay.date)} · ${formatCompactVnd(d.bestDay.revenue)} ₫` : '—'}</strong></p>

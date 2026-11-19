@@ -891,6 +891,29 @@ button {
   font-size: 14px;
 }
 
+.product-detail-page .review-detail .shop-reply {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 10px 12px;
+  border-left: 3px solid #8FE3A9;
+  border-radius: 6px;
+  background-color: #F3FBF6;
+}
+
+.product-detail-page .review-detail .shop-reply-label {
+  font-weight: 700;
+  font-size: 12px;
+  color: #1E293B;
+}
+
+.product-detail-page .review-detail .shop-reply-content {
+  font-weight: 400;
+  font-size: 14px;
+  color: #334155;
+}
+
 .product-detail-page .right-part {
   box-shadow: 0px 1.75px 3.51px 0px #0000001F;
   border-radius: 10px;

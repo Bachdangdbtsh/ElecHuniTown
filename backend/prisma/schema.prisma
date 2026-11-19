@@ -64,6 +64,7 @@ model User {
   admin                 Admin?
   auditLogs             AuditLog[]
   Comment               Comment[]
+  commentReplies        Comment[]              @relation("CommentRepliedBy")
   customer              Customer?
   loginHistory          LoginHistory[]
   notifications         Notification[]
@@ -506,6 +507,11 @@ model Comment {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  // Phản hồi của Staff/Shop Owner cho đánh giá của khách hàng.
+  reply       String?
+  repliedAt   DateTime?
+  repliedById Int?
+  RepliedBy   User?    @relation("CommentRepliedBy", fields: [repliedById], references: [id], onDelete: SetNull)
   Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

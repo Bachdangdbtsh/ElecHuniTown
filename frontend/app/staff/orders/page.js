@@ -1,12 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { apiGet, apiPatch } from '@/lib/api';
+import { apiGet, apiPatch, apiPost } from '@/lib/api';
+import DeliveryConfirmTimer from './DeliveryConfirmTimer';
+import ShippingTimer from './ShippingTimer';
 
 const STATUS_TEXT = {
   PENDING: 'Chờ xác nhận',
   CONFIRMED: 'Đã xác nhận',
   SHIPPING: 'Đang vận chuyển',
+  DELIVERED_PENDING_CONFIRM: 'Chờ xác nhận giao hàng',
+  DELIVERED_CONFIRMED: 'Đã xác nhận giao hàng',
   DELIVERED: 'Đã nhận',
   CANCELLED: 'Đã hủy',
 };
@@ -21,13 +25,13 @@ function getNextStatuses(status) {
   const next = {
     PENDING: ['CONFIRMED', 'CANCELLED'],
     CONFIRMED: ['SHIPPING', 'CANCELLED'],
-    SHIPPING: ['DELIVERED'],
+    SHIPPING: [],
   };
   return next[status] || [];
 }
 
 /* Popup chi tiết; nhận đơn hàng và callback từ page */
-function OrderDetailModal({ order, history, busy, error, onClose, onChangeStatus }) {
+function OrderDetailModal({ order, history, busy, error, onClose, onChangeStatus, onRefresh, config, isOwner }) {
   const nextStatuses = getNextStatuses(order.status);
 
   return (
@@ -91,7 +95,7 @@ function OrderDetailModal({ order, history, busy, error, onClose, onChangeStatus
         </div>
 
         <h3 className="staff-order-section-title">Lịch sử xử lý đơn hàng</h3>
-        <div className="staff-order-history">{history.length ? history.map((entry) => <p key={entry.id}><b>{entry.details?.to || entry.details?.status || entry.action}</b> · {entry.actor?.fullName || 'Hệ thống'} · {formatDate(entry.createdAt)}</p>) : <p>Chưa có lịch sử xử lý.</p>}</div>
+        <div className="staff-order-history">{history.length ? history.map((entry) => <p key={entry.id}><b>{entry.action === 'AUTO_CONFIRM_DELIVERY' ? 'Hệ thống tự xác nhận giao hàng' : entry.details?.to || entry.details?.status || entry.action}</b> · {entry.actor?.fullName || 'Hệ thống'} · {formatDate(entry.createdAt)}</p>) : <p>Chưa có lịch sử xử lý.</p>}</div>
 
         <div className="staff-order-status-actions">
           <h3 className="staff-order-section-title">Cập nhật trạng thái</h3>
@@ -106,12 +110,18 @@ function OrderDetailModal({ order, history, busy, error, onClose, onChangeStatus
               >
                 {status === 'CONFIRMED' && 'Xác nhận đơn'}
                 {status === 'SHIPPING' && 'Đánh dấu đã vận chuyển'}
-                {status === 'DELIVERED' && 'Đánh dấu đã nhận'}
                 {status === 'CANCELLED' && (order.status === 'PENDING' ? 'Từ chối đơn' : 'Hủy đơn')}
               </button>
             ))}
           </div>
-          {order.status === 'DELIVERED' && (
+          {order.status === 'DELIVERED_PENDING_CONFIRM' && order.deliveredAt && <>
+            <DeliveryConfirmTimer deliveredAt={order.deliveredAt} totalCost={order.totalCost} config={config} onExpired={onRefresh} />
+            {isOwner && order.totalCost > config.autoConfirmMaxAmount && <button type="button" className="staff-button" disabled={busy} onClick={() => onChangeStatus(order, 'DELIVERED_CONFIRMED')}>Xác nhận thủ công</button>}
+          </>}
+          {order.status === 'SHIPPING' && (order.shippedAt
+            ? <ShippingTimer shippedAt={order.shippedAt} delayMs={config.simulatedShippingDelayMs} onExpired={onRefresh} />
+            : <span className="staff-subtitle">Đơn đang vận chuyển. Hệ thống sẽ cập nhật khi giao tới khách.</span>)}
+          {['DELIVERED', 'DELIVERED_CONFIRMED'].includes(order.status) && (
             <span className="staff-subtitle">
               Khách đã nhận hàng.
             </span>
@@ -142,6 +152,13 @@ export default function StaffOrdersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [statusCounts, setStatusCounts] = useState({});
   const [history, setHistory] = useState([]);
+  const [config, setConfig] = useState({ autoConfirmEnabled: true, autoConfirmDelayMs: 60_000, autoConfirmMaxAmount: 2_000_000, simulatedShippingDelayMs: 30_000 });
+  const [isOwner, setIsOwner] = useState(false);
+
+  useEffect(() => {
+    apiGet('/config/order').then(setConfig).catch(() => {});
+    apiGet('/auth/me').then((user) => setIsOwner(user?.role?.code === 'SHOP_OWNER' || user?.role === 'SHOP_OWNER' || user?.role?.code === 'ADMIN' || user?.role === 'ADMIN')).catch(() => {});
+  }, []);
 
   const loadOrders = useCallback(async () => {
     try {
@@ -173,6 +190,12 @@ export default function StaffOrdersPage() {
     return () => clearTimeout(timer);
   }, [loadOrders]);
 
+  useEffect(() => {
+    if (!orders.some((order) => ['SHIPPING', 'DELIVERED_PENDING_CONFIRM'].includes(order.status))) return;
+    const timer = setInterval(loadOrders, 5_000);
+    return () => clearInterval(timer);
+  }, [orders, loadOrders]);
+
   const selectedOrder = orders.find((order) => order.id === selectedId);
 
   useEffect(() => {
@@ -187,7 +210,8 @@ export default function StaffOrdersPage() {
     setError('');
 
     try {
-      await apiPatch('/staff/orders/' + order.id + '/status', { status: nextStatus });
+      if (nextStatus === 'DELIVERED_CONFIRMED') await apiPost(`/orders/${order.id}/confirm-delivery`);
+      else await apiPatch('/staff/orders/' + order.id + '/status', { status: nextStatus });
       await loadOrders();
     } catch (requestError) {
       setError(requestError.message);
@@ -211,7 +235,7 @@ export default function StaffOrdersPage() {
       </header>
 
       <div className="staff-cards">
-        {['PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED'].map((status) => (
+        {['PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED_PENDING_CONFIRM', 'DELIVERED_CONFIRMED'].map((status) => (
           <div className="staff-card" key={status}>
             <span>{STATUS_TEXT[status]}</span>
             <strong>{statusCounts[status] || 0}</strong>
@@ -276,7 +300,7 @@ export default function StaffOrdersPage() {
                 <td>{order.items.reduce((total, item) => total + item.quantity, 0)}</td>
                 <td>{money(order.totalCost)}</td>
                 <td>
-                  <span className={'staff-badge ' + (order.status === 'DELIVERED' ? 'green' : order.status === 'CANCELLED' ? 'red' : '')}>
+                  <span className={'staff-badge ' + (['DELIVERED', 'DELIVERED_CONFIRMED'].includes(order.status) ? 'green' : order.status === 'CANCELLED' ? 'red' : '')}>
                     {STATUS_TEXT[order.status] || order.status}
                   </span>
                 </td>
@@ -336,6 +360,9 @@ export default function StaffOrdersPage() {
           error={error}
           onClose={() => setSelectedId(null)}
           onChangeStatus={(order, status) => setPendingDecision({ order, status })}
+          onRefresh={loadOrders}
+          config={config}
+          isOwner={isOwner}
         />
       )}
       {pendingDecision && <div className="staff-modal-backdrop staff-decision-backdrop" role="presentation">

@@ -125,14 +125,14 @@ model Admin {
 
 model AuditLog {
   id         Int         @id @default(autoincrement())
-  actorId    Int
+  actorId    Int?
   action     AuditAction
   entityType String
   entityId   Int?
   details    Json?
   ip         String?
   createdAt  DateTime    @default(now())
-  actor      User        @relation(fields: [actorId], references: [id])
+  actor      User?       @relation(fields: [actorId], references: [id])
 
   @@index([actorId, createdAt])
   @@index([entityType, entityId])
@@ -261,12 +261,17 @@ model Order {
   discount            Int
   subtotal            Int
   totalCost           Int
+  shippedAt           DateTime?
+  deliveredAt         DateTime?
   confirmedBy         User?                   @relation("OrderConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
   customer            User?                   @relation("OrderCustomer", fields: [customerId], references: [id])
   recipient           RecipientInfo           @relation(fields: [recipientId], references: [id])
   items               Order_contain_product[]
   returnRequests      ReturnRequest[]
   financeMovements    FinanceMovement[]
+
+  @@index([status, deliveredAt, totalCost])
+  @@index([status, shippedAt])
 }
 
 model Order_contain_product {
@@ -542,6 +547,7 @@ model StaffManageCategory {
 }
 
 enum AuditAction {
+  AUTO_CONFIRM_DELIVERY
   CREATE
   UPDATE
   DELETE
@@ -563,6 +569,8 @@ enum OrderStatus {
   CONFIRMED
   SHIPPING
   DELIVERED
+  DELIVERED_PENDING_CONFIRM
+  DELIVERED_CONFIRMED
   CANCELLED
 }
 

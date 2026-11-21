@@ -18,6 +18,8 @@ import returnsRoutes from './modules/returns/returns.route.js';
 import commentRoutes from './modules/comment/comment.route.js';
 import inventoryRoutes from './source/Inventory/InventoryRouter.js';
 import notificationRoutes from './modules/notification/notification.route.js';
+import orderRoutes from './modules/order/order.route.js';
+import { ORDER_AUTO_CONFIRM, SIMULATED_SHIPPING } from './config/order.js';
 
 export const app = express();
 
@@ -58,6 +60,13 @@ app.use('/account-change-requests', changeRequestRoutes);
 app.use('/admin', adminRoutes);
 app.use('/roles', roleRoutes);
 app.use('/staff', staffRoutes);
+app.use('/orders', orderRoutes);
+app.get('/config/order', (req, res) => res.json({ data: {
+  autoConfirmEnabled: ORDER_AUTO_CONFIRM.ENABLED,
+  autoConfirmDelayMs: ORDER_AUTO_CONFIRM.DELAY_MS,
+  autoConfirmMaxAmount: ORDER_AUTO_CONFIRM.MAX_AMOUNT,
+  simulatedShippingDelayMs: SIMULATED_SHIPPING.DELAY_MS,
+} }));
 app.use('/returns', returnsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/comments', commentRoutes);

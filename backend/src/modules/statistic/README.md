@@ -16,7 +16,7 @@ Khoảng cách tối đa giữa `from` và `to` là **366 ngày** (`MAX_RANGE_DA
 | `/statistics/export` | 52 | `from`, `to` | File `.xlsx` (8 sheet: Tổng quan, Doanh thu theo ngày, Bán chạy, Bán chậm, Lợi nhuận, Theo danh mục, Theo nhân viên, Đánh giá) |
 
 ## Quy ước tính (sửa trong `statistic.constants.js`)
-- Chỉ đơn `DELIVERED` được tính; thời điểm tính là `Order.orderDate` (schema chưa có `deliveredAt`).
+- Chỉ đơn `DELIVERED` cũ và `DELIVERED_CONFIRMED` được tính; thời điểm tính là `Order.orderDate`.
 - Doanh thu = tổng `Order.totalCost` (đã gồm phí vận chuyển, đã trừ giảm giá).
 - "Khách hàng mới" = `User` có vai trò mã `CUSTOMER` tạo trong kỳ.
 - Bán chạy/chậm tính theo kỳ từ `Order_contain_product`, không dùng cột `Product.sold` (tổng cả đời).

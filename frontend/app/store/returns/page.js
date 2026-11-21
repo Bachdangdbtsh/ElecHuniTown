@@ -74,6 +74,21 @@ export default function StoreReturnsPage() {
     }
   }
 
+  async function refundOffline() {
+    if (!selected || busy) return;
+    setBusy(true);
+    try {
+      await apiPost(`/returns/${selected.id}/refund-offline`, { confirmed: true });
+      setRefundConfirm(false);
+      setSelectedId(null);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return <section className="store-returns">
     <header className="store-returns-head"><div><h1>Đổi trả - Hoàn tiền</h1><p>Tiếp nhận, xét duyệt và theo dõi các yêu cầu đổi trả của khách hàng.</p></div><button type="button" className="eht-btn" onClick={load}>⟳ &nbsp; Làm mới dữ liệu</button></header>
     <div className="store-returns-summary">
@@ -100,12 +115,12 @@ export default function StoreReturnsPage() {
       <h3>Sản phẩm hoàn trả</h3>
       {selected.items.map((item) => <div className="store-return-item" key={item.id}><div className="store-return-item-product"><strong>{item.product.productName}</strong><span>Số lượng: {item.quantity}</span></div><select aria-label={`Tình trạng kho của ${item.product.productName}`} disabled={selected.status !== 'PENDING'} value={conditions[item.productId] || 'RESALEABLE'} onChange={(event) => setConditions((current) => ({ ...current, [item.productId]: event.target.value }))}><option value="RESALEABLE">Còn bán được · nhập lại tồn</option><option value="NON_RESALEABLE">Không bán được · không nhập tồn</option></select></div>)}
       {selected.status === 'PENDING' && <><label htmlFor="reject-reason">Lý do từ chối (khi từ chối)</label><textarea id="reject-reason" rows={3} value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} /><div className="store-return-actions"><button type="button" onClick={() => decide('DENIED')} disabled={busy}>Từ chối</button><button type="button" className="primary" onClick={() => decide('APPROVED')} disabled={busy}>Đồng ý đổi trả</button></div></>}
-      {selected.status === 'APPROVED' && selected.order.paymentMethod === 'bank' && <div className="store-return-actions"><button type="button" className="primary" onClick={() => setRefundConfirm(true)} disabled={busy || !!selected.refundCode}>{selected.refundCode ? 'Đã gửi yêu cầu VNPay' : 'Gửi yêu cầu hoàn tiền VNPay'}</button></div>}
-      {selected.status === 'APPROVED' && selected.order.paymentMethod !== 'bank' && <p>Đơn thanh toán khi nhận hàng không có giao dịch VNPay gốc. Cần xử lý hoàn tiền ngoài hệ thống.</p>}
+      {selected.status === 'APPROVED' && selected.order.paymentMethod === 'bank' && <div className="store-return-actions"><button type="button" className="primary" onClick={() => setRefundConfirm('vnpay')} disabled={busy || !!selected.refundCode}>{selected.refundCode ? 'Đã gửi yêu cầu VNPay' : 'Gửi yêu cầu hoàn tiền VNPay'}</button></div>}
+      {selected.status === 'APPROVED' && selected.order.paymentMethod === 'money' && <><p>Đơn thanh toán khi nhận hàng không có giao dịch VNPay gốc. Sau khi đã trả tiền cho khách ngoài hệ thống, xác nhận tại đây để cập nhật trạng thái.</p><div className="store-return-actions"><button type="button" className="primary" onClick={() => setRefundConfirm('offline')} disabled={busy}>Xác nhận đã hoàn tiền</button></div></>}
       {selected.refundMessage && <p className="store-return-note">{selected.refundMessage}</p>}
       {error && <p className="store-returns-error" role="alert">{error}</p>}
     </div></div>}
-    {refundConfirm && selected && <div className="store-return-backdrop"><div className="store-return-dialog store-refund-confirm" role="dialog" aria-modal="true" aria-labelledby="refund-title">
+    {refundConfirm === 'vnpay' && selected && <div className="store-return-backdrop"><div className="store-return-dialog store-refund-confirm" role="dialog" aria-modal="true" aria-labelledby="refund-title">
       <h2 id="refund-title">Xác nhận hoàn tiền VNPay</h2>
       <p>Vui lòng kiểm tra thông tin trước khi gửi yêu cầu hoàn tiền.</p>
       <div className="store-refund-line"><span>ID yêu cầu</span><b>DT-{selected.id}</b></div>
@@ -116,6 +131,15 @@ export default function StoreReturnsPage() {
       <div className="store-refund-amount"><span>Số tiền hoàn lại</span><strong>{money(selected.order.totalCost)}</strong></div>
       <p className="store-return-note">Yêu cầu sẽ được truy vấn và gửi tới VNPay theo giao dịch gốc. Kết quả có thể cần đối soát nếu VNPay đang xử lý.</p>
       <div className="store-return-actions"><button type="button" onClick={() => setRefundConfirm(false)} disabled={busy}>Quay lại</button><button type="button" className="primary" onClick={refund} disabled={busy || (!selected.order.paymentCreatedAt && !/^\d{14}$/.test(transactionDate))}>{busy ? 'Đang gửi…' : 'Xác nhận hoàn tiền qua VNPay'}</button></div>
+      {error && <p className="store-returns-error" role="alert">{error}</p>}
+    </div></div>}
+    {refundConfirm === 'offline' && selected && <div className="store-return-backdrop"><div className="store-return-dialog store-refund-confirm" role="dialog" aria-modal="true" aria-labelledby="offline-refund-title">
+      <h2 id="offline-refund-title">Xác nhận đã hoàn tiền ngoài hệ thống</h2>
+      <p>Chỉ xác nhận sau khi bạn đã thực sự trả tiền cho khách. Trạng thái yêu cầu của khách sẽ chuyển thành “Đã hoàn tiền”.</p>
+      <div className="store-refund-line"><span>Yêu cầu</span><b>DT-{selected.id}</b></div>
+      <div className="store-refund-line"><span>Khách hàng</span><b>{selected.order.customer.fullName}</b></div>
+      <div className="store-refund-amount"><span>Số tiền</span><strong>{money(selected.order.totalCost)}</strong></div>
+      <div className="store-return-actions"><button type="button" onClick={() => setRefundConfirm(false)} disabled={busy}>Quay lại</button><button type="button" className="primary" onClick={refundOffline} disabled={busy}>{busy ? 'Đang cập nhật…' : 'Tôi đã hoàn tiền cho khách'}</button></div>
       {error && <p className="store-returns-error" role="alert">{error}</p>}
     </div></div>}
   </section>;

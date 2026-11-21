@@ -27,6 +27,26 @@ const issueInclude = {
   },
 };
 
+async function notifyStaffOfDecision(tx, document, kind) {
+  const creator = await tx.user.findFirst({
+    where: { id: document.createdById, role: { code: 'STAFF' } },
+    select: { id: true },
+  });
+  if (!creator) return;
+
+  const approved = document.status === 'APPROVED';
+  const label = kind === 'receipt' ? 'nhập' : 'xuất';
+  const type = `STOCK_${kind === 'receipt' ? 'RECEIPT' : 'ISSUE'}_${approved ? 'APPROVED' : 'DENIED'}`;
+  await notify({
+    userId: creator.id,
+    role: 'STAFF',
+    type,
+    message: `Phiếu ${label} kho ${document.code} của bạn đã ${approved ? 'được duyệt' : 'bị từ chối'}.`,
+    url: `/inventory?view=processed&status=${document.status}`,
+    payload: { [kind === 'receipt' ? 'receiptId' : 'issueId']: document.id, status: document.status },
+  }, tx);
+}
+
 const paging = ({ page, pageSize }) => ({
   skip: (page - 1) * pageSize,
   take: pageSize,
@@ -349,7 +369,9 @@ export async function approveReceiptInTransaction(tx, id, handledById) {
     },
   });
 
-  return tx.stockReceipt.findUnique({ where: { id }, include: receiptInclude });
+  const receipt = await tx.stockReceipt.findUnique({ where: { id }, include: receiptInclude });
+  await notifyStaffOfDecision(tx, receipt, 'receipt');
+  return receipt;
 }
 
 export class InsufficientStockError extends Error {
@@ -391,22 +413,34 @@ export async function approveIssue(id, handledById) {
       })),
     });
 
-    return tx.stockIssue.findUnique({ where: { id }, include: issueInclude });
+    const issue = await tx.stockIssue.findUnique({ where: { id }, include: issueInclude });
+    await notifyStaffOfDecision(tx, issue, 'issue');
+    return issue;
   });
 }
 
 export async function rejectReceipt(id, handledById, rejectReason) {
-  const changed = await prisma.stockReceipt.updateMany({
-    where: { id, status: 'PENDING_HANDLE' },
-    data: { status: 'DENIED', rejectReason, handledById, handledAt: new Date() },
+  return prisma.$transaction(async (tx) => {
+    const changed = await tx.stockReceipt.updateMany({
+      where: { id, status: 'PENDING_HANDLE' },
+      data: { status: 'DENIED', rejectReason, handledById, handledAt: new Date() },
+    });
+    if (!changed.count) return null;
+    const receipt = await tx.stockReceipt.findUnique({ where: { id }, include: receiptInclude });
+    await notifyStaffOfDecision(tx, receipt, 'receipt');
+    return receipt;
   });
-  return changed.count ? getReceiptById(id) : null;
 }
 
 export async function rejectIssue(id, handledById, rejectReason) {
-  const changed = await prisma.stockIssue.updateMany({
-    where: { id, status: 'PENDING_HANDLE' },
-    data: { status: 'DENIED', rejectReason, handledById, handledAt: new Date() },
+  return prisma.$transaction(async (tx) => {
+    const changed = await tx.stockIssue.updateMany({
+      where: { id, status: 'PENDING_HANDLE' },
+      data: { status: 'DENIED', rejectReason, handledById, handledAt: new Date() },
+    });
+    if (!changed.count) return null;
+    const issue = await tx.stockIssue.findUnique({ where: { id }, include: issueInclude });
+    await notifyStaffOfDecision(tx, issue, 'issue');
+    return issue;
   });
-  return changed.count ? getIssueById(id) : null;
 }

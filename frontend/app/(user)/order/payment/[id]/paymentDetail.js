@@ -37,6 +37,10 @@ export default function PaymentDetail({ id }) {
         return { text: 'Đang giao hàng', color: '#8b5cf6' }; // Màu tím
       case 'DELIVERED':
         return { text: 'Đã giao hàng thành công', color: '#10b981' }; // Màu xanh lá
+      case 'DELIVERED_PENDING_CONFIRM':
+        return { text: 'Chờ xác nhận giao hàng', color: '#f59e0b' };
+      case 'DELIVERED_CONFIRMED':
+        return { text: 'Đã xác nhận giao hàng', color: '#10b981' };
       case 'CANCELLED':
         return { text: 'Đã hủy', color: '#ef4444' }; // Màu đỏ
       default:

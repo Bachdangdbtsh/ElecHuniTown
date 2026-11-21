@@ -8,7 +8,7 @@ import ShellTopBar from '../_components/ShellTopBar';
 import './orders.css';
 
 const money = (value) => Number(value || 0).toLocaleString('vi-VN') + ' ₫';
-const labels = { PENDING: 'Chờ xác nhận', CONFIRMED: 'Đã xác nhận', SHIPPING: 'Đang giao', DELIVERED: 'Đã giao', CANCELLED: 'Đã hủy' };
+const labels = { PENDING: 'Chờ xác nhận', CONFIRMED: 'Đã xác nhận', SHIPPING: 'Đang giao', DELIVERED_PENDING_CONFIRM: 'Chờ xác nhận giao hàng', DELIVERED_CONFIRMED: 'Đã xác nhận giao hàng', DELIVERED: 'Đã giao', CANCELLED: 'Đã hủy' };
 
 export default function AccountOrdersPage() {
   const [user, setUser] = useState(null);
@@ -37,6 +37,12 @@ export default function AccountOrdersPage() {
     const timer = setTimeout(load, 0);
     return () => clearTimeout(timer);
   }, [load]);
+
+  useEffect(() => {
+    if (!orders.some((order) => ['SHIPPING', 'DELIVERED_PENDING_CONFIRM'].includes(order.status))) return;
+    const timer = setInterval(load, 5_000);
+    return () => clearInterval(timer);
+  }, [orders, load]);
 
   async function chooseImages(event) {
     const files = Array.from(event.target.files || []);
@@ -72,6 +78,19 @@ export default function AccountOrdersPage() {
     }
   }
 
+  async function confirmDelivery(orderId) {
+    setBusy(true);
+    setError('');
+    try {
+      await apiPost(`/orders/${orderId}/confirm-delivery`);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return <>
     <ShellTopBar title="Đơn hàng của tôi" subtitle="Theo dõi đơn hàng và gửi yêu cầu đổi trả" user={user} />
     <div className="eht-content account-orders">
@@ -84,7 +103,7 @@ export default function AccountOrdersPage() {
             <span className="account-order-item-name">{item.product?.productName || `Sản phẩm #${item.productId}`}</span>
             <span className="account-order-item-quantity">× {item.quantity}</span>
           </p>)}</div>
-          <div className="account-order-foot"><strong>{money(order.totalCost)}</strong><div><Link href={`/order/detail/${order.id}`} className="eht-btn eht-btn-sm">Xem chi tiết</Link>{order.status === 'DELIVERED' && !order.returnRequests?.length && <button type="button" className="eht-btn eht-btn-primary eht-btn-sm" onClick={() => { setSelected(order); setError(''); }}>Đổi trả - hoàn tiền</button>}{order.returnRequests?.length > 0 && <span className="eht-badge">Yêu cầu đổi trả: {order.returnRequests[0].status}</span>}</div></div>
+          <div className="account-order-foot"><strong>{money(order.totalCost)}</strong><div><Link href={`/order/detail/${order.id}`} className="eht-btn eht-btn-sm">Xem chi tiết</Link>{order.status === 'DELIVERED_PENDING_CONFIRM' && <button type="button" disabled={busy} className="eht-btn eht-btn-primary eht-btn-sm" onClick={() => confirmDelivery(order.id)}>Xác nhận đã nhận hàng</button>}{['DELIVERED', 'DELIVERED_CONFIRMED'].includes(order.status) && !order.returnRequests?.length && <button type="button" className="eht-btn eht-btn-primary eht-btn-sm" onClick={() => { setSelected(order); setError(''); }}>Đổi trả - hoàn tiền</button>}{order.returnRequests?.length > 0 && <span className="eht-badge">Yêu cầu đổi trả: {order.returnRequests[0].status}</span>}</div></div>
         </article>)}</div>
       )}
     </div>

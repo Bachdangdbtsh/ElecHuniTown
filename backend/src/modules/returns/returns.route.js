@@ -52,7 +52,7 @@ router.post('/', requireRole('CUSTOMER'), async (req, res) => {
     throw new AppError(400, 'INVALID_IMAGES', 'Tối đa 2 ảnh PNG, JPEG hoặc WebP, mỗi ảnh dưới 300 KB');
   }
   const order = await prisma.order.findFirst({
-    where: { id: orderId, customerId: req.user.id, status: 'DELIVERED' },
+    where: { id: orderId, customerId: req.user.id, status: { in: ['DELIVERED', 'DELIVERED_CONFIRMED'] } },
     include: { items: true, returnRequests: { select: { id: true } } },
   });
   if (!order) throw new AppError(404, 'ORDER_NOT_ELIGIBLE', 'Không tìm thấy đơn đã giao của bạn');

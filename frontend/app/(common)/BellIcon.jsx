@@ -29,7 +29,7 @@ export default function BellIcon({ user }) {
   useEffect(() => {
     if (!user) return;
     const initial = setTimeout(load, 0);
-    const timer = setInterval(load, 30000);
+    const timer = setInterval(load, 5000);
     return () => { clearTimeout(initial); clearInterval(timer); };
   }, [user, load]);
 
@@ -80,7 +80,7 @@ export default function BellIcon({ user }) {
       {error && <p className="notification-error" role="alert">{error}</p>}
       <div className="notification-list">
         {notifications.length === 0 ? <p className="notification-empty">Không có thông báo</p> : notifications.map((item) =>
-          <button type="button" key={item.id} onClick={() => openItem(item)} className={`notification-item ${item.isRead ? 'is-read' : 'is-unread'}`}>
+          <button type="button" key={item.id} onClick={() => openItem(item)} className={`notification-item ${item.isRead ? 'is-read' : 'is-unread'} ${item.type?.startsWith('ORDER_AUTO_CONFIRMED') ? 'is-auto-confirmed' : ''}`}>
             <span>{item.message}</span>
             <small>{new Date(item.createdAt).toLocaleString('vi-VN')}</small>
           </button>)}

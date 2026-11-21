@@ -21,7 +21,7 @@ export async function getSummary(start, end) {
     SELECT COALESCE(SUM(o."totalCost"), 0)::float8 AS revenue,
            COUNT(*)::int AS orders
     FROM "Order" o
-    WHERE o.status = ${STATUS}::"OrderStatus"
+    WHERE o.status IN (${STATUS}::"OrderStatus", 'DELIVERED_CONFIRMED'::"OrderStatus")
       AND o."orderDate" >= ${start} AND o."orderDate" < ${end}`;
   return { revenue: num(rows[0].revenue), orders: num(rows[0].orders) };
 }
@@ -57,7 +57,7 @@ export async function getRevenueBuckets(start, end, groupBy) {
            SUM(o."totalCost")::float8 AS revenue,
            COUNT(*)::int AS orders
     FROM "Order" o
-    WHERE o.status = ${STATUS}::"OrderStatus"
+    WHERE o.status IN (${STATUS}::"OrderStatus", 'DELIVERED_CONFIRMED'::"OrderStatus")
       AND o."orderDate" >= ${start} AND o."orderDate" < ${end}
     GROUP BY 1
     ORDER BY 1`;
@@ -76,7 +76,7 @@ export async function getTopProducts(start, end, limit) {
     JOIN "Order" o ON o.id = i."orderId"
     JOIN "Product" p ON p.id = i."productId"
     JOIN "Category" c ON c.id = p."categoryId"
-    WHERE o.status = ${STATUS}::"OrderStatus"
+    WHERE o.status IN (${STATUS}::"OrderStatus", 'DELIVERED_CONFIRMED'::"OrderStatus")
       AND o."orderDate" >= ${start} AND o."orderDate" < ${end}
     GROUP BY p.id, p."productName", c.name
     ORDER BY sold DESC, revenue DESC, p.id ASC
@@ -107,7 +107,7 @@ export async function getSlowProducts(start, end, limit) {
       SELECT i."productId", SUM(i.quantity) AS sold
       FROM "Order_contain_product" i
       JOIN "Order" o ON o.id = i."orderId"
-      WHERE o.status = ${STATUS}::"OrderStatus"
+      WHERE o.status IN (${STATUS}::"OrderStatus", 'DELIVERED_CONFIRMED'::"OrderStatus")
         AND o."orderDate" >= ${start} AND o."orderDate" < ${end}
       GROUP BY i."productId"
     ) s ON s."productId" = p.id

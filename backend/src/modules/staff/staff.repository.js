@@ -1,5 +1,4 @@
 import { prisma } from '../../lib/prisma.js';
-import { recordSale } from '../finance/finance.service.js';
 import { notify } from '../../utils/notify.js';
 
 const productInclude = {
@@ -263,17 +262,12 @@ export function findOrderById(id) {
 
 export function updateOrderStatus(id, status, expectedStatus, actorId) {
   return prisma.$transaction(async (tx) => {
-    const order = status === 'DELIVERED'
-      ? await tx.order.findUnique({ where: { id }, select: { id: true, totalCost: true, paymentMethod: true } })
-      : null;
     const updated = await tx.order.updateMany({
       where: { id, status: expectedStatus },
-      data: { status, ...(status === 'CONFIRMED' ? { confirmedById: actorId } : {}) },
+      data: { status, ...(status === 'CONFIRMED' ? { confirmedById: actorId } : {}),
+        ...(status === 'SHIPPING' ? { shippedAt: new Date() } : {}) },
     });
     if (!updated.count) return false;
-    if (status === 'DELIVERED' && order?.paymentMethod === 'money') {
-      await recordSale(tx, order, actorId);
-    }
     const recipient = await tx.order.findUnique({ where: { id }, select: { customerId: true } });
     await notify({ userId: recipient?.customerId, role: 'CUSTOMER', type: 'ORDER_STATUS', message: `Đơn hàng #${id} đã chuyển sang trạng thái ${status}.`, url: '/account/orders', payload: { orderId: id, status } }, tx);
     await tx.auditLog.create({

@@ -6,6 +6,7 @@ import Avatar from '@/app/(common)/Avatar';
 import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/api';
 import BellIcon from '@/app/(common)/BellIcon';
+import { roleLabel } from '@/lib/roleHome';
 
 function initials(name) {
   return (name || 'U')
@@ -40,13 +41,9 @@ export default function ShellTopBar({ title, subtitle, user, action }) {
     ADMIN: { href: '/admin/dashboard', label: '🛡️ Bảng điều khiển quản trị' },
     CUSTOMER: { href: '/', label: '🛒 Tiếp tục mua sắm' },
   }[roleCode] || { href: '/', label: '🛒 Tiếp tục mua sắm' };
-  const roleLabels = {
-    STAFF: 'Nhân viên',
-    SHOP_OWNER: 'Chủ cửa hàng',
-    ADMIN: 'Quản trị viên',
-    CUSTOMER: 'Khách hàng',
-  };
-  const userLabel = roleLabels[roleCode] || user?.roleName;
+  const userLabel = ['STAFF', 'SHOP_OWNER', 'ADMIN', 'CUSTOMER'].includes(roleCode)
+    ? roleLabel(roleCode)
+    : user?.roleName;
 
   useEffect(() => {
     const close = (e) => {

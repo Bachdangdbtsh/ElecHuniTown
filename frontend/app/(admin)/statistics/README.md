@@ -5,4 +5,4 @@ URL: `/statistics`. Gọi backend qua `NEXT_PUBLIC_API_URL` (mặc định `http
 - `page.js`: ghép các khối, giữ khoảng ngày đang chọn.
 - `_components/`: KpiPanel, RevenueChart (SVG tự vẽ, không cần thư viện), ProductRanking, RatingSection, PeriodPicker, ExportButton, AsyncSection (tải/lỗi/trống).
 - `_lib/`: gọi API (`api.js`, `useApi.js`), định dạng VND/ngày (`format.js`, `dates.js`).
-- Khung menu chung nằm ở `components/admin/` (sửa `nav.js` để bật menu cho trang khác).
+- Khung menu chung dùng [StoreLayout](../../store/layout.js); cấu hình menu trong `OWNER_MENU` của layout này.

@@ -703,64 +703,6 @@
   outline-offset: -2px;
 }
 
-/* ---- Sidebar xanh + item active nền tối (chỉ trong khu Thống kê, theo Figma) ---- */
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-side {
-  background: #8fe3a9;
-  border-right-color: #78d79a;
-}
-
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-side-brand {
-  background: rgba(255, 255, 255, 0.55);
-}
-
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-side-brand-title { color: #0f2e3d; }
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-side-brand-sub { color: #14532d; }
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-side-label { color: #14532d; }
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav a { color: #0f2e3d; }
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav a:hover { background: rgba(255, 255, 255, 0.5); }
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-ico {
-  background: rgba(255, 255, 255, 0.55);
-  color: #047857;
-}
-
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav a.active {
-  background: #16324f;
-  color: #ffffff;
-  box-shadow: none;
-}
-
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav a.active::before { display: none; }
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav a.active .eht-nav-ico {
-  background: rgba(255, 255, 255, 0.16);
-  color: #ffffff;
-}
-
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-inventory.active {
-  background: #16324f;
-  box-shadow: none;
-}
-
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-inventory.active a { color: #ffffff; }
-
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-inventory.active .eht-nav-ico {
-  background: rgba(255, 255, 255, 0.16);
-  color: #ffffff;
-}
-
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-inventory.active .eht-nav-expand { color: #ffffff; }
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-expand { color: #0f2e3d; }
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-expand:hover { background: rgba(255, 255, 255, 0.5); }
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-disabled { color: #2f6b4b; }
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-disabled:hover { background: rgba(255, 255, 255, 0.5); color: #0f2e3d; }
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-submenu a,
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-submenu button { color: #0f2e3d; }
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-submenu a:hover,
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-nav-submenu button:hover { background: rgba(255, 255, 255, 0.5); }
-:is(.eht-shell:has(.st-page), .eht-shell:has(.rp-root)) .eht-side-logout {
-  background: #16324f;
-  color: #ffffff;
-}
-
 /* ---- KPI có icon, thẻ đầu tô xanh ---- */
 .st-kpi-head { display: flex; align-items: center; gap: 10px; }
 .st-kpi-icon {

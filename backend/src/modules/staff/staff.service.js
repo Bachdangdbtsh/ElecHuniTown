@@ -1,6 +1,6 @@
 import * as repository from './staff.repository.js';
 import { AppError } from '../../common/error/AppError.js';
-import { createSlug } from '../../source/Category/CategoryUtils.js';
+import { createSlug } from '../../utils/slug.js';
 
 const productStatuses = ['ACTIVE', 'HIDDEN'];
 const allowedPageSizes = [5, 10, 20, 50];

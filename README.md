@@ -1,5 +1,39 @@
 # ElecHuniTown
 
+## Chạy bằng Docker Desktop (local)
+
+### Chế độ phát triển — dùng cùng database với `npm run dev`
+
+Nếu `backend/.env` đang trỏ tới Neon, dùng cấu hình này để frontend/backend trong Docker kết nối tới chính database đó và tự tải lại khi sửa mã nguồn:
+
+```powershell
+docker compose down
+docker compose -f docker-compose.dev.yml up -d --build
+docker compose -f docker-compose.dev.yml ps
+```
+
+Mở http://localhost:3000. API ở http://localhost:4000/health. Chế độ này **không chạy migration hoặc seed tự động** trên database Neon. File `backend/.env` được đọc lúc chạy container, không được đưa vào image. Dừng bằng `docker compose -f docker-compose.dev.yml down`. Khi chỉ sửa code, không cần build lại; khi đổi dependencies, chạy lại lệnh `up -d --build`.
+
+### Chế độ tách biệt — database PostgreSQL mới trong Docker
+
+Mở Docker Desktop, sau đó chạy tại thư mục gốc dự án:
+
+```powershell
+docker compose up -d --build
+docker compose ps
+```
+
+Truy cập giao diện tại http://localhost:3000 và kiểm tra API tại http://localhost:4000/health. Docker Compose chạy Next.js, Express/Prisma và PostgreSQL 17; migration được áp dụng tự động khi backend khởi động. Database nằm trong Docker volume `elechunitown_postgres_data`, riêng biệt với PostgreSQL cài trực tiếp trên máy và không mở cổng ra host. Nếu cổng 3000 hoặc 4000 đã được sử dụng, hãy dừng dịch vụ đang chiếm cổng trước khi chạy.
+
+Các giá trị trong [docker-compose.yml](./docker-compose.yml) chỉ dành cho local. Muốn đổi mật khẩu database hoặc JWT secret, tạo file `.env` tại thư mục gốc với `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `JWT_SECRET` trước lần chạy đầu tiên. Không commit file này. Không dùng cấu hình mặc định để triển khai công khai.
+
+```powershell
+docker compose logs -f backend
+docker compose down
+```
+
+Lệnh `down` chỉ dừng và xóa container/network, vẫn giữ dữ liệu PostgreSQL trong volume. Sau khi sửa mã nguồn, chạy lại `docker compose up -d --build`.
+
 Ứng dụng web bán hàng và quản lý kinh doanh cho cửa hàng điện gia dụng ElecHuniTown.
 
 - **Sàn thương mại điện tử:** khách hàng xem, tìm kiếm, đặt hàng, thanh toán (mô phỏng), theo dõi đơn hàng. Nhân viên và chủ cửa hàng quản lý sản phẩm, xử lý đơn hàng.

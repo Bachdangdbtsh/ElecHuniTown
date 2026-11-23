@@ -1,0 +1,38 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: development
+      CLIENT_ORIGIN: http://localhost:3000
+      SERVER_ORIGIN: http://localhost:4000
+      PORT: 4000
+    command: ["./node_modules/.bin/nodemon", "--legacy-watch", "src/server.js"]
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+    ports:
+      - "127.0.0.1:4000:4000"
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      INTERNAL_API_URL: http://backend:4000
+      WATCHPACK_POLLING: "true"
+    command: ["npm", "run", "dev", "--", "--hostname", "0.0.0.0"]
+    volumes:
+      - ./frontend/app:/app/app
+      - ./frontend/components:/app/components
+      - ./frontend/lib:/app/lib
+      - ./frontend/public:/app/public
+      - ./frontend/next.config.mjs:/app/next.config.mjs
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - backend

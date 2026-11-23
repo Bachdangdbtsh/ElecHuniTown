@@ -2,13 +2,13 @@
 -- Gồm: Order.transactionID, User.avatar và hai bảng giỏ hàng Cart / CartItem.
 
 -- AlterTable
-ALTER TABLE "Order" ADD COLUMN "transactionID" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "transactionID" TEXT;
 
 -- AlterTable
-ALTER TABLE "User" ADD COLUMN "avatar" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "avatar" TEXT;
 
 -- CreateTable
-CREATE TABLE "Cart" (
+CREATE TABLE IF NOT EXISTS "Cart" (
     "id" SERIAL NOT NULL,
     "customerId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -18,7 +18,7 @@ CREATE TABLE "Cart" (
 );
 
 -- CreateTable
-CREATE TABLE "CartItem" (
+CREATE TABLE IF NOT EXISTS "CartItem" (
     "id" SERIAL NOT NULL,
     "cartId" INTEGER NOT NULL,
     "productId" INTEGER NOT NULL,
@@ -28,16 +28,28 @@ CREATE TABLE "CartItem" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Cart_customerId_key" ON "Cart"("customerId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Cart_customerId_key" ON "Cart"("customerId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "CartItem_cartId_productId_key" ON "CartItem"("cartId", "productId");
+CREATE UNIQUE INDEX IF NOT EXISTS "CartItem_cartId_productId_key" ON "CartItem"("cartId", "productId");
 
 -- AddForeignKey
-ALTER TABLE "Cart" ADD CONSTRAINT "Cart_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Cart_customerId_fkey') THEN
+    ALTER TABLE "Cart" ADD CONSTRAINT "Cart_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_cartId_fkey" FOREIGN KEY ("cartId") REFERENCES "Cart"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'CartItem_cartId_fkey') THEN
+    ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_cartId_fkey" FOREIGN KEY ("cartId") REFERENCES "Cart"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'CartItem_productId_fkey') THEN
+    ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;

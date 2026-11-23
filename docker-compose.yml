@@ -1,0 +1,56 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: elechunitown-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-elec}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      POSTGRES_DB: ${POSTGRES_DB:-elechunitown}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-elec} -d ${POSTGRES_DB:-elechunitown}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: elechunitown-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-elec}:${POSTGRES_PASSWORD:-secret}@db:5432/${POSTGRES_DB:-elechunitown}
+      JWT_SECRET: ${JWT_SECRET:-change-this-development-secret}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-30m}
+      CLIENT_ORIGIN: http://localhost:3000
+      SERVER_ORIGIN: http://localhost:4000
+      PORT: 4000
+    ports:
+      - "127.0.0.1:4000:4000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4000
+        INTERNAL_API_URL: http://backend:4000
+    container_name: elechunitown-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      INTERNAL_API_URL: http://backend:4000
+    ports:
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  postgres_data:
+

@@ -56,15 +56,17 @@ export default async function RootLayout({
                     <Avatar src={account.avatar} size={38} alt="Ảnh đại diện" />
                     <div className="name">{account.fullName}</div>
                   </Link>
-                  <Link
-                    href={accountHomeByRole(account.role)}
-                    className="setting"
-                    title="Tài khoản / Console theo vai trò"
-                  >
-                    <IoSettings />
-                    <div className="label-setting">Tài khoản</div>
-                  </Link>
-                  <LogoutButton />
+                  <div className="account-actions">
+                    <Link
+                      href={accountHomeByRole(account.role)}
+                      className="setting"
+                      title="Tài khoản / Console theo vai trò"
+                    >
+                      <IoSettings />
+                      <div className="label-setting">Tài khoản</div>
+                    </Link>
+                    <LogoutButton />
+                  </div>
                 </>
               ) : (
                 <>

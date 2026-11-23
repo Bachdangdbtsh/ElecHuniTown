@@ -3,7 +3,8 @@ import { Suspense } from 'react';
 
 async function SearchContent({ searchParams }) {
   const params = await searchParams;
-  const query = typeof params.q === 'string' ? params.q.trim() : '';
+  const rawQuery = params.q ?? params.key;
+  const query = typeof rawQuery === 'string' ? rawQuery.trim() : '';
   return <SearchResults key={query} query={query} />;
 }
 

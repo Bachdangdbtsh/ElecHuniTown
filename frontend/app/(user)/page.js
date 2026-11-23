@@ -4,14 +4,13 @@ import Product from "./component/product"
 import Pagination from "./component/Pagination";
 import { useEffect, useState } from "react";
 export default function Home() {
-  const [featurePage, setFeaturePage] = useState(1);
   const [suggestPage, setSuggestPage] = useState(1);
   const [products, setProducts] = useState(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/backend?featurePage=${featurePage}&suggestPage=${suggestPage}`, {
+    fetch(`/api/backend?suggestPage=${suggestPage}`, {
       method: "POST",
       credentials: "include",
       signal: controller.signal,
@@ -20,19 +19,18 @@ export default function Home() {
       .then(setProducts)
       .catch(err => { if (err.name !== 'AbortError') setError(true); });
     return () => controller.abort();
-  }, [featurePage, suggestPage])
+  }, [suggestPage])
   return (
     <>
       <div className="homepage">
         {error && <p role="alert">Không tải được sản phẩm. Vui lòng thử lại.</p>}
         <div className="feature-product">
-          <div className="title">Sản phẩm hot</div>
+          <h2 className="title"><span aria-hidden="true">✦</span> Sản phẩm hot <span aria-hidden="true">✦</span></h2>
           <div className="list-feature-product">
             {products?.featureProducts?.map((p) => (
               <Product data={p} key={p.id} />
             ))}
           </div>
-          <Pagination page={featurePage} totalPages={products?.featureTotalPages ?? 0} onChange={(page) => { setError(false); setFeaturePage(page); }} label="Phân trang sản phẩm hot" />
         </div>
         <div className="suggest-product">
           <div className="title">Gợi ý cho bạn</div>

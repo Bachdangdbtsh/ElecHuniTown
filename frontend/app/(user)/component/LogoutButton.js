@@ -38,15 +38,7 @@ export default function LogoutButton() {
       type="button"
       onClick={handleLogout}
       disabled={loading}
-      className="login"
-      style={{
-        background: 'transparent',
-        border: 'none',
-        cursor: loading ? 'wait' : 'pointer',
-        font: 'inherit',
-        color: 'inherit',
-        padding: 0,
-      }}
+      className="account-logout"
       title="Đăng xuất"
     >
       {loading ? '...' : 'Đăng xuất'}

@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { COUNTED_ORDER_STATUS, CUSTOMER_ROLE_CODE, TZ } from './statistic.constants.js';
 
@@ -6,6 +7,21 @@ import { COUNTED_ORDER_STATUS, CUSTOMER_ROLE_CODE, TZ } from './statistic.consta
 const num = (v) => (v === null || v === undefined ? 0 : Number(v));
 
 const STATUS = COUNTED_ORDER_STATUS;
+
+/**
+ * Giá vốn nhập bình quân gia quyền của từng sản phẩm, lấy từ các phiếu nhập kho đã duyệt.
+ * Chỉ tính phiếu tạo trước khi kỳ kết thúc để số liệu quá khứ không đổi khi nhập thêm hàng.
+ */
+function costSubquery(end) {
+  return Prisma.sql`
+    SELECT sr."productId" AS product_id,
+           SUM(sr."quantity"::float8 * sr."unitCost") / NULLIF(SUM(sr.quantity), 0) AS unit_cost
+    FROM "StockReceiptItem" sr
+    JOIN "StockReceipt" r ON r.id = sr."receiptId"
+    WHERE r.status = 'APPROVED'::"DocumentStatus"
+      AND r."createdAt" < ${end}
+    GROUP BY sr."productId"`;
+}
 
 export async function getFinance() {
   const finance = await prisma.finance.findUnique({ where: { id: 1 } });
@@ -120,6 +136,137 @@ export async function getSlowProducts(start, end, limit) {
     category: r.category,
     sold: num(r.sold),
     stock: num(r.stock),
+  }));
+}
+
+/**
+ * UC_50 - các con số gốc của lợi nhuận trong kỳ:
+ * doanh thu (tổng tiền đơn đã giao), giá vốn hàng bán, tiền đã hoàn, chi phí hàng hỏng.
+ */
+export async function getProfitTotals(start, end) {
+  const [sales] = await prisma.$queryRaw`
+    SELECT COALESCE(SUM(o."totalCost"), 0)::float8 AS revenue,
+           COUNT(*)::int AS orders
+    FROM "Order" o
+    WHERE o.status = ${STATUS}::"OrderStatus"
+      AND o."orderDate" >= ${start} AND o."orderDate" < ${end}`;
+
+  const [cogs] = await prisma.$queryRaw(Prisma.sql`
+    SELECT COALESCE(SUM(i.quantity::float8 * COALESCE(cost.unit_cost, 0)), 0)::float8 AS cogs,
+           COUNT(*) FILTER (WHERE COALESCE(cost.unit_cost, 0) = 0)::int AS missing_cost,
+           COUNT(*)::int AS lines
+    FROM "Order_contain_product" i
+    JOIN "Order" o ON o.id = i."orderId"
+    LEFT JOIN (${costSubquery(end)}) cost ON cost.product_id = i."productId"
+    WHERE o.status = ${STATUS}::"OrderStatus"
+      AND o."orderDate" >= ${start} AND o."orderDate" < ${end}`);
+
+  const [refund] = await prisma.$queryRaw`
+    SELECT COALESCE(SUM(rr."refundAmount"), 0)::float8 AS refunds
+    FROM "ReturnRequest" rr
+    WHERE rr.status = 'REFUNDED'::"ReturnStatus"
+      AND rr."refundedAt" >= ${start} AND rr."refundedAt" < ${end}`;
+
+  const [damaged] = await prisma.$queryRaw`
+    SELECT COALESCE(SUM(si.quantity::float8 * si."unitCost"), 0)::float8 AS other
+    FROM "StockIssueItem" si
+    JOIN "StockIssue" s ON s.id = si."issueId"
+    WHERE s.type = 'DAMAGED'::"StockIssueType"
+      AND s.status = 'APPROVED'::"DocumentStatus"
+      AND COALESCE(s."handledAt", s."createdAt") >= ${start}
+      AND COALESCE(s."handledAt", s."createdAt") < ${end}`;
+
+  return {
+    revenue: num(sales.revenue),
+    orders: num(sales.orders),
+    cogs: num(cogs.cogs),
+    itemsMissingCost: num(cogs.missing_cost),
+    soldLines: num(cogs.lines),
+    refunds: num(refund.refunds),
+    otherCosts: num(damaged.other),
+  };
+}
+
+/**
+ * UC_51 - doanh thu / giá vốn / lợi nhuận gom theo danh mục, sản phẩm hoặc nhân viên xử lý đơn.
+ * Doanh thu của từng dòng là phần tiền đơn hàng được phân bổ theo tỷ lệ giá trị hàng,
+ * nên tổng các dòng luôn khớp doanh thu ở UC_49/UC_50 (đã gồm phí vận chuyển, đã trừ giảm giá).
+ */
+export async function getBreakdown(start, end, groupBy, limit) {
+  if (groupBy === 'staff') {
+    const rows = await prisma.$queryRaw`
+      SELECT COALESCE(o."confirmedById", 0)::int AS id,
+             COALESCE(u."fullName", 'Chưa gán') AS label,
+             COUNT(*)::int AS orders,
+             COALESCE(SUM(o."totalCost"), 0)::float8 AS revenue
+      FROM "Order" o
+      LEFT JOIN "User" u ON u.id = o."confirmedById"
+      WHERE o.status = ${STATUS}::"OrderStatus"
+        AND o."orderDate" >= ${start} AND o."orderDate" < ${end}
+      GROUP BY 1, 2`;
+
+    const cogs = await prisma.$queryRaw(Prisma.sql`
+      SELECT COALESCE(o."confirmedById", 0)::int AS id,
+             COALESCE(SUM(i.quantity::float8 * COALESCE(cost.unit_cost, 0)), 0)::float8 AS cogs
+      FROM "Order_contain_product" i
+      JOIN "Order" o ON o.id = i."orderId"
+      LEFT JOIN (${costSubquery(end)}) cost ON cost.product_id = i."productId"
+      WHERE o.status = ${STATUS}::"OrderStatus"
+        AND o."orderDate" >= ${start} AND o."orderDate" < ${end}
+      GROUP BY 1`);
+
+    const cogsById = new Map(cogs.map((r) => [num(r.id), num(r.cogs)]));
+    return rows
+      .map((r) => ({
+        id: num(r.id),
+        label: r.label,
+        sublabel: null,
+        orders: num(r.orders),
+        sold: null,
+        revenue: num(r.revenue),
+        cogs: cogsById.get(num(r.id)) ?? 0,
+      }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, limit);
+  }
+
+  const isCategory = groupBy === 'category';
+  const rows = await prisma.$queryRaw(Prisma.sql`
+    WITH item_totals AS (
+      SELECT o.id AS order_id,
+             o."totalCost"::float8 AS total,
+             SUM(i.quantity::float8 * i.price)::float8 AS goods
+      FROM "Order" o
+      JOIN "Order_contain_product" i ON i."orderId" = o.id
+      WHERE o.status = ${STATUS}::"OrderStatus"
+        AND o."orderDate" >= ${start} AND o."orderDate" < ${end}
+      GROUP BY o.id, o."totalCost"
+    )
+    SELECT ${isCategory ? Prisma.sql`c.id` : Prisma.sql`p.id`} AS id,
+           ${isCategory ? Prisma.sql`c.name` : Prisma.sql`p."productName"`} AS label,
+           ${isCategory ? Prisma.sql`NULL::text` : Prisma.sql`c.name`} AS sublabel,
+           NULL::int               AS orders,
+           SUM(i.quantity)::int    AS sold,
+           COALESCE(SUM(CASE WHEN it.goods > 0 THEN i.quantity::float8 * i.price * it.total / it.goods ELSE 0 END), 0)::float8 AS revenue,
+           COALESCE(SUM(i.quantity::float8 * COALESCE(cost.unit_cost, 0)), 0)::float8 AS cogs
+    FROM "Order_contain_product" i
+    JOIN "Order" o ON o.id = i."orderId"
+    JOIN item_totals it ON it.order_id = o.id
+    JOIN "Product" p ON p.id = i."productId"
+    JOIN "Category" c ON c.id = p."categoryId"
+    LEFT JOIN (${costSubquery(end)}) cost ON cost.product_id = i."productId"
+    GROUP BY ${isCategory ? Prisma.sql`c.id, c.name` : Prisma.sql`p.id, p."productName", c.name`}
+    ORDER BY revenue DESC, label ASC
+    LIMIT ${limit}`);
+
+  return rows.map((r) => ({
+    id: num(r.id),
+    label: r.label,
+    sublabel: r.sublabel,
+    orders: null,
+    sold: num(r.sold),
+    revenue: num(r.revenue),
+    cogs: num(r.cogs),
   }));
 }
 

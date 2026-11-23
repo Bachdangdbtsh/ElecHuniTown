@@ -5,6 +5,24 @@ import { formatNumber } from '../_lib/format';
 
 const STARS = [5, 4, 3, 2, 1];
 
+/** Thanh phân bố 5★ → 1★ thu nhỏ cho từng sản phẩm. */
+function ProductDistribution({ distribution, total }) {
+  if (!total) return null;
+  const counts = distribution ?? {};
+  const label = STARS.map((star) => `${star} sao: ${counts[star] ?? 0}`).join(', ');
+  return (
+    <span className="st-prod-dist" role="img" aria-label={`Phân bố đánh giá (${label})`}>
+      {STARS.map((star) => (
+        <span
+          key={star}
+          className={`st-prod-dist-seg s${star}`}
+          style={{ width: `${((counts[star] ?? 0) / total) * 100}%` }}
+        />
+      ))}
+    </span>
+  );
+}
+
 function Distribution({ distribution, total }) {
   return (
     <ul className="st-dist">
@@ -25,7 +43,7 @@ function Distribution({ distribution, total }) {
   );
 }
 
-export default function RatingSection({ state }) {
+export default function RatingSection({ state, onOpenProduct }) {
   // Backend trả 501 khi chưa có bảng Comment: đây là "chưa có dữ liệu", không phải lỗi.
   const notReady = state.status === 'error' && state.error?.code === 'RATING_NOT_AVAILABLE';
   const view = notReady ? { ...state, status: 'success', data: { notReady: true } } : state;
@@ -54,8 +72,29 @@ export default function RatingSection({ state }) {
             <p className="st-kpi-label">Đánh giá theo sản phẩm</p>
             <ul className="st-prod-rating">
               {d.products.map((p) => (
-                <li key={p.id}>
-                  <p className="st-rank-name">{p.name}</p>
+                <li
+                  key={p.id}
+                  className={onOpenProduct ? 'st-prod-rating-link' : undefined}
+                  role={onOpenProduct ? 'button' : undefined}
+                  tabIndex={onOpenProduct ? 0 : undefined}
+                  aria-haspopup={onOpenProduct ? 'dialog' : undefined}
+                  aria-label={onOpenProduct ? `Xem chi tiết đánh giá: ${p.name}` : undefined}
+                  onClick={onOpenProduct ? () => onOpenProduct(p) : undefined}
+                  onKeyDown={
+                    onOpenProduct
+                      ? (event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            onOpenProduct(p);
+                          }
+                        }
+                      : undefined
+                  }
+                >
+                  <div className="st-prod-rating-name">
+                    <p className="st-rank-name">{p.name}</p>
+                    <ProductDistribution distribution={p.distribution} total={p.total} />
+                  </div>
                   <p className="st-prod-score">
                     <strong>{p.average.toFixed(1).replace('.', ',')}</strong>/5
                   </p>

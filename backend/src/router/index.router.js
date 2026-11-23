@@ -45,20 +45,18 @@ const getMyCart = async (userId) => {
 router.post("/", async (req, res) => {
   try {
     const limit = 10;
-    const featurePage = Math.max(1, Number.parseInt(req.query.featurePage, 10) || 1);
     const suggestPage = Math.max(1, Number.parseInt(req.query.suggestPage, 10) || 1);
     const productInclude = {
       category: { select: { id: true, name: true, slug: true, imageUrl: true } },
       pictures: { select: { url: true } },
       tags: { select: { tag: true } },
     };
-    const [featureProducts, suggestProducts, featureTotal, suggestTotal] = await Promise.all([
+    const [featureProducts, suggestProducts, suggestTotal] = await Promise.all([
       prisma.product.findMany({
-        where: { isFeature: true, status: "ACTIVE" },
+        where: { status: "ACTIVE" },
         include: productInclude,
-        orderBy: { createdAt: "desc" },
-        take: limit,
-        skip: (featurePage - 1) * limit,
+        orderBy: [{ sold: "desc" }, { createdAt: "desc" }],
+        take: 4,
       }),
       prisma.product.findMany({
         where: { status: "ACTIVE" },
@@ -67,7 +65,6 @@ router.post("/", async (req, res) => {
         take: limit,
         skip: (suggestPage - 1) * limit,
       }),
-      prisma.product.count({ where: { isFeature: true, status: "ACTIVE" } }),
       prisma.product.count({ where: { status: "ACTIVE" } }),
     ]);
 
@@ -76,7 +73,7 @@ router.post("/", async (req, res) => {
       message: "Lấy thành công",
       featureProducts,
       suggestProducts,
-      featureTotalPages: Math.ceil(featureTotal / limit),
+      featureTotalPages: 1,
       suggestTotalPages: Math.ceil(suggestTotal / limit),
     });
   } catch (err) {
@@ -970,18 +967,6 @@ router.post("/search", async (req, res) => {
         category: true,
         pictures: true,
         tags: true,
-        Comment: {
-          where: { isActive: true },
-          include: {
-            User: {
-              select: {
-                fullName: true,
-                avatar: true
-              }
-            }
-          },
-          orderBy: { createdAt: 'desc' }
-        }
       }
     });
     const allTags = product.flatMap(p => p.tags.map(t => t.tag));

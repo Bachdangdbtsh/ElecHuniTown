@@ -69,12 +69,6 @@ export default function Comment({ product }) {
                 ))}
               </div>
               <div className="des-detail">{com.content}</div>
-              {com.reply && (
-                <div className="shop-reply">
-                  <div className="shop-reply-label">Phản hồi từ cửa hàng</div>
-                  <div className="shop-reply-content">{com.reply}</div>
-                </div>
-              )}
             </div>
           ))
         )}

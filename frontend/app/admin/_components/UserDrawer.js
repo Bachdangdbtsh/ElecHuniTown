@@ -5,26 +5,45 @@ import { useApi } from '../_lib/useApi';
 import AsyncSection from './AsyncSection';
 import { apiPatch } from '@/lib/api';
 
+const DEFAULT_REASON = 'Quyết định của Quản trị viên';
+
 export default function UserDrawer({ userId, onClose, onRefresh }) {
   const userDetailState = useApi(userId ? `/admin/users/${userId}` : null);
   const [locking, setLocking] = useState(false);
   const [actionError, setActionError] = useState('');
+  const [confirming, setConfirming] = useState(false);
+  const [reason, setReason] = useState(DEFAULT_REASON);
 
   if (!userId) return null;
 
-  async function handleToggleStatus(currentActive) {
-    const nextStatus = !currentActive;
-    const promptMsg = nextStatus ? 'Nhập lý do mở khóa tài khoản:' : 'Nhập lý do khóa tài khoản vi phạm:';
-    const reason = prompt(promptMsg, 'Quyết định của Quản trị viên');
-    if (!reason) return;
+  function openConfirm() {
+    setActionError('');
+    setReason(DEFAULT_REASON);
+    setConfirming(true);
+  }
 
+  function cancelConfirm() {
+    setConfirming(false);
+    setActionError('');
+  }
+
+  async function handleConfirmToggle(e, currentActive) {
+    e.preventDefault();
+    const trimmedReason = reason.trim();
+    if (trimmedReason.length < 3) {
+      setActionError('Lý do khóa hoặc mở khóa phải có ít nhất 3 ký tự.');
+      return;
+    }
+
+    const nextStatus = !currentActive;
     setLocking(true);
     setActionError('');
     try {
       await apiPatch(`/admin/users/${userId}/status`, {
         isActive: nextStatus,
-        reason,
+        reason: trimmedReason,
       });
+      setConfirming(false);
       userDetailState.reload();
       onRefresh?.();
     } catch (err) {
@@ -50,7 +69,7 @@ export default function UserDrawer({ userId, onClose, onRefresh }) {
             <>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <span className={`adm-badge ${user.isActive ? 'adm-badge-active' : 'adm-badge-locked'}`} style={{ width: 'fit-content' }}>
-                  {user.isActive ? 'Đang hoạt động' : 'Đã bị khóa'}
+                  {user.isActive ? 'Đang hoạt động' : 'Bị khóa'}
                 </span>
                 <p style={{ fontSize: 20, fontWeight: 800 }}>{user.fullName}</p>
                 <p style={{ fontSize: 13, color: 'var(--muted)' }}>Mã: {user.userCode} | Vai trò: {user.roleName}</p>
@@ -60,18 +79,61 @@ export default function UserDrawer({ userId, onClose, onRefresh }) {
               </div>
 
               <div>
-                <button
-                  type="button"
-                  className="adm-btn"
-                  style={{
-                    color: user.isActive ? 'var(--down)' : 'var(--up)',
-                    borderColor: user.isActive ? 'var(--down)' : 'var(--up)',
-                  }}
-                  disabled={locking}
-                  onClick={() => handleToggleStatus(user.isActive)}
-                >
-                  {user.isActive ? 'Khóa tài khoản này' : 'Mở khóa tài khoản'}
-                </button>
+                {!confirming ? (
+                  <button
+                    type="button"
+                    className="adm-btn"
+                    style={{
+                      color: user.isActive ? 'var(--down)' : 'var(--up)',
+                      borderColor: user.isActive ? 'var(--down)' : 'var(--up)',
+                    }}
+                    disabled={locking}
+                    onClick={openConfirm}
+                  >
+                    {user.isActive ? 'Khóa tài khoản này' : 'Mở khóa tài khoản'}
+                  </button>
+                ) : (
+                  <form
+                    onSubmit={(e) => handleConfirmToggle(e, user.isActive)}
+                    className="adm-lock-confirm"
+                  >
+                    <label htmlFor="adm-lock-reason" style={{ fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                      {user.isActive ? 'Nhập lý do khóa tài khoản vi phạm:' : 'Nhập lý do mở khóa tài khoản:'}
+                    </label>
+                    <input
+                      id="adm-lock-reason"
+                      type="text"
+                      className="form-control"
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      placeholder="Nhập lý do (tối thiểu 3 ký tự)..."
+                      disabled={locking}
+                      autoFocus
+                    />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                      <button
+                        type="submit"
+                        className="adm-btn"
+                        style={{
+                          background: user.isActive ? '#dc2626' : '#15803d',
+                          color: '#fff',
+                          borderColor: user.isActive ? '#dc2626' : '#15803d',
+                        }}
+                        disabled={locking}
+                      >
+                        {locking ? 'Đang xử lý...' : user.isActive ? 'Xác nhận khóa' : 'Xác nhận mở khóa'}
+                      </button>
+                      <button
+                        type="button"
+                        className="adm-btn"
+                        disabled={locking}
+                        onClick={cancelConfirm}
+                      >
+                        Hủy
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
 
               <div>

@@ -138,19 +138,24 @@ export default function AdminUsersPage() {
                     <td>{u.roleName}</td>
                     <td>
                       <span className={`adm-badge ${u.isActive ? 'adm-badge-active' : 'adm-badge-locked'}`}>
-                        {u.isActive ? 'Hoạt động' : 'Đã khóa'}
+                        {u.isActive ? 'Hoạt động' : 'Bị khóa'}
                       </span>
                     </td>
                     <td>{u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString('vi-VN') : 'Chưa đăng nhập'}</td>
                     <td>
-                      <button
-                        type="button"
-                        className="adm-btn"
-                        style={{ padding: '4px 10px', fontSize: 12 }}
-                        onClick={() => setSelectedUserId(u.id)}
-                      >
-                        Chi tiết
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="adm-btn"
+                          style={{ padding: '4px 10px', fontSize: 12 }}
+                          onClick={() => setSelectedUserId(u.id)}
+                        >
+                          Chi tiết
+                        </button>
+                        {!u.isActive && (
+                          <span className="adm-badge adm-badge-locked">Bị khóa</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -192,6 +197,7 @@ export default function AdminUsersPage() {
       />
 
       <UserDrawer
+        key={selectedUserId ?? 'closed'}
         userId={selectedUserId}
         onClose={() => setSelectedUserId(null)}
         onRefresh={usersState.reload}

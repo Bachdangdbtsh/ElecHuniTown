@@ -118,6 +118,25 @@ export async function getRatings(query) {
   }
 }
 
+/** UC_55: danh sách đánh giá chi tiết của một sản phẩm (chỉ đọc). */
+export async function getRatingReviews({ productId, rating, page, limit }) {
+  const { items, total } = await repo.getProductReviews({
+    productId,
+    rating,
+    skip: (page - 1) * limit,
+    take: limit,
+  });
+  return {
+    items,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    },
+  };
+}
+
 /** Chuyển số gốc của UC_50 thành các chỉ số lợi nhuận đã tính sẵn. */
 function shapeProfit(t) {
   const totalCost = t.cogs + t.refunds + t.otherCosts;

@@ -330,3 +330,29 @@ export async function getRatingStats(start, end, limit) {
     throw err;
   }
 }
+
+/** Danh sách đánh giá của một sản phẩm cho modal chi tiết trong trang Thống kê (chỉ đọc). */
+export async function getProductReviews({ productId, rating, skip, take }) {
+  const where = {
+    isActive: true,
+    productId,
+    ...(rating ? { rating } : {}),
+  };
+  const [items, total] = await Promise.all([
+    prisma.comment.findMany({
+      where,
+      select: {
+        id: true,
+        content: true,
+        rating: true,
+        createdAt: true,
+        User: { select: { id: true, fullName: true, avatar: true } },
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip,
+      take,
+    }),
+    prisma.comment.count({ where }),
+  ]);
+  return { items, total };
+}

@@ -51,7 +51,7 @@ export default function ReviewDetailModal({ product, onClose }) {
   const [rating, setRating] = useState('all');
   const [page, setPage] = useState(1);
 
-  const state = useApi('/comments', {
+  const state = useApi('/statistics/ratings/reviews', {
     productId: product.id,
     limit: PAGE_SIZE,
     page,
@@ -134,15 +134,6 @@ export default function ReviewDetailModal({ product, onClose }) {
                         <p className="st-review-date">{formatDate(comment.createdAt)}</p>
                       </div>
                       <p className="st-review-content">{comment.content}</p>
-                      {comment.reply && (
-                        <div className="st-review-reply">
-                          <p className="st-review-reply-label">
-                            Phản hồi từ cửa hàng
-                            {comment.RepliedBy?.fullName ? ` · ${comment.RepliedBy.fullName}` : ''}
-                          </p>
-                          <p>{comment.reply}</p>
-                        </div>
-                      )}
                     </div>
                   </li>
                 ))}

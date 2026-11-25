@@ -54,7 +54,12 @@ export default function LoginPage() {
       const role = data.user.role;
       window.location.assign(destinationForRole(role));
     } catch (err) {
-      setError(err.message || 'Đăng nhập thất bại');
+      localStorage.removeItem('isLoggedIn');
+      setError(
+        err.code === 'ACCOUNT_LOCKED'
+          ? 'Tài khoản đã bị khóa'
+          : err.message || 'Đăng nhập thất bại',
+      );
       setLoading(false);
     }
   }

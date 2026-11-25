@@ -34,10 +34,6 @@ export async function authenticate(req, res, next) {
       throw new AppError(401, 'INVALID_TOKEN', 'Token xác thực không hợp lệ');
     }
 
-    if (decoded.userId && decoded.iat && isSessionInvalidated(decoded.userId, decoded.iat)) {
-      throw new AppError(401, 'SESSION_REVOKED', 'Phiên đăng nhập đã hết hiệu lực. Vui lòng đăng nhập lại');
-    }
-
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       include: {
@@ -58,7 +54,11 @@ export async function authenticate(req, res, next) {
     }
 
     if (!user.isActive) {
-      throw new AppError(403, 'ACCOUNT_LOCKED', 'Tài khoản của bạn đã bị khóa hoặc tạm ngừng hoạt động');
+      throw new AppError(403, 'ACCOUNT_LOCKED', 'Tài khoản đã bị khóa');
+    }
+
+    if (decoded.userId && decoded.iat && isSessionInvalidated(decoded.userId, decoded.iat)) {
+      throw new AppError(401, 'SESSION_REVOKED', 'Phiên đăng nhập đã hết hiệu lực. Vui lòng đăng nhập lại');
     }
 
     if (!user.role) {

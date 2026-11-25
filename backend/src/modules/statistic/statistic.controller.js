@@ -1,7 +1,7 @@
 import { AppError } from '../../common/error/AppError.js';
 import * as service from './statistic.service.js';
 import { buildReportWorkbook } from './statistic.export.js';
-import { rangeQuery, revenueQuery, rankQuery, breakdownQuery } from './statistic.schema.js';
+import { rangeQuery, revenueQuery, rankQuery, breakdownQuery, ratingReviewsQuery } from './statistic.schema.js';
 
 function parse(schema, query) {
   const result = schema.safeParse(query);
@@ -33,6 +33,10 @@ export async function slowProducts(req, res) {
 
 export async function ratings(req, res) {
   ok(res, await service.getRatings(parse(rankQuery, req.query)));
+}
+
+export async function ratingReviews(req, res) {
+  ok(res, await service.getRatingReviews(parse(ratingReviewsQuery, req.query)));
 }
 
 export async function profit(req, res) {

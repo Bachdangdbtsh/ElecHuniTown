@@ -7,7 +7,7 @@ import { apiFetch, apiPost } from '@/lib/api';
 import BrandLogo from '@/components/BrandLogo';
 import Avatar from '@/app/(common)/Avatar';
 import BellIcon from '@/app/(common)/BellIcon';
-import { FiBox, FiChevronDown, FiClipboard, FiGrid, FiPackage, FiRefreshCw, FiSettings, FiShoppingBag, FiStar, FiTrendingUp, FiUsers } from 'react-icons/fi';
+import { FiBox, FiChevronDown, FiClipboard, FiGrid, FiPackage, FiRefreshCw, FiSettings, FiShoppingBag, FiTrendingUp, FiUsers } from 'react-icons/fi';
 import '../eht-ui.css';
 import '../staff/staff.css';
 import './store.css';
@@ -16,7 +16,6 @@ const OWNER_MENU = [
   { label: 'Xử lý & Quản lý Đơn hàng', href: '/store/orders', icon: FiShoppingBag },
   { label: 'Đổi trả - Hoàn tiền', href: '/store/returns', icon: FiRefreshCw, ownerOnly: true },
   { label: 'Quản lý Danh mục Sản phẩm', href: '/store/categories', icon: FiGrid },
-  { label: 'Quản lý Đánh giá', href: '/store/reviews', icon: FiStar },
   { label: 'Quản lý Kho hàng', href: '/inventory', icon: FiBox },
   { label: 'Thống kê Tài chính', href: '/statistics', icon: FiTrendingUp, ownerOnly: true },
 ];

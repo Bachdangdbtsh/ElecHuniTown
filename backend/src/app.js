@@ -15,7 +15,6 @@ import adminRoutes from './modules/admin/admin.route.js';
 import roleRoutes from './modules/role/role.route.js';
 import staffRoutes from './modules/staff/staff.route.js';
 import returnsRoutes from './modules/returns/returns.route.js';
-import commentRoutes from './modules/comment/comment.route.js';
 import inventoryRoutes from './source/Inventory/InventoryRouter.js';
 import notificationRoutes from './modules/notification/notification.route.js';
 import orderRoutes from './modules/order/order.route.js';
@@ -69,7 +68,6 @@ app.get('/config/order', (req, res) => res.json({ data: {
 } }));
 app.use('/returns', returnsRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/comments', commentRoutes);
 app.use('/statistics', statisticRoutes);
 
 // Global error handler — luôn đặt cuối

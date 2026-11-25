@@ -15,6 +15,7 @@ router.get('/breakdown', requirePermission(PERMISSIONS.VIEW), c.breakdown); // U
 router.get('/top-products', requirePermission(PERMISSIONS.VIEW), c.topProducts); // UC_54
 router.get('/slow-products', requirePermission(PERMISSIONS.VIEW), c.slowProducts); // UC_54
 router.get('/ratings', requirePermission(PERMISSIONS.VIEW), c.ratings); // UC_55
+router.get('/ratings/reviews', requirePermission(PERMISSIONS.VIEW), c.ratingReviews); // UC_55 detail
 router.get('/export', requirePermission(PERMISSIONS.EXPORT), c.exportExcel); // UC_52
 
 export default router;

@@ -116,7 +116,7 @@ export async function login(payload, clientMeta = {}) {
       userAgent: clientMeta.userAgent,
       success: false,
     });
-    throw new AppError(403, 'ACCOUNT_LOCKED', 'Tài khoản của bạn đã bị khóa hoặc tạm ngừng hoạt động');
+    throw new AppError(403, 'ACCOUNT_LOCKED', 'Tài khoản đã bị khóa');
   }
 
   await repo.createLoginHistory({

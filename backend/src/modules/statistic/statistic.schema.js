@@ -61,6 +61,14 @@ export const breakdownQuery = z
     path: ['from'],
   });
 
+// UC_55: danh sách đánh giá chi tiết của một sản phẩm trong trang Thống kê.
+export const ratingReviewsQuery = z.object({
+  productId: z.coerce.number().int().positive('productId không hợp lệ'),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(8),
+  rating: z.coerce.number().int().min(1).max(5).optional(),
+});
+
 // ---------- Tiện ích thời gian (giờ Việt Nam) ----------
 
 const pad = (n) => String(n).padStart(2, '0');

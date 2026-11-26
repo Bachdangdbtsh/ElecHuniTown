@@ -44,29 +44,31 @@ const getMyCart = async (userId) => {
 
 router.post("/", async (req, res) => {
   try {
-    const limit = 10;
-    const suggestPage = Math.max(1, Number.parseInt(req.query.suggestPage, 10) || 1);
+    const limit = 12;
+    const requestedPage = Math.max(1, Number.parseInt(req.query.suggestPage, 10) || 1);
     const productInclude = {
       category: { select: { id: true, name: true, slug: true, imageUrl: true } },
       pictures: { select: { url: true } },
       tags: { select: { tag: true } },
     };
-    const [featureProducts, suggestProducts, suggestTotal] = await Promise.all([
+    const [featureProducts, suggestTotal] = await Promise.all([
       prisma.product.findMany({
         where: { status: "ACTIVE" },
         include: productInclude,
-        orderBy: [{ sold: "desc" }, { createdAt: "desc" }],
+        orderBy: [{ sold: "desc" }, { createdAt: "desc" }, { id: "asc" }],
         take: 4,
-      }),
-      prisma.product.findMany({
-        where: { status: "ACTIVE" },
-        include: productInclude,
-        orderBy: { createdAt: "asc" },
-        take: limit,
-        skip: (suggestPage - 1) * limit,
       }),
       prisma.product.count({ where: { status: "ACTIVE" } }),
     ]);
+    const suggestTotalPages = Math.max(1, Math.ceil(suggestTotal / limit));
+    const suggestPage = Math.min(requestedPage, suggestTotalPages);
+    const suggestProducts = await prisma.product.findMany({
+      where: { status: "ACTIVE" },
+      include: productInclude,
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      take: limit,
+      skip: (suggestPage - 1) * limit,
+    });
 
     res.json({
       code: "success",
@@ -126,81 +128,103 @@ router.post("/header/category/list", async (req, res) => {
 router.post("/category/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    if (!Number.isInteger(id)) {
+    if (!Number.isInteger(id) || id < 1) {
       return res.status(400).json({
         code: "error",
         message: "ID danh mục không hợp lệ",
       });
     }
-    const child = await prisma.category.findUnique({
-      where: { id },
+
+    const activeCategories = await prisma.category.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        imageUrl: true,
+        parentID: true,
+      },
+      orderBy: { name: "asc" },
     });
 
+    const child = activeCategories.find((cat) => cat.id === id);
     if (!child) {
-      return res.status(404).json({ code: "error", message: "Không tìm thấy category" });
+      return res.status(404).json({ code: "error", message: "Không tìm thấy danh mục" });
     }
-    let orderCondition = {};
-    if (req.query.sort) {
-      orderCondition = { newPrice: req.query.sort };
-    }
-    let whereCondition = {
-      categoryId: id,
-      status: "ACTIVE",
-    }
-    if (req.query.tag && req.query.tag !== "null") {
-      whereCondition.tags = {
-        some: {
-          tag: req.query.tag
+
+    // Gom ID của danh mục hiện tại cùng toàn bộ danh mục con đang hoạt động
+    const categoryIds = [id];
+    for (let i = 0; i < categoryIds.length; i++) {
+      for (const cat of activeCategories) {
+        if (cat.parentID === categoryIds[i] && !categoryIds.includes(cat.id)) {
+          categoryIds.push(cat.id);
         }
-      };
+      }
     }
-    //pagination
-    const page = parseInt(req.query.page || 1);
-    const limit = 9;
-    const skip = (page - 1) * limit
+
+    const children = activeCategories.filter((cat) => cat.parentID === id);
+    const parent = child.parentID === null
+      ? null
+      : activeCategories.find((cat) => cat.id === child.parentID) ?? null;
+
+    const orderCondition = req.query.sort === "asc" || req.query.sort === "desc"
+      ? [{ newPrice: req.query.sort }, { id: "asc" }]
+      : [{ createdAt: "desc" }, { id: "asc" }];
+
+    const baseWhere = {
+      categoryId: { in: categoryIds },
+      status: "ACTIVE",
+    };
+
+    const whereCondition = {
+      ...baseWhere,
+      ...(req.query.tag && req.query.tag !== "null"
+        ? { tags: { some: { tag: req.query.tag } } }
+        : {}),
+    };
+
+    // pagination
+    let page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = 12;
     const total = await prisma.product.count({
       where: whereCondition,
     });
-    const totalPage=Math.ceil(total / limit);
-    if(page<=0) page=1;
-    if(page>totalPage) page=totalPage;
+    const totalPage = Math.ceil(total / limit);
+    if (totalPage > 0 && page > totalPage) page = totalPage;
+    const skip = (page - 1) * limit;
     const pagination = {
       page,
       totalPage,
       total,
-    }
-    //end pagination
+    };
 
-    const productList = await prisma.product.findMany({
-      where: whereCondition,
-      orderBy: orderCondition,
-      take: limit,
-      skip: skip,
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
-        pictures: { select: { url: true } },
-        tags: { select: { tag: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    const allTags = productList.flatMap(p => p.tags.map(t => t.tag));
-    const uniqueTags = [...new Set(allTags)];
-    const parent = child.parentID === null ? null : await prisma.category.findUnique({
-      where: { id: child.parentID },
-      select: { id: true, name: true, slug: true, imageUrl: true, parentID: true },
-    });
-    if (productList.length === 0) {
-      return res.status(404).json({
-        code: "error",
-        message: "Không tìm thấy sản phẩm nào cho danh mục này",
-        productList: [],
-      });
-    }
+    const [productList, tagRows] = await Promise.all([
+      prisma.product.findMany({
+        where: whereCondition,
+        orderBy: orderCondition,
+        take: limit,
+        skip,
+        include: {
+          category: { select: { id: true, name: true, slug: true } },
+          pictures: { select: { url: true } },
+          tags: { select: { tag: true } },
+        },
+      }),
+      prisma.product_Tags.findMany({
+        where: { product: baseWhere },
+        select: { tag: true },
+        distinct: ["tag"],
+      }),
+    ]);
+
+    const uniqueTags = tagRows.map((row) => row.tag);
 
     return res.status(200).json({
       code: "success",
       message: "Lấy sản phẩm thành công",
       parent,
+      children,
       productList,
       category: child,
       pagination,
@@ -214,7 +238,6 @@ router.post("/category/:id", async (req, res) => {
       error: error.message,
     });
   }
-
 });
 
 router.post("/product/detail/:id", async (req, res) => {
@@ -927,11 +950,10 @@ router.post("/comment/create", async (req, res) => {
 router.post("/search", async (req, res) => {
   try {
     let title = "";
-    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
-    const skip = (page - 1) * limit;
+    let page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 12));
     let whereCondition = { status: "ACTIVE" }
-    let orderCondition = { createdAt: 'desc' }
+    let orderCondition = [{ createdAt: 'desc' }, { id: 'asc' }]
     if (req.query.isFeature === "true") {
       whereCondition.isFeature = true;
       title = "Sản phẩm hot"
@@ -953,10 +975,13 @@ router.post("/search", async (req, res) => {
         }
       };
     }
-    if (req.query.sort) {
-      orderCondition = { newPrice: req.query.sort };
+    if (req.query.sort === 'asc' || req.query.sort === 'desc') {
+      orderCondition = [{ newPrice: req.query.sort }, { id: 'asc' }];
     }
     const total = await prisma.product.count({ where: whereCondition });
+    const totalPage = Math.ceil(total / limit);
+    if (totalPage > 0 && page > totalPage) page = totalPage;
+    const skip = (page - 1) * limit;
     const product = await prisma.product.findMany({
       where: whereCondition,
       take: limit,

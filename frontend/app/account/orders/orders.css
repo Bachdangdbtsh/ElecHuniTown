@@ -9,7 +9,11 @@
 .account-order-item-name { min-width: 0; font-weight: 600; }
 .account-order-item-quantity { color: #64748b; white-space: nowrap; }
 .account-order-foot > div, .account-return-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
-.account-order-error { padding: 12px; background: #fef2f2; color: #9f1239; border-radius: 10px; }
+.account-order-error { padding: 12px; background: #fef2f2; color: #9f1239; border: 1px solid #fecdd3; border-radius: 10px; }
+.account-order-notice { padding: 12px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; border-radius: 10px; }
+.eht-badge-cancelled { background: #fee2e2; color: #b91c1c; }
+.eht-btn-danger { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+.eht-btn-danger:hover:not(:disabled) { background: #ffe4e6; }
 .account-return-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: #0f172a99; padding: 15px; }
 .account-return-modal { display: flex; flex-direction: column; gap: 10px; width: min(100%, 650px); max-height: 90vh; overflow: auto; padding: 26px; border-radius: 17px; background: #fff; box-shadow: 0 20px 70px #0003; }
 .account-return-modal h2, .account-return-modal p { margin: 0; }

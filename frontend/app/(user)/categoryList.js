@@ -3,20 +3,29 @@ import { FaListUl } from "react-icons/fa";
 import { useEffect, useState } from "react"
 import Link from "next/link";
 import Image from "next/image";
-import { getApiBase } from "@/lib/apiBase";
 export default function CategoryList() {
   const [categories, setcategories] = useState(null);
   const [activeId, setActiveId] = useState(null);
   useEffect(() => {
-    fetch(`${getApiBase()}/header/category/list`, {
+    const controller = new AbortController();
+    fetch("/api/backend/header/category/list", {
       method: "POST",
+      credentials: "include",
+      signal: controller.signal,
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("Không tải được danh mục");
+        return res.json();
+      })
       .then(data => {
         const loadedCategories = Array.isArray(data.categories) ? data.categories : [];
         setcategories(loadedCategories);
         setActiveId(loadedCategories[0]?.id ?? null);
       })
+      .catch(err => {
+        if (err.name !== "AbortError") setcategories([]);
+      });
+    return () => controller.abort();
   }, [])
   const activeCategory = categories?.find((category) => category.id === activeId) || categories?.[0];
   const currentChildren = Array.isArray(activeCategory?.children) ? activeCategory.children : [];

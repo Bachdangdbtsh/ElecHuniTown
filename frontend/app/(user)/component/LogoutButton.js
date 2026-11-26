@@ -3,13 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.NEXT_PUBLIC_URL ||
-  'http://localhost:4000';
-
 /**
- * Đăng xuất từ header mua hàng — clear cookie httpOnly qua backend.
+ * Đăng xuất từ header mua hàng — clear cookie httpOnly qua proxy /api/backend.
  */
 export default function LogoutButton() {
   const router = useRouter();
@@ -19,7 +14,7 @@ export default function LogoutButton() {
     if (loading) return;
     setLoading(true);
     try {
-      await fetch(`${API_BASE}/auth/logout`, {
+      await fetch('/api/backend/auth/logout', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

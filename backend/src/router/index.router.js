@@ -809,7 +809,7 @@ router.get('/vnpay-return', async (req, res) => {
           data: {
             paymentMethodStatus: true,
             transactionID,
-            paymentCreatedAt: String(verifyResult.vnp_PayDate || ''),
+            paymentCreatedAt: order.paymentCreatedAt || String(verifyResult.vnp_PayDate || ''),
           },
         });
       }

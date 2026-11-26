@@ -13,11 +13,13 @@ export default function Category({ id }) {
   const handleParams = (key, value) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set(key, value);
+    if (key !== "page") params.delete("page");
     router.push(`/category/${id}?${params.toString()}`);
   };
   const removeParams = (key) => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete(key);
+    if (key !== "page") params.delete("page");
     router.push(`/category/${id}?${params.toString()}`);
   };
 
@@ -30,8 +32,15 @@ export default function Category({ id }) {
   const [pagination, setpagination] = useState({});
   const [tags, settags] = useState([]);
   const [parent, setparent] = useState(null);
+  const [children, setChildren] = useState([]);
   const [category, setcategory] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
   useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setNotFound(false);
 
     const url = new URL(`/category/${id}`, getApiBase());
     if (sort) url.searchParams.append("sort", sort);
@@ -39,22 +48,47 @@ export default function Category({ id }) {
     if (page) url.searchParams.append("page", page);
 
     fetch(url, {
-      method: "POST"
+      method: "POST",
+      signal: controller.signal,
     })
       .then(res => res.json())
       .then(data => {
-        console.log(data);
-        if (data.code == "success") {
-          setproductList(data.productList);
-          settags(data.tags);
-          setpagination(data.pagination);
-          setparent(data.parent);
-          setcategory(data.category);
-          console.log(data.pagination);
+        if (data.code === "success") {
+          setproductList(data.productList || []);
+          settags(data.tags || []);
+          setpagination(data.pagination || {});
+          setparent(data.parent || null);
+          setChildren(data.children || []);
+          setcategory(data.category || null);
+        } else {
+          setNotFound(true);
+          setproductList([]);
+          settags([]);
+          setpagination({});
+          setparent(null);
+          setChildren([]);
+          setcategory(null);
         }
       })
+      .catch(err => {
+        if (err.name !== "AbortError") setNotFound(true);
+      })
+      .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, [id, sort, tag, page])
-  // const category = data.category;
+
+  if (!loading && notFound) {
+    return (
+      <div className="category-page" style={{ padding: "48px 0" }}>
+        <div className="link-from-homepage">
+          <Link href="/">Trang chủ</Link>
+        </div>
+        <p style={{ marginTop: "24px", color: "#64748b" }}>Không tìm thấy danh mục hoặc danh mục đang tạm ẩn.</p>
+      </div>
+    );
+  }
+
   return (<>
     <div className="category-page">
       <div className="link-from-homepage">
@@ -62,17 +96,33 @@ export default function Category({ id }) {
         {
           parent && <>
             <div>{">>"}</div>
-            <Link href="#">{parent?.name}</Link>
+            <Link href={`/category/${parent.id}`}>{parent.name}</Link>
           </>
         }
-        <div>{">>"}</div>
-        <Link href={`/category/${category?.id}`}><strong>{pagination.total}</strong> {category?.name}</Link>
+        {category && <>
+          <div>{">>"}</div>
+          <Link href={`/category/${category.id}`}><strong>{pagination.total ?? 0}</strong> {category.name}</Link>
+        </>}
       </div>
       <div className="category-title">{category?.name}</div>
-      <div className="description">{category?.description}</div>
+      {category?.description && <div className="description">{category.description}</div>}
+      {children.length > 0 && (
+        <div className="subcategories" style={{ marginTop: "18px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <strong style={{ fontSize: "14px", color: "#2F7562" }}>Danh mục con:</strong>
+          {children.map((sub) => (
+            <Link
+              key={sub.id}
+              href={`/category/${sub.id}`}
+              style={{ padding: "6px 14px", borderRadius: "999px", border: "1px solid #bfd8c8", background: "#eaf3ed", color: "#174936", fontSize: "13px", fontWeight: 600, textDecoration: "none" }}
+            >
+              {sub.name}
+            </Link>
+          ))}
+        </div>
+      )}
       <div className="sort">
         <strong className="label">Sắp xếp:</strong>
-        <div className="price-increase" onClick={() => handleParams("sort", "desc")}>
+        <div className="price-increase" onClick={() => handleParams("sort", "asc")}>
           <span>Giá tăng dần</span>
           <BsArrowUpRightSquareFill />
         </div>
@@ -96,16 +146,21 @@ export default function Category({ id }) {
           }
         </div>
       </div>
-      <div className="list-product">
-        {productList.map((p, index) => <Product data={p} key={index}></Product>)}
-
-      </div>
-      <div className="pagination">
+      {loading ? (
+        <p style={{ marginTop: "40px", color: "#64748b" }}>Đang tải sản phẩm...</p>
+      ) : productList.length === 0 ? (
+        <p style={{ marginTop: "40px", color: "#64748b" }}>Chưa có sản phẩm nào trong danh mục này.</p>
+      ) : (
+        <div className="list-product">
+          {productList.map((p) => <Product data={p} key={p.id}></Product>)}
+        </div>
+      )}
+      {(pagination.totalPage || 0) > 1 && <div className="pagination">
         <div className="inner-item">
 
           {/* Nút Trang trước */}
           <div
-            onClick={() => handleParams("page", page - 1)}
+            onClick={() => { if (page > 1) handleParams("page", page - 1); }}
             style={{
               cursor: page > 1 ? "pointer" : "not-allowed",
               opacity: page > 1 ? 1 : 0.5
@@ -142,17 +197,17 @@ export default function Category({ id }) {
 
           {/* Nút Trang sau */}
           <div
-            onClick={() => handleParams("page", page + 1)}
+            onClick={() => { if (page < (pagination.totalPage || 1)) handleParams("page", page + 1); }}
             style={{
-              cursor: page < pagination.totalPages ? "pointer" : "not-allowed",
-              opacity: page < pagination.totalPages ? 1 : 0.5
+              cursor: page < (pagination.totalPage || 1) ? "pointer" : "not-allowed",
+              opacity: page < (pagination.totalPage || 1) ? 1 : 0.5
             }}
           >
             {">>"}
           </div>
 
         </div>
-      </div>
+      </div>}
     </div>
   </>)
 }

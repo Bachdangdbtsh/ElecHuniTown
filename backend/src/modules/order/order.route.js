@@ -6,4 +6,5 @@ const router = Router();
 router.use(authenticate);
 router.post('/:id/delivered', requireRole('SHOP_OWNER', 'ADMIN'), controller.markDelivered);
 router.post('/:id/confirm-delivery', requireRole('CUSTOMER', 'SHOP_OWNER', 'ADMIN'), controller.confirmDelivered);
+router.post('/:id/cancel', requireRole('CUSTOMER'), controller.cancelOrder);
 export default router;

@@ -1,7 +1,7 @@
 import { prisma } from '../../lib/prisma.js';
 import { notify } from '../../utils/notify.js';
 import { AppError } from '../../common/error/AppError.js';
-import { recordSale } from '../finance/finance.service.js';
+import { recordRefund, recordSale } from '../finance/finance.service.js';
 import { ORDER_AUTO_CONFIRM, SIMULATED_SHIPPING } from '../../config/order.js';
 
 const PENDING = 'DELIVERED_PENDING_CONFIRM';
@@ -118,4 +118,78 @@ export async function autoConfirmDelivered(db = prisma) {
     if (changed) count++;
   }
   return count;
+}
+
+const CANCELLABLE_BY_CUSTOMER = ['PENDING', 'CONFIRMED'];
+const ALREADY_SHIPPED_ERROR = 'Huỷ đơn thất bại. Đơn hàng đã được giao cho đơn vị vận chuyển';
+
+export async function cancelOrderByCustomer(orderId, actor, db = prisma) {
+  return db.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+    if (!order) throw new AppError(404, 'ORDER_NOT_FOUND', 'Không tìm thấy đơn hàng');
+    if (actor.role !== 'CUSTOMER' || order.customerId !== actor.id) {
+      throw new AppError(403, 'FORBIDDEN', 'Bạn không có quyền huỷ đơn hàng này');
+    }
+    if (order.status === 'CANCELLED') {
+      throw new AppError(409, 'ORDER_ALREADY_CANCELLED', 'Đơn hàng đã được huỷ trước đó');
+    }
+    if (!CANCELLABLE_BY_CUSTOMER.includes(order.status)) {
+      throw new AppError(409, 'ORDER_ALREADY_SHIPPING', ALREADY_SHIPPED_ERROR);
+    }
+
+    const changed = await tx.order.updateMany({
+      where: { id: orderId, customerId: actor.id, status: { in: CANCELLABLE_BY_CUSTOMER } },
+      data: { status: 'CANCELLED' },
+    });
+    if (!changed.count) {
+      throw new AppError(409, 'ORDER_ALREADY_SHIPPING', ALREADY_SHIPPED_ERROR);
+    }
+
+    for (const item of order.items || []) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: {
+          stock: { increment: item.quantity },
+          sold: { decrement: item.quantity },
+        },
+      });
+      await tx.inventoryTransaction.create({
+        data: { type: 'RECEIPT', productId: item.productId, quantity: item.quantity, unitCost: item.price },
+      });
+    }
+
+    if (order.paymentMethod === 'bank' && order.paymentMethodStatus) {
+      await recordRefund(tx, order, actor.id);
+    }
+
+    await tx.auditLog.create({
+      data: {
+        actorId: actor.id,
+        action: 'UPDATE',
+        entityType: 'Order',
+        entityId: orderId,
+        details: { from: order.status, to: 'CANCELLED', cancelledBy: 'CUSTOMER' },
+      },
+    });
+
+    const recipients = await tx.user.findMany({
+      where: { role: { code: { in: ['STAFF', 'SHOP_OWNER'] } }, isActive: true },
+      select: { id: true, role: { select: { code: true } } },
+    });
+    for (const recipient of recipients) {
+      await notify({
+        userId: recipient.id,
+        role: recipient.role?.code || 'SHOP_OWNER',
+        type: 'ORDER_CANCELLED',
+        message: `Khách hàng đã huỷ đơn hàng #${orderId}.`,
+        url: '/store/orders',
+        payload: { orderId, status: 'CANCELLED' },
+      }, tx);
+    }
+
+    return tx.order.findUnique({ where: { id: orderId } });
+  });
 }

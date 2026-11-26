@@ -5,39 +5,58 @@ import { useApi } from '../_lib/useApi';
 import AsyncSection from '../_components/AsyncSection';
 import { apiPut } from '@/lib/api';
 
+const ADMIN_LOCKED_PERMS = new Set(['USER_VIEW', 'ROLE_MANAGE', 'CHANGE_REQUEST_REVIEW']);
+
 export default function AdminRolesPage() {
   const matrixState = useApi('/roles/matrix');
   const [selectedRoleId, setSelectedRoleId] = useState(null);
-  const [activePerms, setActivePerms] = useState(null);
+  const [draftPerms, setDraftPerms] = useState(null);
   const [saving, setSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
   const [statusErr, setStatusErr] = useState('');
 
+  const roles = matrixState.data?.roles ?? [];
+  const effectiveRoleId = selectedRoleId ?? roles[0]?.id ?? null;
+  const selectedRole = roles.find((r) => r.id === effectiveRoleId) ?? null;
+
   function handleSelectRole(role) {
     setSelectedRoleId(role.id);
-    setActivePerms(new Set(role.assignedPermissionIds));
+    setDraftPerms(null);
+    setStatusMsg('');
+    setStatusErr('');
   }
 
-  function handleTogglePerm(permId) {
-    if (!activePerms) return;
-    const next = new Set(activePerms);
-    if (next.has(permId)) {
-      next.delete(permId);
-    } else {
-      next.add(permId);
-    }
-    setActivePerms(next);
+  function handleTogglePerm(perm) {
+    if (!selectedRole) return;
+    if (selectedRole.code === 'ADMIN' && ADMIN_LOCKED_PERMS.has(perm.code)) return;
+    setStatusMsg('');
+    setStatusErr('');
+    setDraftPerms((prev) => {
+      const next = new Set(prev ?? selectedRole.assignedPermissionIds ?? []);
+      if (next.has(perm.id)) {
+        next.delete(perm.id);
+      } else {
+        next.add(perm.id);
+      }
+      return next;
+    });
+  }
+
+  function handleResetDraft() {
+    setDraftPerms(null);
+    setStatusMsg('');
+    setStatusErr('');
   }
 
   async function handleSavePermissions() {
-    if (!selectedRoleId || !activePerms) return;
+    if (!effectiveRoleId || !selectedRole) return;
+    const permissionIds = Array.from(draftPerms ?? selectedRole.assignedPermissionIds ?? []);
     setSaving(true);
     setStatusMsg('');
     setStatusErr('');
     try {
-      await apiPut(`/roles/${selectedRoleId}/permissions`, {
-        permissionIds: Array.from(activePerms),
-      });
+      await apiPut(`/roles/${effectiveRoleId}/permissions`, { permissionIds });
+      setDraftPerms(null);
       setStatusMsg('Cập nhật phân quyền thành công.');
       matrixState.reload();
     } catch (err) {
@@ -60,8 +79,14 @@ export default function AdminRolesPage() {
 
       <AsyncSection state={matrixState} minHeight={300}>
         {(data) => {
-          const selectedRole = data.roles.find((r) => r.id === (selectedRoleId ?? data.roles[0].id));
-          const currentPermSet = activePerms ?? new Set(selectedRole.assignedPermissionIds);
+          const currentRole =
+            data.roles.find((r) => r.id === (selectedRoleId ?? data.roles[0]?.id)) ?? data.roles[0];
+          const serverPermSet = new Set(currentRole?.assignedPermissionIds ?? []);
+          const currentPermSet = draftPerms ?? serverPermSet;
+          const hasChanges =
+            draftPerms !== null &&
+            (draftPerms.size !== serverPermSet.size ||
+              Array.from(draftPerms).some((id) => !serverPermSet.has(id)));
 
           return (
             <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 24, alignItems: 'start' }}>
@@ -70,7 +95,7 @@ export default function AdminRolesPage() {
                 <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>Danh sách vai trò</h2>
                 <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {data.roles.map((r) => {
-                    const isCurrent = r.id === selectedRole.id;
+                    const isCurrent = r.id === currentRole?.id;
                     return (
                       <li key={r.id}>
                         <button
@@ -97,25 +122,37 @@ export default function AdminRolesPage() {
 
               {/* Cột ma trận quyền */}
               <div className="st-panel">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
                   <div>
-                    <h2 style={{ fontSize: 18, fontWeight: 800 }}>{selectedRole.name}</h2>
-                    <p style={{ fontSize: 13, color: 'var(--muted)' }}>{selectedRole.description}</p>
+                    <h2 style={{ fontSize: 18, fontWeight: 800 }}>{currentRole?.name}</h2>
+                    <p style={{ fontSize: 13, color: 'var(--muted)' }}>{currentRole?.description}</p>
                   </div>
-                  <button
-                    type="button"
-                    className="eht-btn eht-btn-primary"
-                    disabled={saving}
-                    onClick={handleSavePermissions}
-                    style={{
-                      boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
-                      transition: 'all 0.2s ease',
-                      cursor: saving ? 'not-allowed' : 'pointer',
-                      opacity: saving ? 0.75 : 1,
-                    }}
-                  >
-                    {saving ? '⏳ Đang lưu...' : '💾 Lưu phân quyền'}
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {hasChanges && !saving && (
+                      <button
+                        type="button"
+                        className="eht-btn"
+                        onClick={handleResetDraft}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        Hoàn tác
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="eht-btn eht-btn-primary"
+                      disabled={saving}
+                      onClick={handleSavePermissions}
+                      style={{
+                        boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
+                        transition: 'all 0.2s ease',
+                        cursor: saving ? 'not-allowed' : 'pointer',
+                        opacity: saving ? 0.75 : 1,
+                      }}
+                    >
+                      {saving ? '⏳ Đang lưu...' : '💾 Lưu phân quyền'}
+                    </button>
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -125,27 +162,49 @@ export default function AdminRolesPage() {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
                         {g.permissions.map((p) => {
                           const checked = currentPermSet.has(p.id);
+                          const isLocked = currentRole?.code === 'ADMIN' && ADMIN_LOCKED_PERMS.has(p.code);
                           return (
                             <label
                               key={p.id}
+                              title={isLocked ? 'Quyền cốt lõi của Quản trị viên, không thể gỡ bỏ' : undefined}
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
+                                justifyContent: 'space-between',
                                 gap: 8,
                                 fontSize: 13,
-                                cursor: 'pointer',
+                                cursor: isLocked ? 'not-allowed' : 'pointer',
+                                opacity: isLocked ? 0.8 : 1,
                                 background: checked ? 'var(--mint-soft)' : '#f8fafc',
                                 padding: '8px 12px',
                                 borderRadius: 8,
                                 border: checked ? '1px solid var(--mint)' : '1px solid var(--line)',
                               }}
                             >
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => handleTogglePerm(p.id)}
-                              />
-                              <span>{p.name}</span>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  disabled={isLocked || saving}
+                                  onChange={() => handleTogglePerm(p)}
+                                />
+                                <span>{p.name}</span>
+                              </span>
+                              {isLocked && (
+                                <span
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    color: '#047857',
+                                    background: '#d1fae5',
+                                    padding: '2px 6px',
+                                    borderRadius: 4,
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  Bắt buộc
+                                </span>
+                              )}
                             </label>
                           );
                         })}

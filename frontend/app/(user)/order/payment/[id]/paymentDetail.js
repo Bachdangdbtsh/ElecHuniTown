@@ -1,18 +1,22 @@
 "use client"
 import Link from "next/link";
 import { FaChevronRight } from "react-icons/fa";
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 export default function PaymentDetail({ id }) {
   const [order, setorder] = useState(null);
   const [error, setError] = useState("");
+  const [cancelError, setCancelError] = useState("");
   const [paying, setPaying] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
   const searchParams = useSearchParams();
   const status = searchParams.get("payment");
-  useEffect(() => {
-    fetch(`/api/backend/order/payment/${id}`, {
+
+  const loadOrder = useCallback(() => {
+    return fetch(`/api/backend/order/payment/${id}`, {
       method: "GET",
       credentials: "include",
     })
@@ -23,10 +27,17 @@ export default function PaymentDetail({ id }) {
       .then((data) => {
         if (!data.order) throw new Error("Không tìm thấy đơn hàng");
         setorder(data.order);
-        if (status === 'success' && data.order.paymentMethodStatus) toast.success('Thanh toán thành công');
+        return data.order;
+      });
+  }, [id]);
+
+  useEffect(() => {
+    loadOrder()
+      .then((loaded) => {
+        if (status === 'success' && loaded.paymentMethodStatus) toast.success('Thanh toán thành công');
       })
       .catch((cause) => setError(cause.message || "Không tải được đơn hàng"));
-  }, [id, status])
+  }, [loadOrder, status])
   const getStatusInfo = (status) => {
     switch (status) {
       case 'PENDING':
@@ -42,9 +53,39 @@ export default function PaymentDetail({ id }) {
       case 'DELIVERED_CONFIRMED':
         return { text: 'Đã xác nhận giao hàng', color: '#10b981' };
       case 'CANCELLED':
-        return { text: 'Đã hủy', color: '#ef4444' }; // Màu đỏ
+        return { text: 'Đã huỷ', color: '#ef4444' }; // Màu đỏ
       default:
         return { text: 'Không xác định', color: '#6b7280' }; // Màu xám
+    }
+  };
+  const cancelOrder = async () => {
+    if (!order || cancelling) return;
+    setCancelling(true);
+    setCancelError("");
+    try {
+      const res = await fetch(`/api/backend/orders/${order.id}/cancel`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const message = body?.error?.message || body?.message || "Không thể huỷ đơn hàng";
+        setCancelError(message);
+        toast.error(message);
+        setConfirmingCancel(false);
+        await loadOrder().catch(() => {});
+        return;
+      }
+      setConfirmingCancel(false);
+      setorder((current) => current ? { ...current, status: 'CANCELLED' } : current);
+      toast.success("Đã huỷ đơn hàng thành công");
+    } catch {
+      const message = "Không thể kết nối máy chủ để huỷ đơn hàng";
+      setCancelError(message);
+      toast.error(message);
+    } finally {
+      setCancelling(false);
     }
   };
   const pay=function(){
@@ -144,12 +185,57 @@ export default function PaymentDetail({ id }) {
           </div>
 
         </div>
+        {cancelError && (
+          <div role="alert" style={{ padding: '12px 14px', borderRadius: '8px', background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', fontSize: '14px' }}>
+            {cancelError}
+          </div>
+        )}
         {
-          (!order.paymentMethodStatus && order.paymentMethod === 'bank') &&
+          (!order.paymentMethodStatus && order.paymentMethod === 'bank' && order.status !== 'CANCELLED') &&
           <div className="payment">
             <button onClick={pay} disabled={paying}>{paying ? 'ĐANG CHUYỂN ĐẾN VNPAY...' : 'THANH TOÁN QUA VNPAY'}</button>
           </div>
         }
+        {['PENDING', 'CONFIRMED', 'SHIPPING'].includes(order.status) && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
+            {!confirmingCancel ? (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => { setConfirmingCancel(true); setCancelError(''); }}
+                  disabled={cancelling}
+                  style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #fecaca', background: '#fff1f2', color: '#be123c', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}
+                >
+                  Huỷ đơn
+                </button>
+              </div>
+            ) : (
+              <div style={{ padding: '14px', borderRadius: '10px', border: '1px solid #fecaca', background: '#fff5f5', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ fontSize: '14px', color: '#7f1d1d', fontWeight: 500 }}>
+                  Bạn có chắc chắn muốn huỷ đơn hàng #{order.id} không?
+                </div>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingCancel(false)}
+                    disabled={cancelling}
+                    style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#ffffff', color: '#374151', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}
+                  >
+                    Quay lại
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelOrder}
+                    disabled={cancelling}
+                    style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#dc2626', color: '#ffffff', fontWeight: 600, fontSize: '14px', cursor: cancelling ? 'wait' : 'pointer' }}
+                  >
+                    {cancelling ? 'Đang huỷ...' : 'Xác nhận huỷ đơn'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div >
 

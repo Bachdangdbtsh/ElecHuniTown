@@ -13,7 +13,8 @@ function subscribe(callback) {
 }
 
 function getSnapshot() {
-  return readCart().reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const items = readCart().filter((item) => Number(item?.quantity || 0) > 0);
+  return new Set(items.map((item) => Number(item.id))).size;
 }
 
 export default function CartCount() {

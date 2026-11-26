@@ -8,24 +8,27 @@ import ShellTopBar from '../_components/ShellTopBar';
 import './orders.css';
 
 const money = (value) => Number(value || 0).toLocaleString('vi-VN') + ' ₫';
-const labels = { PENDING: 'Chờ xác nhận', CONFIRMED: 'Đã xác nhận', SHIPPING: 'Đang giao', DELIVERED_PENDING_CONFIRM: 'Chờ xác nhận giao hàng', DELIVERED_CONFIRMED: 'Đã xác nhận giao hàng', DELIVERED: 'Đã giao', CANCELLED: 'Đã hủy' };
+const labels = { PENDING: 'Chờ xác nhận', CONFIRMED: 'Đã xác nhận', SHIPPING: 'Đang giao', DELIVERED_PENDING_CONFIRM: 'Chờ xác nhận giao hàng', DELIVERED_CONFIRMED: 'Đã xác nhận giao hàng', DELIVERED: 'Đã giao', CANCELLED: 'Đã huỷ' };
 const returnLabels = { PENDING: 'Chờ xét duyệt', APPROVED: 'Đã đồng ý, chờ hoàn tiền', DENIED: 'Đã từ chối', REFUNDED: 'Đã hoàn tiền' };
+const canCancelOrder = (status) => ['PENDING', 'CONFIRMED', 'SHIPPING'].includes(status);
 
 export default function AccountOrdersPage() {
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [cancelTarget, setCancelTarget] = useState(null);
   const [reason, setReason] = useState('');
   const [images, setImages] = useState([]);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (preserveFeedback = false) => {
     try {
       const data = await apiGet('/returns/my-orders');
       setOrders(data);
-      setError('');
+      if (!preserveFeedback) setError('');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -84,6 +87,7 @@ export default function AccountOrdersPage() {
   async function confirmDelivery(orderId) {
     setBusy(true);
     setError('');
+    setNotice('');
     try {
       await apiPost(`/orders/${orderId}/confirm-delivery`);
       await load();
@@ -94,22 +98,54 @@ export default function AccountOrdersPage() {
     }
   }
 
+  async function cancelOrder(order) {
+    if (!order || busy) return;
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await apiPost(`/orders/${order.id}/cancel`);
+      setCancelTarget(null);
+      setNotice(`Đã huỷ đơn hàng #${order.id} thành công.`);
+      await load(true);
+    } catch (err) {
+      setError(err.message);
+      await load(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return <>
     <ShellTopBar title="Đơn hàng của tôi" subtitle="Theo dõi đơn hàng và gửi yêu cầu đổi trả" user={user} />
     <div className="eht-content account-orders">
+      {notice && <p className="account-order-notice" role="status">{notice}</p>}
       {error && <p className="account-order-error" role="alert">{error}</p>}
       {loading ? <p>Đang tải đơn hàng…</p> : orders.length === 0 ? <div className="eht-card"><p>Bạn chưa có đơn hàng.</p><Link href="/">Tiếp tục mua sắm</Link></div> : (
         <div className="account-order-list">{orders.map((order) => <article className="eht-card account-order-card" key={order.id}>
-          <div className="account-order-head"><div><strong>Đơn hàng #{order.id}</strong><small>{new Date(order.orderDate).toLocaleString('vi-VN')}</small></div><span className="eht-badge">{labels[order.status] || order.status}</span></div>
+          <div className="account-order-head"><div><strong>Đơn hàng #{order.id}</strong><small>{new Date(order.orderDate).toLocaleString('vi-VN')}</small></div><span className={`eht-badge${order.status === 'CANCELLED' ? ' eht-badge-cancelled' : ''}`}>{labels[order.status] || order.status}</span></div>
           <div className="account-order-items">{order.items.map((item) => <p key={item.productId}>
             <Image src={item.product?.pictures?.[0]?.url || '/placeholder.png'} alt="" width={60} height={60} unoptimized />
             <span className="account-order-item-name">{item.product?.productName || `Sản phẩm #${item.productId}`}</span>
             <span className="account-order-item-quantity">× {item.quantity}</span>
           </p>)}</div>
-          <div className="account-order-foot"><strong>{money(order.totalCost)}</strong><div><Link href={`/order/detail/${order.id}`} className="eht-btn eht-btn-sm">Xem chi tiết</Link>{order.status === 'DELIVERED_PENDING_CONFIRM' && <button type="button" disabled={busy} className="eht-btn eht-btn-primary eht-btn-sm" onClick={() => confirmDelivery(order.id)}>Xác nhận đã nhận hàng</button>}{['DELIVERED', 'DELIVERED_CONFIRMED'].includes(order.status) && !order.returnRequests?.length && <button type="button" className="eht-btn eht-btn-primary eht-btn-sm" onClick={() => { setSelected(order); setError(''); }}>Đổi trả - hoàn tiền</button>}{order.returnRequests?.length > 0 && <span className="eht-badge">Yêu cầu đổi trả: {returnLabels[order.returnRequests[0].status] || order.returnRequests[0].status}</span>}</div></div>
+          <div className="account-order-foot"><strong>{money(order.totalCost)}</strong><div><Link href={`/order/detail/${order.id}`} className="eht-btn eht-btn-sm">Xem chi tiết</Link>{canCancelOrder(order.status) && <button type="button" disabled={busy} className="eht-btn eht-btn-danger eht-btn-sm" onClick={() => { setCancelTarget(order); setError(''); setNotice(''); }}>Huỷ đơn</button>}{order.status === 'DELIVERED_PENDING_CONFIRM' && <button type="button" disabled={busy} className="eht-btn eht-btn-primary eht-btn-sm" onClick={() => confirmDelivery(order.id)}>Xác nhận đã nhận hàng</button>}{['DELIVERED', 'DELIVERED_CONFIRMED'].includes(order.status) && !order.returnRequests?.length && <button type="button" className="eht-btn eht-btn-primary eht-btn-sm" onClick={() => { setSelected(order); setError(''); }}>Đổi trả - hoàn tiền</button>}{order.returnRequests?.length > 0 && <span className="eht-badge">Yêu cầu đổi trả: {returnLabels[order.returnRequests[0].status] || order.returnRequests[0].status}</span>}</div></div>
         </article>)}</div>
       )}
     </div>
+    {cancelTarget && <div className="account-return-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) setCancelTarget(null); }}>
+      <div className="account-return-modal" role="dialog" aria-modal="true" aria-labelledby="cancel-order-title">
+        <h2 id="cancel-order-title">Xác nhận huỷ đơn hàng #{cancelTarget.id}</h2>
+        <p>Bạn có chắc chắn muốn huỷ đơn hàng này không? Thao tác chỉ thực hiện được khi cửa hàng chưa giao cho đơn vị vận chuyển.</p>
+        <div className="account-return-products">{cancelTarget.items.map((item) => <p key={item.productId}>{item.product?.productName || `Sản phẩm #${item.productId}`} × {item.quantity}</p>)}</div>
+        <strong>Tổng thanh toán: {money(cancelTarget.totalCost)}</strong>
+        {error && <p className="account-order-error" role="alert">{error}</p>}
+        <div className="account-return-actions">
+          <button type="button" className="eht-btn" disabled={busy} onClick={() => setCancelTarget(null)}>Quay lại</button>
+          <button type="button" className="eht-btn eht-btn-danger" disabled={busy} onClick={() => cancelOrder(cancelTarget)}>{busy ? 'Đang huỷ…' : 'Xác nhận huỷ đơn'}</button>
+        </div>
+      </div>
+    </div>}
     {selected && <div className="account-return-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) setSelected(null); }}>
       <form className="account-return-modal" role="dialog" aria-modal="true" aria-labelledby="return-title" onSubmit={submit}>
         <h2 id="return-title">Đổi trả - hoàn tiền</h2>

@@ -12,7 +12,7 @@ const STATUS_TEXT = {
   DELIVERED_PENDING_CONFIRM: 'Chờ xác nhận giao hàng',
   DELIVERED_CONFIRMED: 'Đã xác nhận giao hàng',
   DELIVERED: 'Đã nhận',
-  CANCELLED: 'Đã hủy',
+  CANCELLED: 'Đã huỷ',
 };
 
 const money = (value) =>
@@ -51,7 +51,7 @@ function OrderDetailModal({ order, history, busy, error, onClose, onChangeStatus
         <header className="staff-order-modal-head">
           <div>
             <h2 id="order-modal-title">Đơn hàng #{order.id}</h2>
-            <span className="staff-badge">
+            <span className={'staff-badge ' + (['DELIVERED', 'DELIVERED_CONFIRMED'].includes(order.status) ? 'green' : order.status === 'CANCELLED' ? 'red' : '')}>
               {STATUS_TEXT[order.status] || order.status}
             </span>
           </div>
@@ -95,25 +95,29 @@ function OrderDetailModal({ order, history, busy, error, onClose, onChangeStatus
         </div>
 
         <h3 className="staff-order-section-title">Lịch sử xử lý đơn hàng</h3>
-        <div className="staff-order-history">{history.length ? history.map((entry) => <p key={entry.id}><b>{entry.action === 'AUTO_CONFIRM_DELIVERY' ? 'Hệ thống tự xác nhận giao hàng' : entry.details?.to || entry.details?.status || entry.action}</b> · {entry.actor?.fullName || 'Hệ thống'} · {formatDate(entry.createdAt)}</p>) : <p>Chưa có lịch sử xử lý.</p>}</div>
+        <div className="staff-order-history">{history.length ? history.map((entry) => <p key={entry.id}><b>{entry.action === 'AUTO_CONFIRM_DELIVERY' ? 'Hệ thống tự xác nhận giao hàng' : entry.details?.cancelledBy === 'CUSTOMER' ? 'Khách hàng đã huỷ đơn' : STATUS_TEXT[entry.details?.to] || entry.details?.to || STATUS_TEXT[entry.details?.status] || entry.details?.status || entry.action}</b> · {entry.actor?.fullName || 'Hệ thống'} · {formatDate(entry.createdAt)}</p>) : <p>Chưa có lịch sử xử lý.</p>}</div>
 
         <div className="staff-order-status-actions">
-          <h3 className="staff-order-section-title">Cập nhật trạng thái</h3>
-          <div className="staff-actions">
-            {nextStatuses.map((status) => (
-              <button
-                key={status}
-                type="button"
-                disabled={busy}
-                className={'staff-button' + (status === 'CANCELLED' ? ' danger' : '')}
-                onClick={() => onChangeStatus(order, status)}
-              >
-                {status === 'CONFIRMED' && 'Xác nhận đơn'}
-                {status === 'SHIPPING' && 'Đánh dấu đã vận chuyển'}
-                {status === 'CANCELLED' && (order.status === 'PENDING' ? 'Từ chối đơn' : 'Hủy đơn')}
-              </button>
-            ))}
-          </div>
+          {order.status !== 'CANCELLED' && (
+            <>
+              <h3 className="staff-order-section-title">Cập nhật trạng thái</h3>
+              <div className="staff-actions">
+                {nextStatuses.map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    disabled={busy}
+                    className={'staff-button' + (status === 'CANCELLED' ? ' danger' : '')}
+                    onClick={() => onChangeStatus(order, status)}
+                  >
+                    {status === 'CONFIRMED' && 'Xác nhận đơn'}
+                    {status === 'SHIPPING' && 'Đánh dấu đã vận chuyển'}
+                    {status === 'CANCELLED' && (order.status === 'PENDING' ? 'Từ chối đơn' : 'Hủy đơn')}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           {order.status === 'DELIVERED_PENDING_CONFIRM' && order.deliveredAt && <>
             <DeliveryConfirmTimer deliveredAt={order.deliveredAt} totalCost={order.totalCost} config={config} onExpired={onRefresh} />
             {isOwner && order.totalCost > config.autoConfirmMaxAmount && <button type="button" className="staff-button" disabled={busy} onClick={() => onChangeStatus(order, 'DELIVERED_CONFIRMED')}>Xác nhận thủ công</button>}
@@ -129,7 +133,7 @@ function OrderDetailModal({ order, history, busy, error, onClose, onChangeStatus
 
           {order.status === 'CANCELLED' && (
             <span className="staff-subtitle">
-              Đơn hàng đã hủy.
+              Đơn hàng đã huỷ. Chỉ có thể xem chi tiết.
             </span>
           )}
         </div>
@@ -235,7 +239,7 @@ export default function StaffOrdersPage() {
       </header>
 
       <div className="staff-cards">
-        {['PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED_PENDING_CONFIRM', 'DELIVERED_CONFIRMED'].map((status) => (
+        {['PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED_PENDING_CONFIRM', 'DELIVERED_CONFIRMED', 'CANCELLED'].map((status) => (
           <div className="staff-card" key={status}>
             <span>{STATUS_TEXT[status]}</span>
             <strong>{statusCounts[status] || 0}</strong>

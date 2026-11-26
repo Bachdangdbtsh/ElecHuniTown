@@ -6,7 +6,6 @@ import { BsFillArrowDownLeftSquareFill } from "react-icons/bs";
 import Product from "../../component/product";
 import { FaFilter } from "react-icons/fa";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getApiBase } from "@/lib/apiBase";
 
 export default function Category({ id }) {
   const router = useRouter();
@@ -28,55 +27,77 @@ export default function Category({ id }) {
   const tag = searchParams.get("tag")
   const sort = searchParams.get("sort")
 
-  const [productList, setproductList] = useState([]);
-  const [pagination, setpagination] = useState({});
-  const [tags, settags] = useState([]);
-  const [parent, setparent] = useState(null);
-  const [children, setChildren] = useState([]);
-  const [category, setcategory] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const requestKey = `${id}|${sort ?? ""}|${tag ?? ""}|${page}`;
+  const [result, setResult] = useState({
+    key: null,
+    notFound: false,
+    productList: [],
+    pagination: {},
+    tags: [],
+    parent: null,
+    children: [],
+    category: null,
+  });
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
-    setNotFound(false);
+    const params = new URLSearchParams();
+    if (sort) params.set("sort", sort);
+    if (tag) params.set("tag", tag);
+    if (page) params.set("page", String(page));
+    const query = params.toString();
 
-    const url = new URL(`/category/${id}`, getApiBase());
-    if (sort) url.searchParams.append("sort", sort);
-    if (tag) url.searchParams.append("tag", tag);
-    if (page) url.searchParams.append("page", page);
-
-    fetch(url, {
+    fetch(`/api/backend/category/${id}${query ? `?${query}` : ""}`, {
       method: "POST",
+      credentials: "include",
       signal: controller.signal,
     })
       .then(res => res.json())
       .then(data => {
         if (data.code === "success") {
-          setproductList(data.productList || []);
-          settags(data.tags || []);
-          setpagination(data.pagination || {});
-          setparent(data.parent || null);
-          setChildren(data.children || []);
-          setcategory(data.category || null);
+          setResult({
+            key: requestKey,
+            notFound: false,
+            productList: data.productList || [],
+            tags: data.tags || [],
+            pagination: data.pagination || {},
+            parent: data.parent || null,
+            children: data.children || [],
+            category: data.category || null,
+          });
         } else {
-          setNotFound(true);
-          setproductList([]);
-          settags([]);
-          setpagination({});
-          setparent(null);
-          setChildren([]);
-          setcategory(null);
+          setResult({
+            key: requestKey,
+            notFound: true,
+            productList: [],
+            tags: [],
+            pagination: {},
+            parent: null,
+            children: [],
+            category: null,
+          });
         }
       })
       .catch(err => {
-        if (err.name !== "AbortError") setNotFound(true);
-      })
-      .finally(() => setLoading(false));
+        if (err.name !== "AbortError") {
+          setResult({
+            key: requestKey,
+            notFound: true,
+            productList: [],
+            tags: [],
+            pagination: {},
+            parent: null,
+            children: [],
+            category: null,
+          });
+        }
+      });
 
     return () => controller.abort();
-  }, [id, sort, tag, page])
+  }, [id, sort, tag, page, requestKey]);
+
+  const loading = result.key !== requestKey;
+  const { notFound, productList, pagination, tags, parent, children, category } = result;
 
   if (!loading && notFound) {
     return (

@@ -148,7 +148,7 @@ export async function getProfitTotals(start, end) {
     SELECT COALESCE(SUM(o."totalCost"), 0)::float8 AS revenue,
            COUNT(*)::int AS orders
     FROM "Order" o
-    WHERE o.status = ${STATUS}::"OrderStatus"
+    WHERE o.status IN (${STATUS}::"OrderStatus", 'DELIVERED_CONFIRMED'::"OrderStatus")
       AND o."orderDate" >= ${start} AND o."orderDate" < ${end}`;
 
   const [cogs] = await prisma.$queryRaw(Prisma.sql`
@@ -158,7 +158,7 @@ export async function getProfitTotals(start, end) {
     FROM "Order_contain_product" i
     JOIN "Order" o ON o.id = i."orderId"
     LEFT JOIN (${costSubquery(end)}) cost ON cost.product_id = i."productId"
-    WHERE o.status = ${STATUS}::"OrderStatus"
+    WHERE o.status IN (${STATUS}::"OrderStatus", 'DELIVERED_CONFIRMED'::"OrderStatus")
       AND o."orderDate" >= ${start} AND o."orderDate" < ${end}`);
 
   const [refund] = await prisma.$queryRaw`
@@ -201,7 +201,7 @@ export async function getBreakdown(start, end, groupBy, limit) {
              COALESCE(SUM(o."totalCost"), 0)::float8 AS revenue
       FROM "Order" o
       LEFT JOIN "User" u ON u.id = o."confirmedById"
-      WHERE o.status = ${STATUS}::"OrderStatus"
+      WHERE o.status IN (${STATUS}::"OrderStatus", 'DELIVERED_CONFIRMED'::"OrderStatus")
         AND o."orderDate" >= ${start} AND o."orderDate" < ${end}
       GROUP BY 1, 2`;
 
@@ -211,7 +211,7 @@ export async function getBreakdown(start, end, groupBy, limit) {
       FROM "Order_contain_product" i
       JOIN "Order" o ON o.id = i."orderId"
       LEFT JOIN (${costSubquery(end)}) cost ON cost.product_id = i."productId"
-      WHERE o.status = ${STATUS}::"OrderStatus"
+      WHERE o.status IN (${STATUS}::"OrderStatus", 'DELIVERED_CONFIRMED'::"OrderStatus")
         AND o."orderDate" >= ${start} AND o."orderDate" < ${end}
       GROUP BY 1`);
 
@@ -238,7 +238,7 @@ export async function getBreakdown(start, end, groupBy, limit) {
              SUM(i.quantity::float8 * i.price)::float8 AS goods
       FROM "Order" o
       JOIN "Order_contain_product" i ON i."orderId" = o.id
-      WHERE o.status = ${STATUS}::"OrderStatus"
+      WHERE o.status IN (${STATUS}::"OrderStatus", 'DELIVERED_CONFIRMED'::"OrderStatus")
         AND o."orderDate" >= ${start} AND o."orderDate" < ${end}
       GROUP BY o.id, o."totalCost"
     )

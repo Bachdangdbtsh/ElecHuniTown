@@ -1,0 +1,118 @@
+@startuml SD_DuyetPhieuNhapXuatKho
+' Sequence Diagram - Duyệt phiếu nhập/xuất kho (UC_42 gộp UC_44)
+' Đối chiếu code: InventoryDocumentModal.js, InventoryRouter.js, InventoryController.js,
+' InventoryService.js, InventoryRepository.js (main @ 73e6dce)
+skinparam monochrome true
+skinparam backgroundColor white
+skinparam ArrowColor black
+skinparam ParticipantBackgroundColor white
+skinparam ActorBackgroundColor white
+skinparam BoundaryBackgroundColor white
+skinparam ControlBackgroundColor white
+skinparam EntityBackgroundColor white
+skinparam DatabaseBackgroundColor white
+skinparam SequenceGroupBackgroundColor white
+skinparam SequenceGroupHeaderFontColor black
+skinparam SequenceLifeLineBorderColor black
+skinparam ActivityBackgroundColor white
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam SwimlaneBorderColor black
+skinparam ClassBackgroundColor white
+skinparam ClassBorderColor black
+skinparam ClassHeaderBackgroundColor white
+skinparam PackageBackgroundColor white
+skinparam NoteBackgroundColor white
+skinparam NoteBorderColor black
+skinparam shadowing false
+skinparam defaultFontName "DejaVu Sans"
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+autonumber
+
+actor "Shop Owner" as O
+boundary "Giao diện Quản lý kho\n(InventoryDocumentModal)" as UI
+control "InventoryRouter\n+ auth middleware" as R
+control "InventoryController" as C
+control "InventoryService" as S
+entity "InventoryRepository" as Repo
+database "PostgreSQL" as DB
+
+O -> UI : Mở danh sách phiếu chờ duyệt, chọn một phiếu
+UI -> R : GET /stock-receipts/:id hoặc /stock-issues/:id
+R -> C : getReceipt / getIssue
+C -> S : getReceipt(id) / getIssue(id)
+S -> Repo : getReceiptById(id) / getIssueById(id)
+Repo -> DB : SELECT phiếu + dòng hàng + nhà cung cấp
+DB --> Repo : phiếu
+Repo --> S : phiếu
+S --> C : phiếu
+C --> UI : 200 phiếu
+UI --> O : Hiển thị chi tiết phiếu
+
+alt Shop Owner duyệt phiếu
+  O -> UI : Nhấn "Duyệt" và xác nhận
+  UI -> R : POST /stock-receipts/:id/approve hoặc /stock-issues/:id/approve
+  R -> R : authenticate() + requireRole(SHOP_OWNER)\n+ requirePermission(STOCK_*_APPROVE)
+  R -> C : approveReceipt / approveIssue
+  C -> S : approveReceipt(id, ownerId) / approveIssue(id, ownerId)
+  S -> Repo : approveReceipt(id, ownerId) / approveIssue(id, ownerId)
+  group Transaction
+    Repo -> DB : UPDATE phiếu SET status = APPROVED, handledBy, handledAt\nWHERE id AND status = PENDING_HANDLE
+    alt Không còn ở trạng thái chờ duyệt (count = 0)
+      Repo --> S : null
+      S --> UI : 404 NOT_FOUND hoặc INVALID_DOCUMENT_STATUS
+      UI --> O : Hiển thị "Chỉ có thể xử lý phiếu đang chờ duyệt"
+    else Phiếu nhập kho
+      loop Mỗi dòng hàng
+        Repo -> DB : UPDATE Product SET stock = stock + quantity
+      end
+      Repo -> DB : INSERT InventoryTransaction (type = RECEIPT)
+      Repo -> DB : UPSERT Finance (cashBalance -= tổng tiền,\ntotalExpense += tổng tiền)
+      Repo -> DB : INSERT AuditLog (Finance)
+      Repo -> DB : INSERT Notification cho Staff lập phiếu ("đã được duyệt")
+      Repo --> S : phiếu đã duyệt
+      S --> C : phiếu
+      C --> UI : 200 phiếu
+      UI --> O : Cập nhật trạng thái phiếu "Đã duyệt"
+    else Phiếu xuất kho
+      loop Mỗi dòng hàng
+        Repo -> DB : UPDATE Product SET stock = stock - quantity\nWHERE stock >= quantity
+        alt Tồn kho không đủ
+          Repo --> S : InsufficientStockError (rollback transaction)
+          S --> UI : 409 INSUFFICIENT_STOCK
+          UI --> O : Hiển thị "Tồn kho sản phẩm ... không đủ để duyệt phiếu xuất"
+        end
+      end
+      Repo -> DB : INSERT InventoryTransaction (type = ISSUE)
+      Repo -> DB : INSERT Notification cho Staff lập phiếu ("đã được duyệt")
+      Repo --> S : phiếu đã duyệt
+      S --> C : phiếu
+      C --> UI : 200 phiếu
+      UI --> O : Cập nhật trạng thái phiếu "Đã duyệt"
+    end
+  end
+else Shop Owner từ chối phiếu
+  O -> UI : Nhấn "Từ chối" và nhập lý do
+  UI -> R : POST /stock-receipts/:id/reject hoặc /stock-issues/:id/reject\n{ rejectReason }
+  R -> R : authenticate() + requireRole(SHOP_OWNER)\n+ requirePermission(STOCK_*_APPROVE)
+  R -> C : rejectReceipt / rejectIssue
+  C -> C : parse(rejectDocumentSchema)
+  alt Lý do trống
+    C --> UI : 400 "Vui lòng nhập lý do từ chối"
+    UI --> O : Hiển thị lỗi
+  else Lý do hợp lệ
+    C -> S : rejectReceipt / rejectIssue(id, ownerId, rejectReason)
+    S -> Repo : rejectReceipt / rejectIssue(...)
+    group Transaction
+      Repo -> DB : UPDATE phiếu SET status = DENIED, rejectReason,\nhandledBy, handledAt WHERE status = PENDING_HANDLE
+      Repo -> DB : INSERT Notification cho Staff lập phiếu ("bị từ chối")
+    end
+    Repo --> S : phiếu đã từ chối
+    S --> C : phiếu
+    C --> UI : 200 phiếu
+    UI --> O : Cập nhật trạng thái phiếu "Đã từ chối"
+  end
+end
+@enduml

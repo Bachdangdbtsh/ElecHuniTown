@@ -1,0 +1,87 @@
+@startuml AD_DuyetPhieuNhapXuatKho
+' Activity Diagram - Duyệt phiếu nhập/xuất kho (UC_42 gộp UC_44)
+skinparam monochrome true
+skinparam backgroundColor white
+skinparam ArrowColor black
+skinparam ParticipantBackgroundColor white
+skinparam ActorBackgroundColor white
+skinparam BoundaryBackgroundColor white
+skinparam ControlBackgroundColor white
+skinparam EntityBackgroundColor white
+skinparam DatabaseBackgroundColor white
+skinparam SequenceGroupBackgroundColor white
+skinparam SequenceGroupHeaderFontColor black
+skinparam SequenceLifeLineBorderColor black
+skinparam ActivityBackgroundColor white
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam SwimlaneBorderColor black
+skinparam ClassBackgroundColor white
+skinparam ClassBorderColor black
+skinparam ClassHeaderBackgroundColor white
+skinparam PackageBackgroundColor white
+skinparam NoteBackgroundColor white
+skinparam NoteBorderColor black
+skinparam shadowing false
+skinparam defaultFontName "DejaVu Sans"
+
+|Shop Owner|
+start
+:Mở danh sách phiếu chờ duyệt;
+:Chọn một phiếu;
+|Hệ thống|
+:Hiển thị chi tiết phiếu;
+|Shop Owner|
+:Chọn thao tác: "Duyệt" (và xác nhận)
+hoặc "Từ chối" (và nhập lý do);
+|Hệ thống|
+if (Thao tác?) then (Duyệt)
+  if (Có quyền STOCK_*_APPROVE?) then (Không)
+    :Báo lỗi 403;
+    stop
+  else (Có)
+  endif
+  if (Phiếu còn ở trạng thái "Chờ duyệt"?) then (Không)
+    :Báo "Chỉ có thể xử lý phiếu đang chờ duyệt";
+    stop
+  else (Có)
+  endif
+  :Chuyển phiếu sang "Đã duyệt",\nghi người duyệt và thời điểm duyệt;
+  if (Loại phiếu?) then (Phiếu nhập)
+    :Cộng số lượng vào tồn kho từng sản phẩm;
+    :Ghi giao dịch kho loại RECEIPT;
+    :Trừ số dư tiền và cộng tổng chi nhập hàng;
+    :Ghi nhật ký thay đổi tài chính;
+  else (Phiếu xuất)
+    while (Còn dòng hàng?) is (Có)
+      if (Tồn kho >= số lượng xuất?) then (Có)
+        :Trừ số lượng khỏi tồn kho;
+      else (Không)
+        :Hủy toàn bộ thay đổi (rollback);
+        :Báo "Tồn kho sản phẩm ... không đủ\nđể duyệt phiếu xuất";
+        stop
+      endif
+    endwhile (Không)
+    :Ghi giao dịch kho loại ISSUE;
+  endif
+  :Gửi thông báo "đã được duyệt"\nđến Staff lập phiếu;
+else (Từ chối)
+  if (Lý do trống?) then (Có)
+    :Báo "Vui lòng nhập lý do từ chối";
+    stop
+  else (Không)
+  endif
+  if (Phiếu còn ở trạng thái "Chờ duyệt"?) then (Không)
+    :Báo "Chỉ có thể xử lý phiếu đang chờ duyệt";
+    stop
+  else (Có)
+  endif
+  :Chuyển phiếu sang "Đã từ chối", lưu lý do,\nngười xử lý và thời điểm xử lý;
+  :Gửi thông báo "bị từ chối"\nđến Staff lập phiếu;
+endif
+|Hệ thống|
+:Cập nhật trạng thái phiếu trên giao diện;
+|Shop Owner|
+stop
+@enduml

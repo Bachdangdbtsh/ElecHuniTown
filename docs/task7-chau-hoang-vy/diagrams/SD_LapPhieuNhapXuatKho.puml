@@ -1,0 +1,92 @@
+@startuml SD_LapPhieuNhapXuatKho
+' Sequence Diagram - Lập phiếu nhập/xuất kho (UC_41, UC_43)
+' Đối chiếu code: InventoryCreateModal.js, InventoryRouter.js, InventoryController.js,
+' InventoryService.js, InventoryRepository.js (main @ 73e6dce)
+skinparam monochrome true
+skinparam backgroundColor white
+skinparam ArrowColor black
+skinparam ParticipantBackgroundColor white
+skinparam ActorBackgroundColor white
+skinparam BoundaryBackgroundColor white
+skinparam ControlBackgroundColor white
+skinparam EntityBackgroundColor white
+skinparam DatabaseBackgroundColor white
+skinparam SequenceGroupBackgroundColor white
+skinparam SequenceGroupHeaderFontColor black
+skinparam SequenceLifeLineBorderColor black
+skinparam ActivityBackgroundColor white
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam SwimlaneBorderColor black
+skinparam ClassBackgroundColor white
+skinparam ClassBorderColor black
+skinparam ClassHeaderBackgroundColor white
+skinparam PackageBackgroundColor white
+skinparam NoteBackgroundColor white
+skinparam NoteBorderColor black
+skinparam shadowing false
+skinparam defaultFontName "DejaVu Sans"
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+autonumber
+
+actor "Staff / Shop Owner" as U
+boundary "Giao diện Quản lý kho\n(InventoryCreateModal)" as UI
+control "InventoryRouter\n+ auth middleware" as R
+control "InventoryController" as C
+control "InventoryService" as S
+entity "InventoryRepository" as Repo
+database "PostgreSQL" as DB
+
+U -> UI : Chọn "Tạo phiếu" và chọn loại phiếu (nhập / xuất)
+UI --> U : Hiển thị form phiếu
+U -> UI : Nhập nhà cung cấp, loại xuất (nếu là phiếu xuất),\nnội dung, danh sách sản phẩm - số lượng (- đơn giá nhập)
+U -> UI : Nhấn "Gửi phiếu"
+UI -> R : POST /stock-receipts hoặc /stock-issues
+R -> R : authenticate() + requireRole(SHOP_OWNER, STAFF)\n+ requirePermissionOrRole(STOCK_*_CREATE)
+alt Chưa đăng nhập / không có quyền
+  R --> UI : 401 UNAUTHENTICATED / 403 FORBIDDEN
+  UI --> U : Hiển thị thông báo lỗi
+else Hợp lệ
+  R -> C : createReceipt(req) / createIssue(req)
+  C -> C : parse(createReceiptSchema / createIssueSchema)
+  alt Dữ liệu không hợp lệ
+    C --> UI : 400 VALIDATION_ERROR
+    UI --> U : Hiển thị lỗi trên form
+  else Dữ liệu hợp lệ
+    C -> S : createReceipt(userId, payload) / createIssue(userId, payload)
+    S -> Repo : findActiveSupplier(supplierId)
+    Repo -> DB : SELECT Supplier
+    DB --> Repo : supplier
+    alt Nhà cung cấp không tồn tại hoặc ngừng hoạt động
+      S --> UI : 404 SUPPLIER_NOT_FOUND
+      UI --> U : Hiển thị thông báo lỗi
+    else Nhà cung cấp hợp lệ
+      S -> Repo : findProductsByIds(productIds)
+      Repo -> DB : SELECT Product
+      DB --> Repo : products
+      alt Có sản phẩm không tồn tại
+        S --> UI : 404 PRODUCT_NOT_FOUND
+        UI --> U : Hiển thị thông báo lỗi
+      else Sản phẩm hợp lệ
+        opt Phiếu xuất
+          S -> S : unitCost của từng dòng = Product.newPrice
+        end
+        S -> Repo : createReceipt(...) / createIssue(...)
+        group Transaction
+          Repo -> DB : INSERT phiếu (status = PENDING_HANDLE) + các dòng hàng
+          Repo -> DB : SELECT User có vai trò SHOP_OWNER đang hoạt động
+          Repo -> DB : INSERT Notification cho từng Shop Owner\n("Có phiếu nhập/xuất kho mới")
+          Repo -> DB : UPDATE mã phiếu = PN-xxxxxx / PX-xxxxxx
+        end
+        DB --> Repo : phiếu đã tạo
+        Repo --> S : phiếu
+        S --> C : phiếu
+        C --> UI : 201 { code: success, data: phiếu }
+        UI --> U : Thông báo "Tạo yêu cầu thành công",\ncập nhật danh sách phiếu chờ duyệt
+      end
+    end
+  end
+end
+@enduml

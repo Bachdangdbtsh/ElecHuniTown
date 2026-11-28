@@ -1,0 +1,82 @@
+@startuml AD_LapPhieuNhapXuatKho
+' Activity Diagram - Lập phiếu nhập/xuất kho (UC_41, UC_43)
+skinparam monochrome true
+skinparam backgroundColor white
+skinparam ArrowColor black
+skinparam ParticipantBackgroundColor white
+skinparam ActorBackgroundColor white
+skinparam BoundaryBackgroundColor white
+skinparam ControlBackgroundColor white
+skinparam EntityBackgroundColor white
+skinparam DatabaseBackgroundColor white
+skinparam SequenceGroupBackgroundColor white
+skinparam SequenceGroupHeaderFontColor black
+skinparam SequenceLifeLineBorderColor black
+skinparam ActivityBackgroundColor white
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam SwimlaneBorderColor black
+skinparam ClassBackgroundColor white
+skinparam ClassBorderColor black
+skinparam ClassHeaderBackgroundColor white
+skinparam PackageBackgroundColor white
+skinparam NoteBackgroundColor white
+skinparam NoteBorderColor black
+skinparam shadowing false
+skinparam defaultFontName "DejaVu Sans"
+
+|Staff / Shop Owner|
+start
+:Mở trang Quản lý kho;
+:Chọn "Tạo phiếu";
+:Chọn loại phiếu;
+if (Loại phiếu?) then (Phiếu nhập)
+  :Chọn nhà cung cấp;
+  :Nhập nội dung phiếu;
+  :Thêm dòng hàng: sản phẩm, số lượng, đơn giá nhập;
+else (Phiếu xuất)
+  :Chọn loại xuất (Bán hàng / Hư hỏng / Trả nhà cung cấp);
+  if (Trả nhà cung cấp?) then (Có)
+    :Chọn nhà cung cấp;
+  else (Không)
+  endif
+  :Nhập nội dung phiếu;
+  :Thêm dòng hàng: sản phẩm, số lượng;
+endif
+:Nhấn "Gửi phiếu";
+
+|Hệ thống|
+if (Đã đăng nhập và có quyền tạo phiếu?) then (Không)
+  :Báo lỗi 401 / 403;
+  stop
+else (Có)
+endif
+if (Dữ liệu hợp lệ?\n(nội dung không trống, có ít nhất 1 dòng,\nsản phẩm không trùng, số lượng > 0)) then (Không)
+  :Báo lỗi trên form\n(người dùng sửa và gửi lại);
+  stop
+else (Có)
+endif
+if (Phiếu có nhà cung cấp và nhà cung cấp\nkhông tồn tại / ngừng hoạt động?) then (Có)
+  :Báo "Nhà cung cấp không tồn tại\nhoặc đã ngừng hoạt động";
+  stop
+else (Không)
+endif
+if (Tất cả sản phẩm tồn tại?) then (Không)
+  :Báo "Không tìm thấy sản phẩm có mã ...";
+  stop
+else (Có)
+endif
+if (Phiếu xuất?) then (Có)
+  :Lấy đơn giá dòng hàng = giá bán hiện tại;
+else (Không)
+endif
+:Lưu phiếu với trạng thái "Chờ duyệt" (PENDING_HANDLE);
+:Gửi thông báo phiếu mới đến các Shop Owner;
+:Sinh mã phiếu PN-xxxxxx / PX-xxxxxx;
+:Trả về phiếu đã tạo;
+
+|Staff / Shop Owner|
+:Nhận thông báo "Tạo yêu cầu thành công";
+stop
+@enduml

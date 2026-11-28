@@ -1,0 +1,511 @@
+@startuml CD_ToanHeThong
+' Class Diagram toàn hệ thống ElecHuniTown
+' Thuộc tính lấy từ backend/prisma/schema.prisma; phương thức lấy từ các service/route
+' (modules/*, source/Inventory, router/index.router.js) - nhánh main @ 73e6dce (28/11/2026).
+' Khóa ngoại không ghi thành thuộc tính mà biểu diễn bằng quan hệ.
+skinparam monochrome true
+skinparam backgroundColor white
+skinparam ArrowColor black
+skinparam ParticipantBackgroundColor white
+skinparam ActorBackgroundColor white
+skinparam BoundaryBackgroundColor white
+skinparam ControlBackgroundColor white
+skinparam EntityBackgroundColor white
+skinparam DatabaseBackgroundColor white
+skinparam SequenceGroupBackgroundColor white
+skinparam SequenceGroupHeaderFontColor black
+skinparam SequenceLifeLineBorderColor black
+skinparam ActivityBackgroundColor white
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam SwimlaneBorderColor black
+skinparam ClassBackgroundColor white
+skinparam ClassBorderColor black
+skinparam ClassHeaderBackgroundColor white
+skinparam PackageBackgroundColor white
+skinparam NoteBackgroundColor white
+skinparam NoteBorderColor black
+skinparam shadowing false
+skinparam defaultFontName "DejaVu Sans"
+skinparam classAttributeIconSize 0
+skinparam linetype polyline
+skinparam nodesep 40
+skinparam ranksep 60
+hide circle
+hide empty members
+
+' ================= TÀI KHOẢN & PHÂN QUYỀN =================
+package "Tài khoản & Phân quyền" {
+  class User {
+    - id : Int
+    - email : String
+    - passwordHash : String
+    - fullName : String
+    - phone : String
+    - avatar : String
+    - isActive : Boolean
+    - createdAt : DateTime
+    - lastLoginAt : DateTime
+    + login(email, password)
+    + logout()
+    + forgotPassword(email)
+    + resetPassword(token, newPassword)
+    + changePassword(oldPassword, newPassword)
+    + updateAvatar(file)
+    + requestAccountChange(changes, reason)
+  }
+  class Customer {
+    + register(email, password, fullName)
+    + updateProfile(data)
+  }
+  class Staff
+  class ShopOwner
+  class Admin {
+    + createInternalUser(data)
+    + toggleUserStatus(userId)
+    + reviewChangeRequest(id, decision)
+    + getAccessAnalytics()
+  }
+  class Role {
+    - id : Int
+    - code : String
+    - name : String
+    - isSystem : Boolean
+    - description : String
+    + updatePermissions(permissionIds)
+  }
+  class Permission {
+    - id : Int
+    - code : String
+    - name : String
+  }
+  class PermissionGroup {
+    - id : Int
+    - code : String
+    - name : String
+  }
+  class AdminManageRole {
+    - type : String
+    - at : DateTime
+  }
+  class AccountChangeRequest {
+    - id : Int
+    - reason : String
+    - changes : Json
+    - previous : Json
+    - status : ChangeRequestStatus
+    - createdAt : DateTime
+    - reviewedAt : DateTime
+  }
+  class LoginHistory {
+    - id : Int
+    - email : String
+    - ip : String
+    - userAgent : String
+    - success : Boolean
+    - createdAt : DateTime
+  }
+  class PasswordResetToken {
+    - id : Int
+    - tokenHash : String
+    - expiresAt : DateTime
+    - usedAt : DateTime
+  }
+  class AuditLog {
+    - id : Int
+    - action : AuditAction
+    - entityType : String
+    - entityId : Int
+    - details : Json
+    - ip : String
+    - createdAt : DateTime
+  }
+  class Notification {
+    - id : Int
+    - role : String
+    - type : String
+    - message : String
+    - url : String
+    - payload : Json
+    - isRead : Boolean
+    - createdAt : DateTime
+    + markRead()
+    + markAllRead(userId)
+  }
+}
+
+' ================= SẢN PHẨM & DANH MỤC =================
+package "Danh mục & Sản phẩm" {
+  class Category {
+    - id : Int
+    - name : String
+    - slug : String
+    - description : String
+    - imageUrl : String
+    - isActive : Boolean
+    + create(data)
+    + update(data)
+    + updateStatus(isActive)
+    + delete()
+  }
+  class Product {
+    - id : Int
+    - productName : String
+    - slug : String
+    - description : String
+    - oldPrice : Int
+    - newPrice : Int
+    - stock : Int
+    - sold : Int
+    - rate : Float
+    - isFeature : Boolean
+    - status : ProductStatus
+    - createdAt : DateTime
+    + create(data)
+    + update(data)
+    + updateStatus(status)
+    + delete()
+    + search(keyword)
+  }
+  class ProductPictures {
+    - url : String
+  }
+  class Product_Tags {
+    - tag : String
+  }
+  class StaffManageCategory {
+    - type : String
+    - at : DateTime
+  }
+  class StaffManageProduct {
+    - type : String
+    - at : DateTime
+  }
+  class Comment {
+    - id : Int
+    - content : String
+    - rating : Int
+    - isActive : Boolean
+    - reply : String
+    - repliedAt : DateTime
+    - createdAt : DateTime
+    + create(productId, rating, content)
+  }
+}
+
+' ================= MUA HÀNG & ĐƠN HÀNG =================
+package "Mua hàng & Đơn hàng" {
+  class Cart {
+    - id : Int
+    - createdAt : DateTime
+    - updatedAt : DateTime
+    + addItem(productId, quantity)
+    + updateItem(productId, quantity)
+    + removeItem(productId)
+  }
+  class CartItem {
+    - id : Int
+    - quantity : Int
+  }
+  class RecipientInfo {
+    - id : Int
+    - recipientName : String
+    - recipientPhoneNumber : String
+    - address : String
+    - recipientType : String
+    - isDefault : Boolean
+    + add(data)
+    + edit(data)
+    + setAsDefault()
+    + remove()
+  }
+  class Order {
+    - id : Int
+    - orderDate : DateTime
+    - status : OrderStatus
+    - paymentMethod : String
+    - paymentMethodStatus : Boolean
+    - transactionID : String
+    - note : String
+    - subtotal : Int
+    - shippingFee : Int
+    - discount : Int
+    - totalCost : Int
+    - shippedAt : DateTime
+    - deliveredAt : DateTime
+    + create(cart, recipient, paymentMethod)
+    + updateStatus(status)
+    + markDelivered()
+    + confirmDelivered()
+    + autoConfirmDelivered()
+    + cancelByCustomer()
+  }
+  class Order_contain_product {
+    - quantity : Int
+    - price : Int
+  }
+}
+
+' ================= KHO HÀNG =================
+package "Kho hàng" {
+  class Supplier {
+    - id : Int
+    - name : String
+    - businessRegistNum : String
+    - email : String
+    - phoneNumber : String
+    - address : String
+    - contactPerson : String
+    - bankNumber : String
+    - bankName : String
+    - isActive : Boolean
+    + create(data)
+    + update(data)
+    + deactivate()
+    + search(keyword, searchBy)
+  }
+  class StockReceipt {
+    - id : Int
+    - code : String
+    - status : DocumentStatus
+    - content : String
+    - rejectReason : String
+    - createdAt : DateTime
+    - handledAt : DateTime
+    + create(supplier, items)
+    + approve(ownerId)
+    + reject(ownerId, reason)
+  }
+  class StockReceiptItem {
+    - id : Int
+    - quantity : Int
+    - unitCost : Int
+  }
+  class StockIssue {
+    - id : Int
+    - code : String
+    - type : StockIssueType
+    - status : DocumentStatus
+    - content : String
+    - rejectReason : String
+    - createdAt : DateTime
+    - handledAt : DateTime
+    + create(type, items)
+    + approve(ownerId)
+    + reject(ownerId, reason)
+  }
+  class StockIssueItem {
+    - id : Int
+    - quantity : Int
+    - unitCost : Int
+  }
+  class InventoryTransaction {
+    - id : Int
+    - type : TransactionType
+    - quantity : Int
+    - unitCost : Int
+    - createdAt : DateTime
+  }
+}
+
+' ================= ĐỔI TRẢ =================
+package "Đổi trả & Hoàn tiền" {
+  class ReturnRequest {
+    - id : Int
+    - status : ReturnStatus
+    - reason : String
+    - rejectReason : String
+    - refundAmount : Int
+    - refundCode : String
+    - beneficiaryAccount : String
+    - beneficiaryName : String
+    - beneficiaryBank : String
+    - refundMessage : String
+    - createdAt : DateTime
+    - handledAt : DateTime
+    - refundedAt : DateTime
+    + create(orderId, reason, items, images)
+    + decide(approved, rejectReason)
+    + refund()
+    + refundOffline()
+  }
+  class ReturnRequestItem {
+    - id : Int
+    - quantity : Int
+    - unitCost : Int
+    - condition : ReturnItemCondition
+  }
+  class ReturnImage {
+    - id : Int
+    - url : String
+    - uploadedAt : DateTime
+  }
+}
+
+' ================= TÀI CHÍNH & THỐNG KÊ =================
+package "Tài chính & Thống kê" {
+  class Finance {
+    - id : Int
+    - cashBalance : BigInt
+    - totalExpense : BigInt
+    - updatedAt : DateTime
+  }
+  class FinanceMovement {
+    - id : Int
+    - kind : String
+    - amount : BigInt
+    - createdAt : DateTime
+    + recordSale(order)
+    + recordRefund(order)
+  }
+  class StatisticService <<service>> {
+    + getDashboard(from, to)
+    + getRevenueSeries(from, to, groupBy)
+    + getProfit(from, to)
+    + getBreakdown(from, to, groupBy, limit)
+    + getTopProducts(from, to, limit)
+    + getSlowProducts(from, to, limit)
+    + getRatings(from, to, limit)
+    + getRatingReviews(productId, rating, page)
+    + exportExcel(from, to)
+  }
+}
+
+' ================= ENUM =================
+package "Kiểu liệt kê" {
+  enum OrderStatus {
+    PENDING
+    CONFIRMED
+    SHIPPING
+    DELIVERED
+    DELIVERED_PENDING_CONFIRM
+    DELIVERED_CONFIRMED
+    CANCELLED
+  }
+  enum DocumentStatus {
+    DRAFT
+    PENDING_HANDLE
+    APPROVED
+    DENIED
+  }
+  enum StockIssueType {
+    SALE
+    DAMAGED
+    RETURN_TO_SUPPLIER
+  }
+  enum TransactionType {
+    RECEIPT
+    ISSUE
+    CUSTOMER_RETURN
+  }
+  enum ReturnStatus {
+    PENDING
+    APPROVED
+    DENIED
+    REFUNDED
+  }
+  enum ReturnItemCondition {
+    RESALEABLE
+    NON_RESALEABLE
+  }
+  enum ProductStatus {
+    ACTIVE
+    HIDDEN
+  }
+  enum ChangeRequestStatus {
+    PENDING
+    APPROVED
+    REJECTED
+  }
+  enum AuditAction {
+    AUTO_CONFIRM_DELIVERY
+    CREATE
+    UPDATE
+    DELETE
+    LOCK
+    UNLOCK
+    APPROVE
+    REJECT
+    ASSIGN_ROLE
+    CHANGE_PERMISSIONS
+  }
+}
+
+' ================= QUAN HỆ =================
+' Kế thừa: mỗi vai trò là phần mở rộng 1-1 của User
+User <|-- Customer
+User <|-- Staff
+User <|-- ShopOwner
+User <|-- Admin
+
+Role "1" -- "0..*" User : được gán >
+Role "1" -- "0..*" AdminManageRole
+Admin "1" -- "0..*" AdminManageRole : thực hiện >
+PermissionGroup "1" *-- "0..*" Permission
+Role "0..*" -- "0..*" Permission : RolePermission
+
+User "1" *-- "0..*" LoginHistory
+User "1" *-- "0..*" PasswordResetToken
+User "1" *-- "0..*" Notification : nhận >
+User "0..1" -- "0..*" AuditLog : thực hiện >
+User "1" -- "0..*" AccountChangeRequest : gửi >
+User "0..1" -- "0..*" AccountChangeRequest : duyệt >
+
+Category "1" -- "0..*" Product : chứa >
+Category "0..1" -- "0..*" Category : danh mục cha >
+Product "1" *-- "0..*" ProductPictures
+Product "1" *-- "0..*" Product_Tags
+Staff "1" -- "0..*" StaffManageCategory
+StaffManageCategory "0..*" -- "1" Category
+Staff "1" -- "0..*" StaffManageProduct
+StaffManageProduct "0..*" -- "1" Product
+
+User "1" *-- "0..*" Comment : viết >
+Product "1" *-- "0..*" Comment : được đánh giá <
+User "0..1" -- "0..*" Comment : phản hồi >
+
+Customer "1" *-- "0..1" Cart
+Cart "1" *-- "0..*" CartItem
+CartItem "0..*" -- "1" Product
+Customer "1" *-- "0..*" RecipientInfo
+Customer "0..1" -- "0..*" Order : đặt >
+RecipientInfo "1" -- "0..*" Order : giao đến <
+User "0..1" -- "0..*" Order : xác nhận >
+Order "1" *-- "1..*" Order_contain_product
+Order_contain_product "0..*" -- "1" Product
+
+Supplier "1" -- "0..*" StockReceipt : cung cấp >
+Supplier "0..1" -- "0..*" StockIssue : nhận trả <
+User "1" -- "0..*" StockReceipt : lập >
+User "0..1" -- "0..*" StockReceipt : duyệt >
+User "1" -- "0..*" StockIssue : lập >
+User "0..1" -- "0..*" StockIssue : duyệt >
+StockReceipt "1" *-- "1..*" StockReceiptItem
+StockIssue "1" *-- "1..*" StockIssueItem
+StockReceiptItem "0..*" -- "1" Product
+StockIssueItem "0..*" -- "1" Product
+StockReceiptItem "1" -- "0..1" InventoryTransaction : sinh ra >
+StockIssueItem "1" -- "0..1" InventoryTransaction : sinh ra >
+ReturnRequest "0..1" -- "0..*" InventoryTransaction : sinh ra >
+InventoryTransaction "0..*" -- "1" Product
+
+Order "1" -- "0..1" ReturnRequest : có >
+ReturnRequest "1" *-- "1..*" ReturnRequestItem
+ReturnRequest "1" *-- "0..*" ReturnImage
+ReturnRequestItem "0..*" -- "1" Product
+User "0..1" -- "0..*" ReturnRequest : xử lý / hoàn tiền >
+
+Order "1" -- "0..*" FinanceMovement : ghi nhận >
+StockReceipt ..> Finance : cập nhật khi duyệt
+FinanceMovement ..> Finance : cập nhật
+
+StatisticService ..> Order
+StatisticService ..> Order_contain_product
+StatisticService ..> StockReceiptItem
+StatisticService ..> StockIssueItem
+StatisticService ..> ReturnRequest
+StatisticService ..> Comment
+StatisticService ..> Finance
+
+@enduml
